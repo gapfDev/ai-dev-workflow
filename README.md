@@ -12,7 +12,9 @@ This is a **process framework**, not a technology framework. It works for any ty
 - CLI tools
 - APIs
 
-## � Workflow Overview
+![Workflow Diagram](images/workflow-diagram.jpg)
+
+## 📋 Workflow Overview
 
 The framework consists of 7 steps with validation gates:
 
@@ -41,7 +43,7 @@ The `.agent/skills/` directory contains reusable, independent skills:
 - **agent-handoff** — Manager-Worker delegation
 - **visual-summary** — ASCII art deliverable summaries
 
-## � Getting Started
+## 🚀 Getting Started
 
 1. Review the workflow: `.agent/workflows/ai-dev-flow-plan.md`
 2. Use skills as needed for each step
