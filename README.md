@@ -74,27 +74,52 @@ Ask your AI: *"What step are we on?"* or *"Show me the workflow status"*
 
 ### For AI Manager Agents
 
-**Before starting Step 1, use this kickoff announcement:**
+**Before starting, use this kickoff announcement:**
 
 ```
 🎬 WORKFLOW KICKOFF
 
-I'm starting the AI Development Workflow for your [project type].
+I'll guide you through a 7-step development process.
 
-We'll go through 7 steps:
-1. Product Discovery (~21 questions about your vision)
-2. Tech Analysis (architecture decisions)
-3. Setup & Backlog (create tickets)
-4. Sprint Planning (prioritization)
-5. Implementation (coding by Dev Agents)
-6. Code Review (quality validation)
-7. QA Validation (testing)
+We'll go step-by-step, and you'll approve each step before we proceed.
+You can modify, skip, or pause anytime.
+
+First up: Step 1/7 — Product Discovery
+• I'll ask ~21 questions about your vision
+• Takes ~15-20 minutes
+• Output: PRODUCT_VISION.md
 
 Timeline estimate: [Small/Medium/Large] = [30-60min / 2-4hrs / Multiple days]
 
-I'll pause at Gates for your approval before major transitions.
+Ready to begin Step 1?
+```
 
-Ready to begin with Step 1: Product Discovery?
+**IMPORTANT:** Show full 7-step plan ONLY if user asks. Otherwise, reveal steps progressively.
+
+**User Control Commands (Recognize These):**
+
+| User Says | Action |
+|-----------|--------|
+| "Yes" / "Proceed" / "OK" | Continue to next step |
+| "No" / "Wait" | Pause, ask what to change |
+| "Modify" / "Change" | Allow edits to current step |
+| "Skip" | Mark step as skipped, proceed |
+| "What step?" / "Status?" | Show progress tracker |
+| "Show plan" / "All steps" | Display full 7-step overview |
+
+**After EACH step, show progress tracker:**
+
+```
+Progress: [####------] 4/7
+
+✅ Step 1: Product Discovery (Done)
+✅ Step 2: Tech Analysis (Done)  
+✅ Step 3: Setup & Backlog (Done)
+🔄 Step 4: Sprint Planning (Current)
+⏸️ Step 5-7: Pending
+
+Next: Sprint Planning → [Brief description]
+Ready to continue? [Yes/No/Modify]
 ```
 
 **Wait for user confirmation before proceeding.**

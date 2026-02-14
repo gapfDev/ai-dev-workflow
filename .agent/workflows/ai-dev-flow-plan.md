@@ -35,24 +35,98 @@
 
 ┌─── ⚠️ MANAGER AGENT: WORKFLOW KICKOFF REQUIRED ─────────────────────────────────┐
 │                                                                                 │
-│  BEFORE starting Step 1, announce to the user:                                  │
+│  BEFORE starting, announce to the user:                                         │
 │                                                                                 │
-│  "🎬 Starting AI Development Workflow (7 steps)                                 │
+│  "🎬 WORKFLOW KICKOFF                                                           │
 │                                                                                 │
-│  We'll build your [PROJECT_TYPE] following this process:                        │
-│  1. Product Discovery — 21 questions about your vision                          │
-│  2. Tech Analysis — Architecture & stack decisions                              │
-│  3. Setup & Backlog — Initialize project + create tickets                       │
-│  4. Sprint Planning — Prioritize work (MoSCoW)                                  │
-│  5. Implementation — Build features (Dev Agents)                                │
-│  6. Code Review — Quality validation                                            │
-│  7. QA Validation — Test user flows                                             │
+│  I'll guide you through a 7-step development process.                           │
 │                                                                                 │
-│  Timeline: Small = 30-60min | Medium = 2-4hrs | Large = Multiple days           │
+│  We'll go step-by-step, and you'll approve each step before we proceed.         │
+│  You can modify, skip, or pause anytime.                                        │
 │                                                                                 │
-│  I'll pause at Gates for your approval. Ready to begin?"                        │
+│  First up: Step 1/7 — Product Discovery                                         │
+│  • I'll ask ~21 questions about your vision                                     │
+│  • Takes ~15-20 minutes                                                         │
+│  • Output: PRODUCT_VISION.md                                                    │
 │                                                                                 │
-│  ✅ Wait for user confirmation before proceeding to Step 1.                     │
+│  Timeline estimate: [Small/Medium/Large] = [30-60min / 2-4hrs / Multiple days]  │
+│                                                                                 │
+│  Ready to begin Step 1?"                                                        │
+│                                                                                 │
+│  ✅ Wait for user confirmation before proceeding.                               │
+│                                                                                 │
+│  NOTE: Show full 7-step plan ONLY if user asks "Show me all steps"              │
+│  Otherwise, reveal steps progressively (one at a time).                         │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─── USER CONTROL COMMANDS ───────────────────────────────────────────────────────┐
+│                                                                                 │
+│  Manager Agent MUST recognize these user commands:                              │
+│                                                                                 │
+│  • "Yes" / "Proceed" / "OK" → Continue to next step                             │
+│  • "No" / "Wait" → Pause, ask what to change                                    │
+│  • "Modify" / "Change" → Allow edits to current step                            │
+│  • "Skip" → Mark step as skipped, proceed to next                               │
+│  • "What step?" / "Status?" → Show progress tracker                             │
+│  • "Show plan" / "All steps" → Display full 7-step overview                     │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─── PROGRESS TRACKER TEMPLATE ───────────────────────────────────────────────────┐
+│                                                                                 │
+│  Show after EACH step completion:                                               │
+│                                                                                 │
+│  Progress: [####------] 4/7                                                     │
+│                                                                                 │
+│  ✅ Step 1: Product Discovery (Done)                                            │
+│  ✅ Step 2: Tech Analysis (Done)                                                │
+│  ✅ Step 3: Setup & Backlog (Done)                                              │
+│  🔄 Step 4: Sprint Planning (Current)                                           │
+│  ⏸️ Step 5: Implementation (Pending)                                            │
+│  ⏸️ Step 6: Code Review (Pending)                                               │
+│  ⏸️ Step 7: QA Validation (Pending)                                             │
+│                                                                                 │
+│  Next: Sprint Planning → Prioritize tickets with MoSCoW                         │
+│  Ready to continue? [Yes/No/Modify]                                             │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─── 📍 STEP TRANSITION: STEP 1 ──────────────────────────────────────────────────┐
+│                                                                                 │
+│  Manager Agent MUST announce:                                                   │
+│                                                                                 │
+│  "📍 STEP 1/7: Product Discovery                                                │
+│                                                                                 │
+│  What we'll do:                                                                 │
+│  • Ask 21 structured questions about your vision                                │
+│  • Understand features, user flows, and business goals                          │
+│  • Create PRODUCT_VISION.md document                                            │
+│                                                                                 │
+│  Estimated time: 15-20 minutes                                                  │
+│                                                                                 │
+│  Ready to proceed with Step 1?"                                                 │
+│                                                                                 │
+│  ⏸️ WAIT for user confirmation (Yes/No/Wait/Modify)                             │
+│                                                                                 │
+│  AFTER completing Step 1, show:                                                 │
+│                                                                                 │
+│  "✅ STEP 1/7 COMPLETE: Product Discovery                                       │
+│                                                                                 │
+│  Summary:                                                                       │
+│  - Captured 21 answers about your vision                                        │
+│  - Created PRODUCT_VISION.md                                                    │
+│  - Identified [X] core features                                                 │
+│                                                                                 │
+│  Progress: [##--------] 1/7                                                     │
+│                                                                                 │
+│  Next: Step 2/7 — Tech Analysis                                                 │
+│  • Discuss architecture \u0026 tech stack (~10-15 min)                              │
+│  • Output: TECH_STRATEGY.md                                                     │
+│                                                                                 │
+│  Ready to proceed to Step 2? [Yes/No/Modify]"                                   │
+│                                                                                 │
+│  ⏸️ WAIT for user confirmation before starting Step 2                           │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
