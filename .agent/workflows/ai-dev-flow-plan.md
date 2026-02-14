@@ -33,6 +33,29 @@
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
+┌─── ⚠️ MANAGER AGENT: WORKFLOW KICKOFF REQUIRED ─────────────────────────────────┐
+│                                                                                 │
+│  BEFORE starting Step 1, announce to the user:                                  │
+│                                                                                 │
+│  "🎬 Starting AI Development Workflow (7 steps)                                 │
+│                                                                                 │
+│  We'll build your [PROJECT_TYPE] following this process:                        │
+│  1. Product Discovery — 21 questions about your vision                          │
+│  2. Tech Analysis — Architecture & stack decisions                              │
+│  3. Setup & Backlog — Initialize project + create tickets                       │
+│  4. Sprint Planning — Prioritize work (MoSCoW)                                  │
+│  5. Implementation — Build features (Dev Agents)                                │
+│  6. Code Review — Quality validation                                            │
+│  7. QA Validation — Test user flows                                             │
+│                                                                                 │
+│  Timeline: Small = 30-60min | Medium = 2-4hrs | Large = Multiple days           │
+│                                                                                 │
+│  I'll pause at Gates for your approval. Ready to begin?"                        │
+│                                                                                 │
+│  ✅ Wait for user confirmation before proceeding to Step 1.                     │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
   ┌───────────────────────┐
   │  STEP 1                │
   │  👤 ROLE: PM Agent     │

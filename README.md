@@ -45,7 +45,63 @@ The `.agent/skills/` directory contains reusable, independent skills:
 - **manager-log** — Decision tracking for Manager Agents
 - **visual-summary** — ASCII art deliverable summaries
 
-## 🚀 Getting Started
+## 🚀 Quick Start
+
+### For Developers (First Time)
+
+This workflow guides AI Manager Agents through a 7-step process. Here's what happens:
+
+**When It Starts:**
+The AI will announce: *"🎬 Starting AI Development Workflow (Step 1 of 7)"*
+
+**What You'll Do:**
+- Answer ~21 questions about your vision (Step 1)
+- Discuss tech stack & architecture (Step 2)
+- Approve backlog tickets (Gates 1 & 2)
+- Review sprint priorities (Step 4)
+- Approve code changes (Step 6)
+- Validate QA results (Step 7)
+
+**Timeline:**
+- **Small feature:** 30-60 min (Steps 1-3 only)
+- **Medium feature:** 2-4 hours (All 7 steps)
+- **Large project:** Multiple days (Multiple sprints)
+
+**How to Track Progress:**
+Ask your AI: *"What step are we on?"* or *"Show me the workflow status"*
+
+---
+
+### For AI Manager Agents
+
+**Before starting Step 1, use this kickoff announcement:**
+
+```
+🎬 WORKFLOW KICKOFF
+
+I'm starting the AI Development Workflow for your [project type].
+
+We'll go through 7 steps:
+1. Product Discovery (~21 questions about your vision)
+2. Tech Analysis (architecture decisions)
+3. Setup & Backlog (create tickets)
+4. Sprint Planning (prioritization)
+5. Implementation (coding by Dev Agents)
+6. Code Review (quality validation)
+7. QA Validation (testing)
+
+Timeline estimate: [Small/Medium/Large] = [30-60min / 2-4hrs / Multiple days]
+
+I'll pause at Gates for your approval before major transitions.
+
+Ready to begin with Step 1: Product Discovery?
+```
+
+**Wait for user confirmation before proceeding.**
+
+---
+
+## 📖 Full Documentation
 
 1. Review the workflow: `.agent/workflows/ai-dev-flow-plan.md`
 2. Use skills as needed for each step
