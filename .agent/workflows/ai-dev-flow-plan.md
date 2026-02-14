@@ -316,6 +316,27 @@
        │ All ✅?         │
        └─────┬──────────┘
              │ ✅ Yes
+
+┌─── 🚪 GITHUB GATE (Step 3.5) — MANDATORY BEFORE CODING ─────────────────────┐
+│                                                                             │
+│  Manager Agent MUST complete BEFORE Step 5 (Implementation):                │
+│                                                                             │
+│  1. Verify BACKLOG.md + Roadmap exists                                      │
+│  2. Create GitHub issues (if gh CLI available):                             │
+│     □ 1 issue per functional block                                          │
+│     □ Each issue has DoD (Definition of Done)                               │
+│     □ Issues labeled (priority/type/size)                                   │
+│  3. Create branches:                                                        │
+│     □ Format: codex/[issue-#]-[short-name]                                  │
+│     □ Link branch to issue                                                  │
+│  4. Move first issue to "In Progress"                                       │
+│                                                                             │
+│  ⚠️ RULE: "implement the plan" = issues + branches FIRST, code SECOND       │
+│                                                                             │
+│  SHOW: "🚪 GitHub Gate ✅: [X] issues ready, starting #[Y]"                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
   ┌──────────▼────────────┐
   │  STEP 5                │
   │  💻 ROLE: Dev Agent    │

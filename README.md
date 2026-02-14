@@ -156,6 +156,15 @@ The workflow enforces tracking at each step. The Manager Agent cannot proceed wi
 - Updating the manager log
 - Providing clear next steps
 
+**GitHub Gate (Step 3.5):**
+Before any code is written, the workflow requires:
+- Issues created for all functional blocks
+- Each issue has Definition of Done (DoD)
+- Branches created and linked to issues
+- Issue moved to "In Progress"
+
+**Rule:** If someone says "implement the plan," the Manager will create issues + branches FIRST, then code.
+
 You'll never be left wondering what was done or what's next.
 
 ---
