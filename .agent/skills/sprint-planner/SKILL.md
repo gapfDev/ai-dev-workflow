@@ -1,4 +1,5 @@
 ---
+name: sprint-planner
 description: How to prioritize backlog tickets and organize them into sprints using MoSCoW
 ---
 

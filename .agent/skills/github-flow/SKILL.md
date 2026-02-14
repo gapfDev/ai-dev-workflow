@@ -1,4 +1,5 @@
 ---
+name: github-flow
 description: How to detect GitHub CLI and set up a full GitHub-based development workflow
 ---
 

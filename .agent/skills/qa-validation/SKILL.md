@@ -1,4 +1,5 @@
 ---
+name: qa-validation
 description: How to validate features through functional testing and produce a validation report
 ---
 

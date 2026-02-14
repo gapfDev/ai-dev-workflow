@@ -1,4 +1,5 @@
 ---
+name: project-scaffold
 description: How to initialize a project repository with proper structure and configuration
 ---
 

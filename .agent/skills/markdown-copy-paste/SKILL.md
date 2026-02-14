@@ -1,5 +1,5 @@
 ---
-name: Markdown Copy-Paste
+name: markdown-copy-paste
 description: Ensures deliverables and structured content are presented in clear, copy-friendly Markdown code blocks for easy human consumption.
 ---
 

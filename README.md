@@ -41,6 +41,8 @@ The `.agent/skills/` directory contains reusable, independent skills:
 - **github-flow** — GitHub CLI integration
 - **external-tracking** — Jira/Linear/Trello support
 - **agent-handoff** — Manager-Worker delegation
+- **agent-communication** — Multi-agent coordination via shared board
+- **manager-log** — Decision tracking for Manager Agents
 - **visual-summary** — ASCII art deliverable summaries
 
 ## 🚀 Getting Started

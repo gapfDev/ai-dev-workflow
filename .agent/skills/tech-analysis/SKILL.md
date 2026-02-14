@@ -1,4 +1,5 @@
 ---
+name: tech-analysis
 description: How to map product features to technical solutions and define a tech strategy
 ---
 

@@ -1,4 +1,5 @@
 ---
+name: agent-handoff
 description: How to manage transitions between agent roles and generate handoff prompts for new threads
 ---
 

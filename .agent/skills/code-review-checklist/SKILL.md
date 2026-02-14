@@ -1,4 +1,5 @@
 ---
+name: code-review-checklist
 description: Systematic code review checklist for quality, security, and maintainability
 ---
 

@@ -1,4 +1,5 @@
 ---
+name: visual-summary
 description: How to present deliverable information as visually appealing ASCII summaries
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: Manager Handoff Protocol
+name: manager-handoff
 description: Standardizes the creation of "Source of Truth" Markdown briefs in .agent/temp for assigning tasks to Developer Agents.
 ---
 

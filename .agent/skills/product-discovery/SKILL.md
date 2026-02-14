@@ -1,4 +1,5 @@
 ---
+name: product-discovery
 description: How to conduct a product discovery interview and produce a Product Vision document
 ---
 

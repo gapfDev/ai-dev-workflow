@@ -1,4 +1,5 @@
 ---
+name: external-tracking
 description: How to support non-GitHub tracking systems (Jira, Linear, Trello, Asana) via manual sync
 ---
 
