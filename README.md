@@ -126,6 +126,40 @@ Ready to continue? [Yes/No/Modify]
 
 ---
 
+## 📊 How to Track Progress
+
+When working with a Manager Agent, you'll always have visibility into what's being done:
+
+**Tracking Options:**
+- **BACKLOG.md** (always created) — Source of truth for all tickets and epics
+- **GitHub Issues** (if `gh` CLI available) — Visual board with project management
+- **manager-log.md** (always created) — Decision history and status tracking
+
+**What You'll See:**
+- 📍 Current step announcements: "Step 3/7: Setup & Backlog"
+- 📊 Progress tracker after each step: `[####------] 4/7`
+- ✅ Work summaries showing what was accomplished
+- 🎫 List of all tickets/epics with acceptance criteria
+- 📝 Key decisions logged in `.agent/temp/manager-log.md`
+
+**To Check Status Anytime:**
+- Ask: "What step are we on?"
+- Ask: "Show me the tickets"
+- Ask: "What decisions were made?"
+- Read: `.agent/temp/manager-log.md`
+- View: `BACKLOG.md` or GitHub Issues board
+
+**Mandatory Tracking:**
+The workflow enforces tracking at each step. The Manager Agent cannot proceed without:
+- Creating visible deliverables
+- Showing work summaries
+- Updating the manager log
+- Providing clear next steps
+
+You'll never be left wondering what was done or what's next.
+
+---
+
 ## 📖 Full Documentation
 
 1. Review the workflow: `.agent/workflows/ai-dev-flow-plan.md`

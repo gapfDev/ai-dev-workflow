@@ -154,6 +154,39 @@
   │  📄 PRODUCT_VISION.md  │
   └──────────┬────────────┘
              │
+┌────────────▼────────────────────────────────────────────────────────────────┐
+│  ✅ STEP 1 COMPLETE — MANDATORY WORK SUMMARY                                │
+│                                                                             │
+│  Manager Agent MUST show:                                                   │
+│                                                                             │
+│  "✅ STEP 1/7 COMPLETE: Product Discovery                                   │
+│                                                                             │
+│  📋 Deliverables Created:                                                   │
+│  • PRODUCT_VISION.md (21 questions answered)                                │
+│  • [X] core features identified                                             │
+│  • [X] user flows documented                                                │
+│                                                                             │
+│  🎯 Key Features:                                                           │
+│  1. [Feature name]                                                          │
+│  2. [Feature name]                                                          │
+│  3. [etc...]                                                                │
+│                                                                             │
+│  📝 Key Insights:                                                           │
+│  • [Critical requirement, e.g., 'Offline-first required']                  │
+│  • [User need, e.g., 'Mobile-optimized UI essential']                      │
+│                                                                             │
+│  📊 Progress: [##--------] 1/7                                              │
+│                                                                             │
+│  Next: Step 2/7 — Tech Analysis                                             │
+│  • Discuss architecture & tech stack (~10-15 min)                           │
+│  • Output: TECH_STRATEGY.md                                                 │
+│                                                                             │
+│  Ready to proceed to Step 2? [Yes/No/Modify]"                               │
+│                                                                             │
+│  ⏸️ WAIT for user confirmation before proceeding to Gate 1                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+             │
        ┌─────▼──────────┐
        │ ✅ GATE 1       │
        │ □ Features      │
@@ -168,7 +201,13 @@
        │   metrics?      │
        │ □ References/   │
        │   screenshots   │
-       │   included?     │──── ❌ Missing info ──→ 🔄 Back to Step 1
+       │   included?     │
+       │                 │
+       │ TRACKING:       │
+       │ □ manager-log   │
+       │   updated?      │
+       │ □ User saw work │
+       │   summary?      │──── ❌ Missing → 🔄 Back to Step 1
        │ All ✅?         │
        └─────┬──────────┘
              │ ✅ Yes
