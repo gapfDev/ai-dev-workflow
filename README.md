@@ -47,6 +47,21 @@ MVP goals:
 - `images/`: reference images.
 - `.agent/`: workflow and skills support material.
 
+## Agent Skills
+- Single source of truth: `.agent/skills`.
+- Bridge script: `.agent/scripts/sync-skills-bridge.sh`.
+- Agent standard: `AGENTS.md`.
+
+Sync for Codex:
+```bash
+bash .agent/scripts/sync-skills-bridge.sh --mode link --prune
+```
+
+Sync for other LLM runtimes (copy mode):
+```bash
+bash .agent/scripts/sync-skills-bridge.sh --mode copy --prune --dest "<llm_skills_dir>"
+```
+
 ## Quick Start
 1. Open your Apps Script project and load files from `apps-script/`.
 2. Set `SPREADSHEET_ID` in Script Properties.
