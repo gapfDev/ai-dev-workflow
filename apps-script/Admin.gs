@@ -42,14 +42,17 @@ function adminPrepareEnvironment() {
   const ordersSheet = ss.getSheetByName(CONFIG.SHEETS.ORDERS);
   const productsSheet = ss.getSheetByName(CONFIG.SHEETS.PRODUCTS);
   const expensesSheet = ss.getSheetByName(CONFIG.SHEETS.EXPENSES);
+  const boardDaysSheet = ss.getSheetByName(CONFIG.SHEETS.BOARD_DAYS);
 
   const summary = {
     orders_rows: Math.max((ordersSheet ? ordersSheet.getLastRow() : 1) - 1, 0),
     products_rows: Math.max((productsSheet ? productsSheet.getLastRow() : 1) - 1, 0),
     expenses_rows: Math.max((expensesSheet ? expensesSheet.getLastRow() : 1) - 1, 0),
+    board_days_rows: Math.max((boardDaysSheet ? boardDaysSheet.getLastRow() : 1) - 1, 0),
     orders_headers: ordersSheet ? ordersSheet.getRange(1, 1, 1, ordersSheet.getLastColumn()).getValues()[0] : [],
     products_headers: productsSheet ? productsSheet.getRange(1, 1, 1, productsSheet.getLastColumn()).getValues()[0] : [],
-    expenses_headers: expensesSheet ? expensesSheet.getRange(1, 1, 1, expensesSheet.getLastColumn()).getValues()[0] : []
+    expenses_headers: expensesSheet ? expensesSheet.getRange(1, 1, 1, expensesSheet.getLastColumn()).getValues()[0] : [],
+    board_days_headers: boardDaysSheet ? boardDaysSheet.getRange(1, 1, 1, boardDaysSheet.getLastColumn()).getValues()[0] : []
   };
 
   return ok_({
@@ -65,7 +68,7 @@ function adminRunSmokeTests() {
     const ss = getSpreadsheet_();
 
     // 1) Required sheets exist
-    [CONFIG.SHEETS.ORDERS, CONFIG.SHEETS.PRODUCTS, CONFIG.SHEETS.EXPENSES].forEach(function (name) {
+    [CONFIG.SHEETS.ORDERS, CONFIG.SHEETS.PRODUCTS, CONFIG.SHEETS.EXPENSES, CONFIG.SHEETS.BOARD_DAYS].forEach(function (name) {
       if (!ss.getSheetByName(name)) {
         issues.push('Missing sheet: ' + name);
       }
@@ -81,16 +84,27 @@ function adminRunSmokeTests() {
         }
       });
     }
+    const boardDaysSheet = ss.getSheetByName(CONFIG.SHEETS.BOARD_DAYS);
+    if (boardDaysSheet) {
+      const headers = boardDaysSheet.getRange(1, 1, 1, boardDaysSheet.getLastColumn()).getValues()[0].map(cleanString_);
+      CONFIG.BOARD_DAY_HEADERS.forEach(function (h) {
+        if (headers.indexOf(h) === -1) {
+          issues.push('Missing BoardDays header: ' + h);
+        }
+      });
+    }
 
     // 3) Read APIs return arrays
     const orders = getOrders_();
     const products = getProducts_();
     const expenses = getExpenses_();
+    const boardDays = getBoardDays_();
     const boardSnapshot = getBoardSnapshot_();
     const clientConfig = getClientConfig_();
     if (!Array.isArray(orders)) issues.push('getOrders_ did not return array');
     if (!Array.isArray(products)) issues.push('getProducts_ did not return array');
     if (!Array.isArray(expenses)) issues.push('getExpenses_ did not return array');
+    if (!Array.isArray(boardDays)) issues.push('getBoardDays_ did not return array');
     if (boardSnapshot.status !== 'success' || !Array.isArray(boardSnapshot.items)) {
       issues.push('getBoardSnapshot_ did not return success/items');
     }
@@ -132,6 +146,24 @@ function adminRunSmokeTests() {
       issues.push('Orders missing sync_version: ' + missingSync.length);
     }
 
+    // 7) BoardDays backfill includes all distinct orders.delivery_date values
+    const boardDaySet = {};
+    (boardDays || []).forEach(function (d) {
+      const key = normalizeDateInput_(d.day_key);
+      if (key) boardDaySet[key] = true;
+    });
+    const orderDaySet = {};
+    (orders || []).forEach(function (o) {
+      const key = normalizeDateInput_(o.delivery_date);
+      if (key) orderDaySet[key] = true;
+    });
+    const missingBoardDays = Object.keys(orderDaySet).filter(function (key) {
+      return !boardDaySet[key];
+    });
+    if (missingBoardDays.length > 0) {
+      issues.push('BoardDays missing delivery_date keys: ' + missingBoardDays.join(', '));
+    }
+
     if (issues.length > 0) {
       return fail_('Smoke tests found issues: ' + issues.join(' | '));
     }
@@ -141,7 +173,8 @@ function adminRunSmokeTests() {
       metrics: {
         orders: orders.length,
         products: products.length,
-        expenses: expenses.length
+        expenses: expenses.length,
+        board_days: boardDays.length
       }
     });
   } catch (err) {

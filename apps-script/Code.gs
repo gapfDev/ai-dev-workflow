@@ -3,7 +3,8 @@ const CONFIG = {
   SHEETS: {
     ORDERS: 'Orders',
     PRODUCTS: 'Products',
-    EXPENSES: 'Expenses'
+    EXPENSES: 'Expenses',
+    BOARD_DAYS: 'BoardDays'
   },
   STATUS: ['Pending', 'Working', 'Baked', 'Delivered', 'Cancelled'],
   TYPE: ['Pickup', 'Delivery'],
@@ -34,6 +35,7 @@ const CONFIG = {
   ],
   PRODUCT_HEADERS: ['id', 'name', 'price', 'category', 'family_key', 'family_label', 'family_color', 'family_order', 'variant_order', 'active'],
   EXPENSE_HEADERS: ['expense_id', 'date', 'category', 'amount', 'description', 'created_at'],
+  BOARD_DAY_HEADERS: ['day_key', 'is_archived', 'archived_at', 'archived_reason', 'unarchived_at', 'updated_at'],
   LATE_THRESHOLD_MINUTES: 15,
   RUNTIME_SETUP_CACHE_SECONDS: 300,
   RUNTIME_SETUP_MAX_AGE_MS: 300000,
@@ -70,9 +72,11 @@ function setup() {
   ensureSheetHeaders_(ss, CONFIG.SHEETS.ORDERS, CONFIG.ORDER_HEADERS);
   ensureSheetHeaders_(ss, CONFIG.SHEETS.PRODUCTS, CONFIG.PRODUCT_HEADERS);
   ensureSheetHeaders_(ss, CONFIG.SHEETS.EXPENSES, CONFIG.EXPENSE_HEADERS);
+  ensureSheetHeaders_(ss, CONFIG.SHEETS.BOARD_DAYS, CONFIG.BOARD_DAY_HEADERS);
   seedProductsIfEmpty_();
   backfillProductFamilies_();
   markLegacyOrders_();
+  syncBoardDaysFromOrders_();
 }
 
 function ensureRuntimeReady_() {
@@ -127,6 +131,8 @@ function handleGetAction_(action, params) {
   switch (action) {
     case 'getOrders':
       return getOrders_();
+    case 'getBoardDays':
+      return getBoardDays_();
     case 'getBoardSnapshot':
       return getBoardSnapshot_();
     case 'getBoardDelta':
@@ -560,6 +566,73 @@ function getExpenses_() {
   }).filter(function (e) {
     return !!e.expense_id;
   });
+}
+
+function rowToBoardDay_(row, map) {
+  const dayKey = normalizeDateInput_(row[map.day_key]);
+  if (!dayKey) return null;
+  return {
+    day_key: dayKey,
+    is_archived: boolValue_(row[map.is_archived], false),
+    archived_at: cleanString_(row[map.archived_at]),
+    archived_reason: cleanString_(row[map.archived_reason]),
+    unarchived_at: cleanString_(row[map.unarchived_at]),
+    updated_at: cleanString_(row[map.updated_at])
+  };
+}
+
+function getBoardDays_() {
+  const sheet = getSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  const map = headerMap_(sheet);
+  const rows = dataRows_(sheet);
+  return rows.map(function (row) {
+    return rowToBoardDay_(row, map);
+  }).filter(function (row) {
+    return !!row;
+  }).sort(function (a, b) {
+    return a.day_key.localeCompare(b.day_key);
+  });
+}
+
+function syncBoardDaysFromOrders_() {
+  const ordersSheet = getSheet_(CONFIG.SHEETS.ORDERS);
+  const ordersMap = headerMap_(ordersSheet);
+  const ordersRows = dataRows_(ordersSheet);
+  const boardDaysSheet = getSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  const boardDaysMap = headerMap_(boardDaysSheet);
+  const boardDaysRows = dataRows_(boardDaysSheet);
+  const nowIso = new Date().toISOString();
+
+  const existingByDay = {};
+  boardDaysRows.forEach(function (row) {
+    const dayKey = normalizeDateInput_(row[boardDaysMap.day_key]);
+    if (!dayKey) return;
+    existingByDay[dayKey] = true;
+  });
+
+  const toInsert = [];
+  ordersRows.forEach(function (row) {
+    const dayKey = normalizeDateInput_(row[ordersMap.delivery_date]);
+    if (!dayKey || existingByDay[dayKey]) return;
+    existingByDay[dayKey] = true;
+    toInsert.push(objectToRow_({
+      day_key: dayKey,
+      is_archived: false,
+      archived_at: '',
+      archived_reason: '',
+      unarchived_at: '',
+      updated_at: nowIso
+    }, CONFIG.BOARD_DAY_HEADERS));
+  });
+
+  if (toInsert.length > 0) {
+    boardDaysSheet.getRange(boardDaysSheet.getLastRow() + 1, 1, toInsert.length, toInsert[0].length).setValues(toInsert);
+  }
+
+  return {
+    inserted: toInsert.length,
+    total: Math.max(boardDaysSheet.getLastRow() - 1, 0)
+  };
 }
 
 function generateOrderNumber_(sheet, map, now) {
