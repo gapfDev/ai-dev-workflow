@@ -81,6 +81,12 @@ Detailed docs:
 - `docs/runbooks/incident-triage.md`
 - `docs/ownership/module-owners.md`
 - `docs/templates/ticket-template.md`
+- `docs/performance/README.md`
+- `docs/performance/execution-order.md`
+- `docs/performance/phases/`
+- `docs/performance/contracts/`
+- `docs/performance/benchmarks/`
+- `docs/performance/rollout/`
 
 ## Automated QA
 From `apps-script/`:
