@@ -362,6 +362,12 @@
 
       .menu-families .product-btn {
         border-left-width: 4px;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+      }
+
+      .menu-families .product-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(24, 18, 10, 0.08);
       }
 
       .menu-modal {
@@ -1527,7 +1533,9 @@
             return String(a.name || '').localeCompare(String(b.name || ''));
           });
           const accent = group.color || '#A0AEC0';
-          const blockBg = colorWithAlpha(accent, 0.08);
+          const blockBg = `linear-gradient(135deg, ${colorWithAlpha(accent, 0.14)} 0%, #fffdf7 72%)`;
+          const productBg = colorWithAlpha(accent, 0.09);
+          const productBorder = colorWithAlpha(accent, 0.36);
           return `
             <section class="family-block" style="border-left-color:${accent}; background:${blockBg};">
               <div class="family-head">
@@ -1539,9 +1547,9 @@
               </div>
               <div class="product-grid">
                 ${items.map((p) => `
-                  <button class="product-btn" data-product-id="${p.id}" style="border-left-color:${accent};">
+                  <button class="product-btn" data-product-id="${p.id}" style="border-left-color:${accent}; border-color:${productBorder}; background:${productBg};">
                     <strong>${p.name}</strong>
-                    <span>${group.label} · ${formatMoney(p.price)}</span>
+                    <span style="color:${accent};">${group.label} · ${formatMoney(p.price)}</span>
                   </button>
                 `).join('')}
               </div>
