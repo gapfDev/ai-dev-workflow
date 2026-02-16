@@ -211,6 +211,7 @@ function createOrder_(payload) {
   const deliveryTime = normalizeTimeInput_(payload.delivery_time || '');
   const deliveryAt = buildDeliveryAt_(deliveryDate, deliveryTime);
   const totalAmount = getTotalAmount_(itemsJson, payload.total_amount);
+  const autoUnarchive = autoUnarchiveBoardDayIfNeeded_(deliveryDate, 'createOrder:' + orderId);
 
   const record = {
     order_id: orderId,
@@ -242,7 +243,9 @@ function createOrder_(payload) {
     message: 'Order created',
     order_id: orderId,
     order_number: orderNumber,
-    captured_at: record.captured_at
+    captured_at: record.captured_at,
+    auto_unarchived_day: autoUnarchive.unarchived,
+    auto_unarchived_day_key: autoUnarchive.unarchived ? autoUnarchive.day_key : ''
   });
 }
 
@@ -257,6 +260,7 @@ function updateOrderDetails_(payload) {
 
   const lastCol = sheet.getLastColumn();
   const row = sheet.getRange(rowIndex, 1, 1, lastCol).getValues()[0];
+  const originalDeliveryDate = normalizeDateInput_(row[map.delivery_date]);
   const currentStatus = normalizeStatus_(row[map.status]);
   if (currentStatus === 'Delivered') {
     return fail_('Delivered orders cannot be edited');
@@ -319,12 +323,19 @@ function updateOrderDetails_(payload) {
   row[map.updated_at] = new Date().toISOString();
   row[map.sync_version] = currentSync + 1;
 
+  const movedToDifferentDay = !!deliveryDate && deliveryDate !== originalDeliveryDate;
+  const autoUnarchive = movedToDifferentDay
+    ? autoUnarchiveBoardDayIfNeeded_(deliveryDate, 'updateOrderDetails:' + orderId)
+    : { day_key: deliveryDate, unarchived: false };
+
   sheet.getRange(rowIndex, 1, 1, lastCol).setValues([row]);
   return ok_({
     message: 'Order updated',
     order_id: orderId,
     sync_version: row[map.sync_version],
-    conflict: conflict
+    conflict: conflict,
+    auto_unarchived_day: autoUnarchive.unarchived,
+    auto_unarchived_day_key: autoUnarchive.unarchived ? autoUnarchive.day_key : ''
   });
 }
 
@@ -871,6 +882,34 @@ function getOrCreateBoardDayState_(dayKey) {
     rowIndex: sheet.getLastRow(),
     row: newRow,
     lastCol: lastCol
+  };
+}
+
+function autoUnarchiveBoardDayIfNeeded_(dayKey, reason) {
+  const normalizedDay = normalizeDateInput_(dayKey);
+  if (!normalizedDay) {
+    return { day_key: '', unarchived: false };
+  }
+
+  const boardDayState = getOrCreateBoardDayState_(normalizedDay);
+  const isArchived = boolValue_(boardDayState.row[boardDayState.map.is_archived], false);
+  if (!isArchived) {
+    return { day_key: normalizedDay, unarchived: false };
+  }
+
+  const nowIso = new Date().toISOString();
+  boardDayState.row[boardDayState.map.is_archived] = false;
+  boardDayState.row[boardDayState.map.unarchived_at] = nowIso;
+  boardDayState.row[boardDayState.map.updated_at] = nowIso;
+  if (!cleanString_(boardDayState.row[boardDayState.map.archived_reason])) {
+    boardDayState.row[boardDayState.map.archived_reason] = cleanString_(reason) || 'auto-unarchive';
+  }
+  boardDayState.sheet.getRange(boardDayState.rowIndex, 1, 1, boardDayState.lastCol).setValues([boardDayState.row]);
+
+  return {
+    day_key: normalizedDay,
+    unarchived: true,
+    unarchived_at: nowIso
   };
 }
 

@@ -87,12 +87,18 @@ Web App deployment URL ending in `/exec`.
 - Creates order and generates:
   - `order_number`
   - `captured_at`
+- If `delivery_date` is archived, backend auto-unarchives that day and returns:
+  - `auto_unarchived_day` (`true|false`)
+  - `auto_unarchived_day_key` (`YYYY-MM-DD` when triggered)
 
-### `updateOrder` (POST)
+### `updateOrderDetails` (POST)
 - Updates mutable order fields.
 - Must reject edits on `Delivered` orders.
+- When `delivery_date` is moved into an archived day, backend auto-unarchives that day and returns:
+  - `auto_unarchived_day` (`true|false`)
+  - `auto_unarchived_day_key` (`YYYY-MM-DD` when triggered)
 
-### `moveOrderStatus` (POST)
+### `updateOrderStatus` (POST)
 - Enforces transitions:
   - Allowed: `Baked -> Delivered`
   - Rejected: direct `Pending -> Delivered`
