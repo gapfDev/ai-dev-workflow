@@ -2,13 +2,14 @@
 
 ## Live Website
 - Open this URL in your browser:
-  - `https://script.google.com/macros/s/AKfycbxCDxwqXmy61qKIiOAa9fbZTzCGFFnpwG1aJwreVc1fnEs1ZxcRBcZqLZretCyxMKjYUg/exec`
+  - `https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec`
 
 ## What Is Included
 - Fast order capture (manual + JSON paste from Square/GPT agent).
 - Production Kanban with drag and drop and FIFO priority by capture time.
 - Friendly daily folio format: `ORD-14FEB-001`.
 - Product popup grouped by family/category.
+- Product menu fallback to keep menu visible during temporary API delays.
 - ES/EN bilingual UI with manual language toggle.
 
 ## Structure
@@ -103,6 +104,10 @@ The suite validates:
 - `Delivered` locking behavior.
 - `Cancelled` revert confirmation rule.
 - UI flow for product popup + Kanban visibility.
+
+Latest verified run:
+- Passed: `25`
+- Failed: `0`
 
 ## Operational Note
 - This MVP is designed for internal use without login.

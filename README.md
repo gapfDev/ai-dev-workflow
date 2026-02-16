@@ -3,8 +3,8 @@
 Internal bakery operations system built with Google Apps Script + Google Sheets.
 
 ## Live Project
-- Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycbxCDxwqXmy61qKIiOAa9fbZTzCGFFnpwG1aJwreVc1fnEs1ZxcRBcZqLZretCyxMKjYUg/exec)
-- URL to open in browser: `https://script.google.com/macros/s/AKfycbxCDxwqXmy61qKIiOAa9fbZTzCGFFnpwG1aJwreVc1fnEs1ZxcRBcZqLZretCyxMKjYUg/exec`
+- Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec)
+- URL to open in browser: `https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec`
 
 MVP goals:
 - Fast order capture (phone, Facebook, manual, and gradual Square replacement).
@@ -21,6 +21,7 @@ MVP goals:
 ## Main Features
 - Fast order capture with minimum required validation.
 - Product selection popup grouped by family/category.
+- Product menu fallback for resiliency (menu remains visible if API products load slowly).
 - Kanban statuses:
   - `Pending`
   - `Working`
@@ -61,6 +62,10 @@ From `apps-script/`:
 ```bash
 python3 qa_e2e.py --api-base "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec" --local-dir "$(pwd)"
 ```
+
+Latest verified run:
+- Passed: `25`
+- Failed: `0`
 
 ## Security
 - Do not commit hardcoded IDs or tokens.
