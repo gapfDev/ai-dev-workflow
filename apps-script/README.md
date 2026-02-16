@@ -2,13 +2,13 @@
 
 ## Live Website
 - Open this URL in your browser:
-  - `https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec`
+  - `https://script.google.com/macros/s/AKfycbxCDxwqXmy61qKIiOAa9fbZTzCGFFnpwG1aJwreVc1fnEs1ZxcRBcZqLZretCyxMKjYUg/exec`
 
 ## What Is Included
 - Fast order capture (manual + JSON paste from Square/GPT agent).
 - Production Kanban with drag and drop and FIFO priority by capture time.
 - Friendly daily folio format: `ORD-14FEB-001`.
-- Product popup grouped by family/category.
+- Product popup grouped and sorted by product family with color coding.
 - Product menu fallback to keep menu visible during temporary API delays.
 - Product upsert/import endpoint for catalog sync from external sheet sources.
 - ES/EN bilingual UI with manual language toggle.
@@ -28,6 +28,21 @@ The `setup()` function creates/updates these tabs:
 - `Expenses`
 
 If they already exist, missing columns are added for compatibility.
+
+### Products Catalog Columns
+`Products` supports family-level organization and quick visual detection:
+- `id`
+- `name`
+- `price`
+- `category`
+- `family_key`
+- `family_label`
+- `family_color` (hex, e.g. `#2E8B57`)
+- `family_order` (sort order across families)
+- `variant_order` (sort order inside each family)
+- `active`
+
+If family columns are missing in old sheets, backend infers values from name/category and backfills automatically.
 
 ## Connecting to the Correct Spreadsheet
 The backend can resolve the spreadsheet in two ways:
@@ -104,7 +119,7 @@ The suite validates:
 - Status transition rules.
 - `Delivered` locking behavior.
 - `Cancelled` revert confirmation rule.
-- UI flow for product popup + Kanban visibility.
+- UI flow for family popup ordering/colors + Kanban visibility.
 
 Latest verified run:
 - Passed: `25`

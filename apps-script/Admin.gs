@@ -139,18 +139,35 @@ function adminSeedDemoProductsIfEmpty() {
   }
 
   const demo = [
-    ['P001', 'Quesadilla Salvadoreña (1/4 Regular)', 9, 'Food', true],
-    ['P002', 'Pan Francés (Docena)', 10, 'Food', true],
-    ['P003', 'Semita Alta (1/4 Regular)', 10, 'Food', true],
-    ['P004', 'Delivery Fee', 5, 'Delivery', true]
+    { id: 'P001', name: 'Quesadilla Salvadoreña (1/4 Regular)', price: 9, category: 'Food', active: true },
+    { id: 'P002', name: 'Pan Francés (Docena)', price: 10, category: 'Food', active: true },
+    { id: 'P003', name: 'Semita Alta (1/4 Regular)', price: 10, category: 'Food', active: true },
+    { id: 'P004', name: 'Delivery Fee', price: 5, category: 'Delivery', active: true }
   ];
 
-  sheet.getRange(2, 1, demo.length, demo[0].length).setValues(demo);
-  return ok_({ message: 'Demo products seeded', inserted: demo.length });
+  const rows = demo.map(function (p) {
+    const family = inferFamilyMeta_(p.name, p.category);
+    return objectToRow_({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      category: p.category,
+      family_key: family.family_key,
+      family_label: family.family_label,
+      family_color: family.family_color,
+      family_order: family.family_order,
+      variant_order: family.variant_order,
+      active: p.active
+    }, CONFIG.PRODUCT_HEADERS);
+  });
+
+  sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  return ok_({ message: 'Demo products seeded', inserted: rows.length });
 }
 
 function adminMigrateLegacySheetById(payload) {
-  const spreadsheetId = cleanString_((payload && payload.spreadsheet_id) || payload) || '18hvcTtVil8Yc9hO9NYanGo6-qJVJ1iPf9gFXGcyFoII';
+  const spreadsheetId = cleanString_((payload && payload.spreadsheet_id) || payload);
+  if (!spreadsheetId) return fail_('spreadsheet_id is required');
   const ss = SpreadsheetApp.openById(spreadsheetId);
   const report = {
     spreadsheet_id: spreadsheetId,
@@ -414,11 +431,18 @@ function adminImportProductsFromSpreadsheet(payload) {
   rows.slice(1).forEach(function (row) {
     const name = cleanString_(row[nameIdx]);
     if (!name) return;
+    const category = cleanString_(categoryIdx >= 0 ? row[categoryIdx] : '') || 'General';
+    const family = inferFamilyMeta_(name, category);
     const rec = {
       id: idIdx >= 0 ? cleanString_(row[idIdx]) : '',
       name: name,
       price: normalizeNumber_(row[priceIdx], 0),
-      category: cleanString_(categoryIdx >= 0 ? row[categoryIdx] : '') || 'General',
+      category: category,
+      family_key: family.family_key,
+      family_label: family.family_label,
+      family_color: family.family_color,
+      family_order: family.family_order,
+      variant_order: family.variant_order,
       active: true
     };
     if (rec.category.toLowerCase() === 'delivery') rec.category = 'Delivery';
@@ -466,6 +490,11 @@ function adminImportProductsFromSpreadsheet(payload) {
       row[map.name] = p.name;
       row[map.price] = p.price;
       row[map.category] = p.category;
+      if (map.family_key !== undefined) row[map.family_key] = p.family_key;
+      if (map.family_label !== undefined) row[map.family_label] = p.family_label;
+      if (map.family_color !== undefined) row[map.family_color] = p.family_color;
+      if (map.family_order !== undefined) row[map.family_order] = p.family_order;
+      if (map.variant_order !== undefined) row[map.variant_order] = p.variant_order;
       if (map.active !== undefined) row[map.active] = true;
       updated += 1;
       return;
@@ -477,6 +506,11 @@ function adminImportProductsFromSpreadsheet(payload) {
       name: p.name,
       price: p.price,
       category: p.category,
+      family_key: p.family_key,
+      family_label: p.family_label,
+      family_color: p.family_color,
+      family_order: p.family_order,
+      variant_order: p.variant_order,
       active: true
     }, CONFIG.PRODUCT_HEADERS));
     inserted += 1;
@@ -528,11 +562,18 @@ function adminUpsertProducts(payload) {
   const newRows = [];
 
   products.forEach(function (raw, idx) {
+    const category = cleanString_(raw.category) || 'General';
+    const family = inferFamilyMeta_(raw.name, category);
     const p = {
       id: cleanString_(raw.id),
       name: cleanString_(raw.name),
       price: normalizeNumber_(raw.price, 0),
-      category: cleanString_(raw.category) || 'General',
+      category: category,
+      family_key: cleanString_(raw.family_key) || family.family_key,
+      family_label: cleanString_(raw.family_label) || family.family_label,
+      family_color: cleanString_(raw.family_color) || family.family_color,
+      family_order: normalizeNumber_(raw.family_order, family.family_order),
+      variant_order: normalizeNumber_(raw.variant_order, family.variant_order),
       active: raw.active === undefined ? true : !!raw.active
     };
     if (!p.name) return;
@@ -553,6 +594,11 @@ function adminUpsertProducts(payload) {
       row[map.name] = p.name;
       row[map.price] = p.price;
       row[map.category] = p.category;
+      if (map.family_key !== undefined) row[map.family_key] = p.family_key;
+      if (map.family_label !== undefined) row[map.family_label] = p.family_label;
+      if (map.family_color !== undefined) row[map.family_color] = p.family_color;
+      if (map.family_order !== undefined) row[map.family_order] = p.family_order;
+      if (map.variant_order !== undefined) row[map.variant_order] = p.variant_order;
       if (map.active !== undefined) row[map.active] = p.active;
       updated += 1;
       return;
@@ -564,6 +610,11 @@ function adminUpsertProducts(payload) {
       name: p.name,
       price: p.price,
       category: p.category,
+      family_key: p.family_key,
+      family_label: p.family_label,
+      family_color: p.family_color,
+      family_order: p.family_order,
+      variant_order: p.variant_order,
       active: p.active
     }, CONFIG.PRODUCT_HEADERS));
     inserted += 1;

@@ -20,7 +20,7 @@ MVP goals:
 
 ## Main Features
 - Fast order capture with minimum required validation.
-- Product selection popup grouped by family/category.
+- Product selection popup grouped by family with visual color cues.
 - Product menu fallback for resiliency (menu remains visible if API products load slowly).
 - Product catalog imported from source sheet (`gid=0`) and merged into active menu.
 - Kanban statuses:

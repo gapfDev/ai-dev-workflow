@@ -32,7 +32,7 @@ const CONFIG = {
     'sync_version',
     'is_legacy'
   ],
-  PRODUCT_HEADERS: ['id', 'name', 'price', 'category', 'active'],
+  PRODUCT_HEADERS: ['id', 'name', 'price', 'category', 'family_key', 'family_label', 'family_color', 'family_order', 'variant_order', 'active'],
   EXPENSE_HEADERS: ['expense_id', 'date', 'category', 'amount', 'description', 'created_at'],
   LATE_THRESHOLD_MINUTES: 15
 };
@@ -68,6 +68,7 @@ function setup() {
   ensureSheetHeaders_(ss, CONFIG.SHEETS.PRODUCTS, CONFIG.PRODUCT_HEADERS);
   ensureSheetHeaders_(ss, CONFIG.SHEETS.EXPENSES, CONFIG.EXPENSE_HEADERS);
   seedProductsIfEmpty_();
+  backfillProductFamilies_();
   markLegacyOrders_();
 }
 
@@ -389,16 +390,30 @@ function getProducts_() {
   const map = headerMap_(sheet);
   const rows = dataRows_(sheet);
   return rows.map(function (row) {
+    const name = cleanString_(row[map.name]);
+    const category = cleanString_(row[map.category]) || 'General';
+    const inferred = inferFamilyMeta_(name, category);
+    const familyOrderRaw = map.family_order === undefined ? '' : row[map.family_order];
+    const variantOrderRaw = map.variant_order === undefined ? '' : row[map.variant_order];
     return {
       id: cleanString_(row[map.id]),
-      name: cleanString_(row[map.name]),
+      name: name,
       price: normalizeNumber_(row[map.price], 0),
-      category: cleanString_(row[map.category]) || 'General',
+      category: category,
+      family_key: map.family_key === undefined ? inferred.family_key : (cleanString_(row[map.family_key]) || inferred.family_key),
+      family_label: map.family_label === undefined ? inferred.family_label : (cleanString_(row[map.family_label]) || inferred.family_label),
+      family_color: map.family_color === undefined ? inferred.family_color : (cleanString_(row[map.family_color]) || inferred.family_color),
+      family_order: map.family_order === undefined ? inferred.family_order : normalizeNumber_(familyOrderRaw, inferred.family_order),
+      variant_order: map.variant_order === undefined ? inferred.variant_order : normalizeNumber_(variantOrderRaw, inferred.variant_order),
       active: map.active === undefined ? true : boolValue_(row[map.active], true)
     };
   }).filter(function (p) {
     return p.name && p.active !== false;
   }).sort(function (a, b) {
+    const famDiff = normalizeNumber_(a.family_order, 999) - normalizeNumber_(b.family_order, 999);
+    if (famDiff !== 0) return famDiff;
+    const varDiff = normalizeNumber_(a.variant_order, 999) - normalizeNumber_(b.variant_order, 999);
+    if (varDiff !== 0) return varDiff;
     return a.name.localeCompare(b.name);
   });
 }
@@ -493,13 +508,144 @@ function markLegacyOrders_() {
 function seedProductsIfEmpty_() {
   const sheet = getSheet_(CONFIG.SHEETS.PRODUCTS);
   if (sheet.getLastRow() > 1) return;
-  const demo = [
-    ['P001', 'Quesadilla Salvadoreña (1/4 Regular)', 9, 'Food', true],
-    ['P002', 'Pan Francés (Docena)', 10, 'Food', true],
-    ['P003', 'Semita Alta (1/4 Regular)', 10, 'Food', true],
-    ['P004', 'Delivery Fee', 5, 'Delivery', true]
+  const demoBase = [
+    { id: 'P001', name: 'Quesadilla Salvadoreña (1/4 Regular)', price: 9, category: 'Food', active: true },
+    { id: 'P002', name: 'Pan Francés (Docena)', price: 10, category: 'Food', active: true },
+    { id: 'P003', name: 'Semita Alta (1/4 Regular)', price: 10, category: 'Food', active: true },
+    { id: 'P004', name: 'Delivery Fee', price: 5, category: 'Delivery', active: true }
   ];
-  sheet.getRange(2, 1, demo.length, demo[0].length).setValues(demo);
+  const demoRows = demoBase.map(function (p) {
+    const family = inferFamilyMeta_(p.name, p.category);
+    return objectToRow_({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      category: p.category,
+      family_key: family.family_key,
+      family_label: family.family_label,
+      family_color: family.family_color,
+      family_order: family.family_order,
+      variant_order: family.variant_order,
+      active: p.active
+    }, CONFIG.PRODUCT_HEADERS);
+  });
+  sheet.getRange(2, 1, demoRows.length, demoRows[0].length).setValues(demoRows);
+}
+
+function backfillProductFamilies_() {
+  const sheet = getSheet_(CONFIG.SHEETS.PRODUCTS);
+  const map = headerMap_(sheet);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+
+  const lastCol = sheet.getLastColumn();
+  const data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  let dirty = false;
+
+  for (let i = 0; i < data.length; i += 1) {
+    const row = data[i];
+    const name = cleanString_(row[map.name]);
+    if (!name) continue;
+    const category = cleanString_(row[map.category]) || 'General';
+    const family = inferFamilyMeta_(name, category);
+
+    if (map.family_key !== undefined && !cleanString_(row[map.family_key])) {
+      row[map.family_key] = family.family_key;
+      dirty = true;
+    }
+    if (map.family_label !== undefined && !cleanString_(row[map.family_label])) {
+      row[map.family_label] = family.family_label;
+      dirty = true;
+    }
+    if (map.family_color !== undefined && !cleanString_(row[map.family_color])) {
+      row[map.family_color] = family.family_color;
+      dirty = true;
+    }
+    if (map.family_order !== undefined && cleanString_(row[map.family_order]) === '') {
+      row[map.family_order] = family.family_order;
+      dirty = true;
+    }
+    if (map.variant_order !== undefined && cleanString_(row[map.variant_order]) === '') {
+      row[map.variant_order] = family.variant_order;
+      dirty = true;
+    }
+  }
+
+  if (dirty) {
+    sheet.getRange(2, 1, data.length, lastCol).setValues(data);
+  }
+}
+
+function inferFamilyMeta_(name, category) {
+  const normalizedName = normalizeForMatch_(name);
+  const normalizedCategory = normalizeForMatch_(category);
+
+  const families = [
+    { key: 'quesadilla_salvadorena', label: 'Quesadillas', color: '#C96A2B', order: 10, patterns: ['quesadilla'] },
+    { key: 'semita_alta', label: 'Semita Alta', color: '#2E8B57', order: 20, patterns: ['semita alta'] },
+    { key: 'pan_frances', label: 'Pan Frances', color: '#2B6CB0', order: 30, patterns: ['pan frances'] },
+    { key: 'pan_menudo', label: 'Pan Menudo', color: '#5A67D8', order: 40, patterns: ['pan menudo'] },
+    { key: 'pastelitos_rellenos', label: 'Pastelitos', color: '#D53F8C', order: 50, patterns: ['pastelito', 'pastelitos rellenos'] },
+    { key: 'budin_guineo', label: 'Budin', color: '#805AD5', order: 60, patterns: ['budin', 'guineo'] },
+    { key: 'delivery', label: 'Delivery', color: '#718096', order: 90, patterns: ['delivery fee', 'delivery'] }
+  ];
+
+  let family = families.find(function (f) {
+    return f.patterns.some(function (pattern) {
+      return normalizedName.indexOf(pattern) >= 0;
+    });
+  });
+
+  if (!family && normalizedCategory.indexOf('delivery') >= 0) {
+    family = families.find(function (f) { return f.key === 'delivery'; });
+  }
+
+  if (!family) {
+    family = { key: 'general', label: 'General', color: '#A0AEC0', order: 99 };
+  }
+
+  return {
+    family_key: family.key,
+    family_label: family.label,
+    family_color: family.color,
+    family_order: family.order,
+    variant_order: inferVariantOrder_(normalizedName)
+  };
+}
+
+function inferVariantOrder_(normalizedName) {
+  const checks = [
+    { order: 10, terms: ['unidad', 'unit'] },
+    { order: 20, terms: ['1/4', '1 4', 'cuarto', 'quarter', 'regular'] },
+    { order: 30, terms: ['media', 'half'] },
+    { order: 40, terms: ['docena', 'dozen'] },
+    { order: 50, terms: ['combo', '3x'] },
+    { order: 60, terms: ['familiar', 'familia', 'family'] },
+    { order: 80, terms: ['external', 'externo'] }
+  ];
+
+  for (let i = 0; i < checks.length; i += 1) {
+    const hit = checks[i].terms.some(function (term) {
+      return normalizedName.indexOf(term) >= 0;
+    });
+    if (hit) return checks[i].order;
+  }
+  return 70;
+}
+
+function normalizeForMatch_(value) {
+  const raw = cleanString_(value).toLowerCase();
+  if (!raw) return '';
+  return raw
+    .replace(/[áàäâ]/g, 'a')
+    .replace(/[éèëê]/g, 'e')
+    .replace(/[íìïî]/g, 'i')
+    .replace(/[óòöô]/g, 'o')
+    .replace(/[úùüû]/g, 'u')
+    .replace(/ñ/g, 'n')
+    .replace(/[^a-z0-9/ ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function ensureSheetHeaders_(ss, name, headers) {
