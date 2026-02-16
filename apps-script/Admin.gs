@@ -382,6 +382,209 @@ function adminMigrateLegacySheetById(payload) {
   return ok_(report);
 }
 
+function adminImportProductsFromSpreadsheet(payload) {
+  const sourceSpreadsheetId = cleanString_(payload && payload.source_spreadsheet_id);
+  const sourceGid = cleanString_(payload && payload.source_gid) || '0';
+  if (!sourceSpreadsheetId) {
+    return fail_('source_spreadsheet_id is required');
+  }
+
+  const csvUrl = 'https://docs.google.com/spreadsheets/d/' + sourceSpreadsheetId + '/export?format=csv&gid=' + encodeURIComponent(sourceGid);
+  const resp = UrlFetchApp.fetch(csvUrl, { muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) {
+    return fail_('Unable to fetch source products CSV. HTTP ' + resp.getResponseCode());
+  }
+
+  const csvText = resp.getContentText() || '';
+  const rows = Utilities.parseCsv(csvText);
+  if (!rows || rows.length < 2) {
+    return fail_('Source sheet has no data rows');
+  }
+
+  const header = (rows[0] || []).map(cleanString_);
+  const idIdx = header.indexOf('id');
+  const nameIdx = header.indexOf('name');
+  const priceIdx = header.indexOf('price');
+  const categoryIdx = header.indexOf('category');
+  if (nameIdx < 0 || priceIdx < 0) {
+    return fail_('Source CSV must include at least name and price columns');
+  }
+
+  const incoming = [];
+  rows.slice(1).forEach(function (row) {
+    const name = cleanString_(row[nameIdx]);
+    if (!name) return;
+    const rec = {
+      id: idIdx >= 0 ? cleanString_(row[idIdx]) : '',
+      name: name,
+      price: normalizeNumber_(row[priceIdx], 0),
+      category: cleanString_(categoryIdx >= 0 ? row[categoryIdx] : '') || 'General',
+      active: true
+    };
+    if (rec.category.toLowerCase() === 'delivery') rec.category = 'Delivery';
+    incoming.push(rec);
+  });
+
+  if (!incoming.length) {
+    return fail_('No valid product rows found in source');
+  }
+
+  const ss = getSpreadsheet_();
+  ensureSheetHeaders_(ss, CONFIG.SHEETS.PRODUCTS, CONFIG.PRODUCT_HEADERS);
+  const sheet = getSheet_(CONFIG.SHEETS.PRODUCTS);
+  const map = headerMap_(sheet);
+  const lastCol = sheet.getLastColumn();
+  const existing = dataRows_(sheet);
+
+  const byId = {};
+  const byName = {};
+  for (let i = 0; i < existing.length; i += 1) {
+    const row = existing[i];
+    const id = cleanString_(row[map.id]).toLowerCase();
+    const name = cleanString_(row[map.name]).toLowerCase();
+    if (id) byId[id] = i;
+    if (name) byName[name] = i;
+  }
+
+  let updated = 0;
+  let inserted = 0;
+  const newRows = [];
+
+  incoming.forEach(function (p, idx) {
+    const idKey = cleanString_(p.id).toLowerCase();
+    const nameKey = cleanString_(p.name).toLowerCase();
+    let targetIdx = -1;
+    if (idKey && byId[idKey] !== undefined) {
+      targetIdx = byId[idKey];
+    } else if (nameKey && byName[nameKey] !== undefined) {
+      targetIdx = byName[nameKey];
+    }
+
+    if (targetIdx >= 0) {
+      const row = existing[targetIdx];
+      if (!cleanString_(row[map.id])) row[map.id] = p.id || ('P-IMP-' + String(targetIdx + 1).padStart(3, '0'));
+      row[map.name] = p.name;
+      row[map.price] = p.price;
+      row[map.category] = p.category;
+      if (map.active !== undefined) row[map.active] = true;
+      updated += 1;
+      return;
+    }
+
+    const generatedId = p.id || ('P-IMP-' + String(idx + 1).padStart(3, '0'));
+    newRows.push(objectToRow_({
+      id: generatedId,
+      name: p.name,
+      price: p.price,
+      category: p.category,
+      active: true
+    }, CONFIG.PRODUCT_HEADERS));
+    inserted += 1;
+  });
+
+  if (existing.length > 0) {
+    sheet.getRange(2, 1, existing.length, lastCol).setValues(existing);
+  }
+  if (newRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
+  }
+
+  return ok_({
+    message: 'Products imported',
+    source_spreadsheet_id: sourceSpreadsheetId,
+    source_gid: sourceGid,
+    imported_rows: incoming.length,
+    updated: updated,
+    inserted: inserted,
+    total_products_after: Math.max(sheet.getLastRow() - 1, 0)
+  });
+}
+
+function adminUpsertProducts(payload) {
+  const products = (payload && payload.products) || [];
+  if (!Array.isArray(products) || products.length === 0) {
+    return fail_('products array is required');
+  }
+
+  const ss = getSpreadsheet_();
+  ensureSheetHeaders_(ss, CONFIG.SHEETS.PRODUCTS, CONFIG.PRODUCT_HEADERS);
+  const sheet = getSheet_(CONFIG.SHEETS.PRODUCTS);
+  const map = headerMap_(sheet);
+  const lastCol = sheet.getLastColumn();
+  const existing = dataRows_(sheet);
+
+  const byId = {};
+  const byName = {};
+  for (let i = 0; i < existing.length; i += 1) {
+    const row = existing[i];
+    const id = cleanString_(row[map.id]).toLowerCase();
+    const name = cleanString_(row[map.name]).toLowerCase();
+    if (id) byId[id] = i;
+    if (name) byName[name] = i;
+  }
+
+  let updated = 0;
+  let inserted = 0;
+  const newRows = [];
+
+  products.forEach(function (raw, idx) {
+    const p = {
+      id: cleanString_(raw.id),
+      name: cleanString_(raw.name),
+      price: normalizeNumber_(raw.price, 0),
+      category: cleanString_(raw.category) || 'General',
+      active: raw.active === undefined ? true : !!raw.active
+    };
+    if (!p.name) return;
+    if (p.category.toLowerCase() === 'delivery') p.category = 'Delivery';
+    const idKey = p.id.toLowerCase();
+    const nameKey = p.name.toLowerCase();
+
+    let targetIdx = -1;
+    if (idKey) {
+      if (byId[idKey] !== undefined) targetIdx = byId[idKey];
+    } else if (nameKey && byName[nameKey] !== undefined) {
+      targetIdx = byName[nameKey];
+    }
+
+    if (targetIdx >= 0) {
+      const row = existing[targetIdx];
+      if (!cleanString_(row[map.id])) row[map.id] = p.id || ('P-IMP-' + String(targetIdx + 1).padStart(3, '0'));
+      row[map.name] = p.name;
+      row[map.price] = p.price;
+      row[map.category] = p.category;
+      if (map.active !== undefined) row[map.active] = p.active;
+      updated += 1;
+      return;
+    }
+
+    const generatedId = p.id || ('P-IMP-' + String(idx + 1).padStart(3, '0'));
+    newRows.push(objectToRow_({
+      id: generatedId,
+      name: p.name,
+      price: p.price,
+      category: p.category,
+      active: p.active
+    }, CONFIG.PRODUCT_HEADERS));
+    inserted += 1;
+  });
+
+  if (existing.length > 0) {
+    sheet.getRange(2, 1, existing.length, lastCol).setValues(existing);
+  }
+  if (newRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
+  }
+
+  return ok_({
+    message: 'Products upserted',
+    received: products.length,
+    updated: updated,
+    inserted: inserted,
+    total_products_after: Math.max(sheet.getLastRow() - 1, 0)
+  });
+}
+
 function getFirstSheetByName_(ss, names) {
   for (let i = 0; i < names.length; i += 1) {
     const sheet = ss.getSheetByName(names[i]);

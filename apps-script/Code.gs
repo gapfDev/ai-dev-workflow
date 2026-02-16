@@ -111,6 +111,8 @@ function handleGetAction_(action) {
       return adminRunSmokeTests();
     case 'adminMigrateLegacySheetById':
       return adminMigrateLegacySheetById({});
+    case 'adminImportProductsFromSpreadsheet':
+      return adminImportProductsFromSpreadsheet({});
     default:
       return fail_('Unknown GET action: ' + action);
   }
@@ -132,6 +134,10 @@ function handlePostAction_(action, payload) {
       return adminSeedDemoProductsIfEmpty();
     case 'adminMigrateLegacySheetById':
       return adminMigrateLegacySheetById(payload);
+    case 'adminImportProductsFromSpreadsheet':
+      return adminImportProductsFromSpreadsheet(payload);
+    case 'adminUpsertProducts':
+      return adminUpsertProducts(payload);
     default:
       return fail_('Unknown POST action: ' + action);
   }
