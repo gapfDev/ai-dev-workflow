@@ -47,6 +47,21 @@ Web App deployment URL ending in `/exec`.
   - `is_archived`
   - `updated_at`
 
+### `getBoardSnapshot` (GET)
+- Optional query: `board_day=YYYY-MM-DD`
+  - When present, snapshot payload is scoped to that day only.
+  - `board_rev` is calculated from the scoped item set.
+  - Invalid `board_day` returns an error.
+
+### `getBoardDelta` (GET)
+- Supports optional day scope with `board_day=YYYY-MM-DD`.
+- For day-scoped delta:
+  - `since_rev` is required.
+  - `removed` includes `order_id`s that existed in the previous scoped revision but are no longer in the selected day (for example moved out to another day).
+  - If prior scoped revision state is unavailable, endpoint falls back to `full: true` snapshot-like response with:
+    - `fallback: "snapshot"`
+    - `fallback_reason`
+
 ### `archiveBoardDay` (POST)
 - Required payload:
   - `day_key` (`YYYY-MM-DD`)

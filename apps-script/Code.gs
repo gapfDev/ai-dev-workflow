@@ -134,7 +134,7 @@ function handleGetAction_(action, params) {
     case 'getBoardDays':
       return getBoardDays_();
     case 'getBoardSnapshot':
-      return getBoardSnapshot_();
+      return getBoardSnapshot_(params || {});
     case 'getBoardDelta':
       return getBoardDelta_(params || {});
     case 'getOrderDetails':
@@ -461,36 +461,78 @@ function getOrderDetails_(params) {
   return ok_({ order: order });
 }
 
-function getBoardSnapshot_() {
-  const items = getOrders_({ boardOnly: true });
-  return ok_({
-    board_rev: buildBoardRevision_(items),
+function getBoardSnapshot_(params) {
+  const scope = resolveBoardDayScope_(params || {});
+  if (scope.error) return scope.error;
+
+  const items = getScopedBoardItems_(scope.board_day);
+  if (!Array.isArray(items)) return items;
+
+  const boardRev = buildBoardRevision_(items);
+  const scopeKey = buildBoardScopeKey_(scope.board_day);
+  cacheBoardRevisionItems_(scopeKey, boardRev, items);
+
+  const payload = {
+    board_rev: boardRev,
     items: items
-  });
+  };
+  if (scope.board_day) payload.board_day = scope.board_day;
+  return ok_(payload);
 }
 
 function getBoardDelta_(params) {
-  const items = getOrders_({ boardOnly: true });
+  const request = params || {};
+  const scope = resolveBoardDayScope_(request);
+  if (scope.error) return scope.error;
+
+  const items = getScopedBoardItems_(scope.board_day);
+  if (!Array.isArray(items)) return items;
+
   const boardRev = buildBoardRevision_(items);
-  const sinceRev = cleanString_(params && params.since_rev);
-  const sinceUpdatedAt = cleanString_(params && params.since_updated_at);
+  const sinceRev = cleanString_(request.since_rev);
+  const sinceUpdatedAt = cleanString_(request.since_updated_at);
+  const scopeKey = buildBoardScopeKey_(scope.board_day);
+
+  cacheBoardRevisionItems_(scopeKey, boardRev, items);
 
   if (sinceRev && sinceRev === boardRev) {
-    return ok_({
+    const noChangePayload = {
       board_rev: boardRev,
       changed: [],
       removed: [],
       full: false
-    });
+    };
+    if (scope.board_day) noChangePayload.board_day = scope.board_day;
+    return ok_(noChangePayload);
+  }
+
+  if (scope.board_day && !sinceRev) {
+    return buildScopedDeltaFallback_(
+      boardRev,
+      items,
+      scope.board_day,
+      'since_rev is required for board_day delta'
+    );
   }
 
   if (!sinceUpdatedAt) {
-    return ok_({
+    const removedFull = computeRemovedIdsForScope_(scopeKey, sinceRev, items);
+    if (scope.board_day && removedFull === null) {
+      return buildScopedDeltaFallback_(
+        boardRev,
+        items,
+        scope.board_day,
+        'previous revision is unavailable for board_day delta'
+      );
+    }
+    const fullPayload = {
       board_rev: boardRev,
       changed: items,
-      removed: [],
+      removed: removedFull || [],
       full: true
-    });
+    };
+    if (scope.board_day) fullPayload.board_day = scope.board_day;
+    return ok_(fullPayload);
   }
 
   const sinceDate = new Date(sinceUpdatedAt);
@@ -503,12 +545,111 @@ function getBoardDelta_(params) {
     return stamp > sinceDate.getTime();
   });
 
-  return ok_({
+  const removed = computeRemovedIdsForScope_(scopeKey, sinceRev, items);
+  if (scope.board_day && removed === null) {
+    return buildScopedDeltaFallback_(
+      boardRev,
+      items,
+      scope.board_day,
+      'previous revision is unavailable for board_day delta'
+    );
+  }
+
+  const deltaPayload = {
     board_rev: boardRev,
     changed: changed,
-    removed: [],
+    removed: removed || [],
     full: false,
     since_updated_at: sinceUpdatedAt
+  };
+  if (scope.board_day) deltaPayload.board_day = scope.board_day;
+  return ok_(deltaPayload);
+}
+
+function resolveBoardDayScope_(params) {
+  const rawBoardDay = cleanString_(params && params.board_day);
+  if (!rawBoardDay) return { board_day: '' };
+  const dayKey = normalizeDateInput_(rawBoardDay);
+  if (!dayKey) {
+    return { error: fail_('board_day must be YYYY-MM-DD') };
+  }
+  return { board_day: dayKey };
+}
+
+function getScopedBoardItems_(boardDay) {
+  const options = { boardOnly: true };
+  if (boardDay) options.board_day = boardDay;
+  return getOrders_(options);
+}
+
+function buildBoardScopeKey_(boardDay) {
+  return boardDay ? ('day:' + boardDay) : 'all';
+}
+
+function buildBoardRevisionCacheKey_(scopeKey, boardRev) {
+  return 'board-rev-v3:' + cleanString_(scopeKey) + ':' + cleanString_(boardRev);
+}
+
+function cacheBoardRevisionItems_(scopeKey, boardRev, items) {
+  const ids = (items || []).map(function (order) {
+    return cleanString_(order.order_id);
+  }).filter(function (orderId) {
+    return !!orderId;
+  }).sort();
+  const payload = JSON.stringify({ order_ids: ids });
+  try {
+    CacheService.getScriptCache().put(buildBoardRevisionCacheKey_(scopeKey, boardRev), payload, 21600);
+  } catch (err) {}
+}
+
+function getCachedBoardRevisionIds_(scopeKey, boardRev) {
+  if (!scopeKey || !boardRev) return null;
+  let raw = '';
+  try {
+    raw = CacheService.getScriptCache().get(buildBoardRevisionCacheKey_(scopeKey, boardRev)) || '';
+  } catch (err) {
+    return null;
+  }
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.order_ids)) return null;
+    return parsed.order_ids.map(function (orderId) {
+      return cleanString_(orderId);
+    }).filter(function (orderId) {
+      return !!orderId;
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
+function computeRemovedIdsForScope_(scopeKey, sinceRev, currentItems) {
+  if (!sinceRev) return [];
+  const previousIds = getCachedBoardRevisionIds_(scopeKey, sinceRev);
+  if (!previousIds) return null;
+
+  const currentById = {};
+  (currentItems || []).forEach(function (order) {
+    const orderId = cleanString_(order.order_id);
+    if (!orderId) return;
+    currentById[orderId] = true;
+  });
+
+  return previousIds.filter(function (orderId) {
+    return !currentById[orderId];
+  });
+}
+
+function buildScopedDeltaFallback_(boardRev, items, boardDay, reason) {
+  return ok_({
+    board_rev: boardRev,
+    changed: items,
+    removed: [],
+    full: true,
+    board_day: boardDay,
+    fallback: 'snapshot',
+    fallback_reason: reason
   });
 }
 
