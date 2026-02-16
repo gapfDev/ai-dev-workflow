@@ -10,6 +10,7 @@
 - Friendly daily folio format: `ORD-14FEB-001`.
 - Product popup grouped by family/category.
 - Product menu fallback to keep menu visible during temporary API delays.
+- Product upsert/import endpoint for catalog sync from external sheet sources.
 - ES/EN bilingual UI with manual language toggle.
 
 ## Structure
@@ -108,6 +109,11 @@ The suite validates:
 Latest verified run:
 - Passed: `25`
 - Failed: `0`
+
+## Product Catalog Sync
+- Source spreadsheet used: `18hvcTtVil8Yc9hO9NYanGo6-qJVJ1iPf9gFXGcyFoII` (`gid=0`)
+- Imported products in active menu: `15`
+- Backend action: `action=adminUpsertProducts` (POST with `products` array)
 
 ## Operational Note
 - This MVP is designed for internal use without login.

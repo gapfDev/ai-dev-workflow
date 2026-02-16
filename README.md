@@ -22,6 +22,7 @@ MVP goals:
 - Fast order capture with minimum required validation.
 - Product selection popup grouped by family/category.
 - Product menu fallback for resiliency (menu remains visible if API products load slowly).
+- Product catalog imported from source sheet (`gid=0`) and merged into active menu.
 - Kanban statuses:
   - `Pending`
   - `Working`
@@ -66,6 +67,10 @@ python3 qa_e2e.py --api-base "https://script.google.com/macros/s/YOUR_DEPLOYMENT
 Latest verified run:
 - Passed: `25`
 - Failed: `0`
+
+Catalog sync status:
+- Source: `18hvcTtVil8Yc9hO9NYanGo6-qJVJ1iPf9gFXGcyFoII` (`gid=0`)
+- Products active in menu: `15`
 
 ## Security
 - Do not commit hardcoded IDs or tokens.
