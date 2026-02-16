@@ -34,6 +34,18 @@ Web App deployment URL ending in `/exec`.
 
 ### `getOrders` (GET)
 - Returns current order board state.
+- Optional query: `board_day=YYYY-MM-DD`
+  - When present, the response includes only orders with matching `delivery_date`.
+  - When omitted, behavior remains unchanged and returns all orders.
+
+### `getBoardDays` (GET)
+- Returns only days that currently contain at least one order.
+- Each item includes:
+  - `day_key`
+  - `order_count`
+  - `pending_count`
+  - `is_archived`
+  - `updated_at`
 
 ### `createOrder` (POST)
 - Creates order and generates:

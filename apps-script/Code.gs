@@ -130,7 +130,7 @@ function responseFn(payload) {
 function handleGetAction_(action, params) {
   switch (action) {
     case 'getOrders':
-      return getOrders_();
+      return getOrders_(params || {});
     case 'getBoardDays':
       return getBoardDays_();
     case 'getBoardSnapshot':
@@ -420,12 +420,19 @@ function rowToOrder_(row, map, boardOnly) {
 function getOrders_(options) {
   const opts = options || {};
   const boardOnly = opts.boardOnly === true;
+  const boardDayInput = cleanString_(opts.board_day || opts.boardDay);
+  const boardDay = boardDayInput ? normalizeDateInput_(boardDayInput) : '';
+  if (boardDayInput && !boardDay) return fail_('board_day must be YYYY-MM-DD');
   const sheet = getSheet_(CONFIG.SHEETS.ORDERS);
   const map = headerMap_(sheet);
   const rows = dataRows_(sheet);
   const orders = rows.map(function (row) {
     return rowToOrder_(row, map, boardOnly);
-  }).filter(function (o) { return !!o; });
+  }).filter(function (o) {
+    if (!o) return false;
+    if (!boardDay) return true;
+    return o.delivery_date === boardDay;
+  });
 
   orders.sort(function (a, b) {
     const left = firstDate_(a.captured_at, a.updated_at, a.delivery_at, a.delivery_date);
@@ -582,15 +589,52 @@ function rowToBoardDay_(row, map) {
 }
 
 function getBoardDays_() {
-  const sheet = getSheet_(CONFIG.SHEETS.BOARD_DAYS);
-  const map = headerMap_(sheet);
-  const rows = dataRows_(sheet);
-  return rows.map(function (row) {
-    return rowToBoardDay_(row, map);
-  }).filter(function (row) {
-    return !!row;
-  }).sort(function (a, b) {
-    return a.day_key.localeCompare(b.day_key);
+  const orders = getOrders_();
+  if (!Array.isArray(orders)) return orders;
+
+  const aggregatesByDay = {};
+  orders.forEach(function (order) {
+    const dayKey = normalizeDateInput_(order.delivery_date);
+    if (!dayKey) return;
+    if (!aggregatesByDay[dayKey]) {
+      aggregatesByDay[dayKey] = {
+        order_count: 0,
+        pending_count: 0,
+        latest_updated_at: ''
+      };
+    }
+
+    const day = aggregatesByDay[dayKey];
+    day.order_count += 1;
+    if (order.status === 'Pending') day.pending_count += 1;
+
+    const orderStamp = firstDate_(order.updated_at, order.captured_at);
+    if (orderStamp.getTime() > firstDate_(day.latest_updated_at).getTime()) {
+      day.latest_updated_at = orderStamp.toISOString();
+    }
+  });
+
+  const boardDaysSheet = getSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  const boardDaysMap = headerMap_(boardDaysSheet);
+  const boardDaysRows = dataRows_(boardDaysSheet);
+  const boardDaysByKey = {};
+
+  boardDaysRows.forEach(function (row) {
+    const boardDay = rowToBoardDay_(row, boardDaysMap);
+    if (!boardDay) return;
+    boardDaysByKey[boardDay.day_key] = boardDay;
+  });
+
+  return Object.keys(aggregatesByDay).sort().map(function (dayKey) {
+    const aggregate = aggregatesByDay[dayKey];
+    const boardDay = boardDaysByKey[dayKey];
+    return {
+      day_key: dayKey,
+      order_count: aggregate.order_count,
+      pending_count: aggregate.pending_count,
+      is_archived: boardDay ? boardDay.is_archived : false,
+      updated_at: boardDay ? cleanString_(boardDay.updated_at) || aggregate.latest_updated_at : aggregate.latest_updated_at
+    };
   });
 }
 
