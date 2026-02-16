@@ -47,6 +47,27 @@ Web App deployment URL ending in `/exec`.
   - `is_archived`
   - `updated_at`
 
+### `archiveBoardDay` (POST)
+- Required payload:
+  - `day_key` (`YYYY-MM-DD`)
+  - `reason`
+  - `confirm_step_1=true`
+  - `confirm_step_2=true`
+- Archives the day and persists audit fields in `BoardDays`:
+  - `is_archived=true`
+  - `archived_at`
+  - `archived_reason`
+  - `updated_at`
+
+### `unarchiveBoardDay` (POST)
+- Required payload:
+  - `day_key` (`YYYY-MM-DD`)
+  - `reason`
+- Unarchives the day and persists audit fields in `BoardDays`:
+  - `is_archived=false`
+  - `unarchived_at`
+  - `updated_at`
+
 ### `createOrder` (POST)
 - Creates order and generates:
   - `order_number`

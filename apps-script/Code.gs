@@ -166,6 +166,10 @@ function handlePostAction_(action, payload) {
       return createOrder_(payload);
     case 'updateOrderDetails':
       return updateOrderDetails_(payload);
+    case 'archiveBoardDay':
+      return archiveBoardDay_(payload);
+    case 'unarchiveBoardDay':
+      return unarchiveBoardDay_(payload);
     case 'updateOrderStatus':
       return updateOrderStatus_(payload);
     case 'addExpense':
@@ -636,6 +640,97 @@ function getBoardDays_() {
       updated_at: boardDay ? cleanString_(boardDay.updated_at) || aggregate.latest_updated_at : aggregate.latest_updated_at
     };
   });
+}
+
+function archiveBoardDay_(payload) {
+  const dayKey = normalizeDateInput_(payload.day_key);
+  const reason = cleanString_(payload.reason);
+  const confirmStep1 = payload.confirm_step_1 === true || payload.confirm_step_1 === 'true';
+  const confirmStep2 = payload.confirm_step_2 === true || payload.confirm_step_2 === 'true';
+
+  if (!dayKey) return fail_('day_key is required and must be YYYY-MM-DD');
+  if (!reason) return fail_('reason is required');
+  if (!confirmStep1 || !confirmStep2) return fail_('confirm_step_1 and confirm_step_2 must be true');
+
+  const boardDayState = getOrCreateBoardDayState_(dayKey);
+  const nowIso = new Date().toISOString();
+  boardDayState.row[boardDayState.map.is_archived] = true;
+  boardDayState.row[boardDayState.map.archived_at] = nowIso;
+  boardDayState.row[boardDayState.map.archived_reason] = reason;
+  boardDayState.row[boardDayState.map.unarchived_at] = '';
+  boardDayState.row[boardDayState.map.updated_at] = nowIso;
+  boardDayState.sheet.getRange(boardDayState.rowIndex, 1, 1, boardDayState.lastCol).setValues([boardDayState.row]);
+
+  return ok_({
+    message: 'Board day archived',
+    day_key: dayKey,
+    is_archived: true,
+    archived_at: nowIso,
+    archived_reason: reason,
+    updated_at: nowIso
+  });
+}
+
+function unarchiveBoardDay_(payload) {
+  const dayKey = normalizeDateInput_(payload.day_key);
+  const reason = cleanString_(payload.reason);
+  if (!dayKey) return fail_('day_key is required and must be YYYY-MM-DD');
+  if (!reason) return fail_('reason is required');
+
+  const boardDayState = getOrCreateBoardDayState_(dayKey);
+  const nowIso = new Date().toISOString();
+  boardDayState.row[boardDayState.map.is_archived] = false;
+  boardDayState.row[boardDayState.map.unarchived_at] = nowIso;
+  boardDayState.row[boardDayState.map.updated_at] = nowIso;
+  if (!cleanString_(boardDayState.row[boardDayState.map.archived_reason])) {
+    boardDayState.row[boardDayState.map.archived_reason] = reason;
+  }
+  boardDayState.sheet.getRange(boardDayState.rowIndex, 1, 1, boardDayState.lastCol).setValues([boardDayState.row]);
+
+  return ok_({
+    message: 'Board day unarchived',
+    day_key: dayKey,
+    is_archived: false,
+    unarchived_at: nowIso,
+    updated_at: nowIso
+  });
+}
+
+function getOrCreateBoardDayState_(dayKey) {
+  const sheet = getSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  const map = headerMap_(sheet);
+  const rows = dataRows_(sheet);
+  const lastCol = sheet.getLastColumn();
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const currentDay = normalizeDateInput_(rows[i][map.day_key]);
+    if (currentDay !== dayKey) continue;
+    return {
+      sheet: sheet,
+      map: map,
+      rowIndex: i + 2,
+      row: rows[i],
+      lastCol: lastCol
+    };
+  }
+
+  const nowIso = new Date().toISOString();
+  const newRow = objectToRow_({
+    day_key: dayKey,
+    is_archived: false,
+    archived_at: '',
+    archived_reason: '',
+    unarchived_at: '',
+    updated_at: nowIso
+  }, CONFIG.BOARD_DAY_HEADERS);
+  sheet.appendRow(newRow);
+  return {
+    sheet: sheet,
+    map: map,
+    rowIndex: sheet.getLastRow(),
+    row: newRow,
+    lastCol: lastCol
+  };
 }
 
 function syncBoardDaysFromOrders_() {
