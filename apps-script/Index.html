@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bakery Ops Board v1</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+      :root {
+        --bg: #f7f3eb;
+        --bg-accent: #f0e5d3;
+        --ink: #2f2a21;
+        --ink-soft: #72644f;
+        --brand: #b45728;
+        --brand-strong: #8c3710;
+        --ok: #2c7a43;
+        --warn: #d48a1a;
+        --danger: #b4332e;
+        --card: #fff9ef;
+        --line: #dbc7aa;
+        --shadow: 0 10px 30px rgba(68, 42, 12, 0.1);
+        --radius: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: radial-gradient(circle at 10% 0%, #fff6e7 0%, var(--bg) 45%, #efe3ce 100%);
+        font-family: 'Space Grotesk', sans-serif;
+      }
+
+      body.menu-open {
+        overflow: hidden;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        background: linear-gradient(135deg, #fff9ef 0%, #f4e8d5 100%);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 14px 16px;
+      }
+
+      .title-group h1 {
+        margin: 0;
+        font-size: 1.25rem;
+        letter-spacing: 0.02em;
+      }
+
+      .title-group p {
+        margin: 3px 0 0;
+        color: var(--ink-soft);
+        font-size: 0.88rem;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .status-pill {
+        border-radius: 999px;
+        border: 1px solid #d8c7a8;
+        background: #fff;
+        padding: 8px 11px;
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 10px;
+        cursor: pointer;
+        padding: 10px 14px;
+        font-weight: 700;
+        font-family: inherit;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s ease;
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn-primary {
+        background: var(--brand);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(180, 87, 40, 0.3);
+      }
+
+      .btn-primary:hover {
+        background: var(--brand-strong);
+      }
+
+      .btn-soft {
+        background: #fff;
+        border: 1px solid var(--line);
+        color: var(--ink);
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: #fff;
+      }
+
+      .role-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .role-card {
+        background: #fff8ea;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .role-card strong {
+        display: block;
+        font-size: 0.86rem;
+        margin-bottom: 3px;
+      }
+
+      .role-card span {
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+      }
+
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .tab-btn {
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #fff7e8;
+        color: var(--ink-soft);
+        padding: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .tab-btn.active {
+        color: #fff;
+        border-color: var(--brand-strong);
+        background: linear-gradient(135deg, #c86530, #8d3d19);
+      }
+
+      .banner {
+        margin-top: 10px;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        display: none;
+      }
+
+      .banner.visible {
+        display: block;
+      }
+
+      .banner.warn {
+        background: #fff4df;
+        border: 1px solid #efc67c;
+        color: #7d4e00;
+      }
+
+      main {
+        margin-top: 12px;
+      }
+
+      .screen {
+        display: none;
+      }
+
+      .screen.active {
+        display: block;
+      }
+
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .grid.capture {
+        grid-template-columns: 1.15fr 1fr;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 14px;
+      }
+
+      .card h2,
+      .card h3 {
+        margin: 0 0 10px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .form-row.triple {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+
+      .field label {
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+        font-weight: 700;
+      }
+
+      .field input,
+      .field select,
+      .field textarea {
+        width: 100%;
+        border: 1px solid #ceb991;
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px;
+        font: inherit;
+        color: var(--ink);
+      }
+
+      .field textarea {
+        min-height: 76px;
+        resize: vertical;
+      }
+
+      .field.missing input,
+      .field.missing select,
+      .field.missing textarea {
+        border-color: var(--danger);
+        background: #fff4f3;
+      }
+
+      .helper {
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        max-height: 330px;
+        overflow-y: auto;
+      }
+
+      .product-btn {
+        text-align: left;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        padding: 8px;
+        cursor: pointer;
+      }
+
+      .product-btn strong {
+        display: block;
+        font-size: 0.84rem;
+      }
+
+      .product-btn span {
+        color: var(--ink-soft);
+        font-size: 0.77rem;
+      }
+
+      .menu-launch {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .menu-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .menu-families {
+        display: grid;
+        gap: 12px;
+      }
+
+      .family-block {
+        border: 1px solid #e1cfb3;
+        border-radius: 12px;
+        padding: 10px;
+        background: #fffdf7;
+      }
+
+      .family-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+      }
+
+      .family-title {
+        margin: 0;
+        font-size: 0.92rem;
+      }
+
+      .family-count {
+        color: var(--ink-soft);
+        font-size: 0.76rem;
+      }
+
+      .menu-families .product-grid {
+        max-height: none;
+        overflow: visible;
+      }
+
+      .menu-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1200;
+        display: none;
+      }
+
+      .menu-modal.active {
+        display: block;
+      }
+
+      .menu-modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(22, 16, 10, 0.55);
+      }
+
+      .menu-modal-dialog {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(1100px, calc(100vw - 24px));
+        max-height: calc(100vh - 24px);
+        overflow: auto;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+        padding: 14px;
+      }
+
+      .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+      }
+
+      .items-table th,
+      .items-table td {
+        border-bottom: 1px solid #e6d5b9;
+        padding: 7px 5px;
+        text-align: left;
+      }
+
+      .qty-input {
+        width: 64px;
+      }
+
+      .totals {
+        margin-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+      }
+
+      .action-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .action-row .btn {
+        flex: 1;
+      }
+
+      .kanban-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .kanban {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(5, minmax(220px, 1fr));
+        align-items: start;
+      }
+
+      .kanban-column {
+        background: #fff7e8;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        min-height: 60vh;
+        padding: 8px;
+      }
+
+      .kanban-column h3 {
+        margin: 0;
+        font-size: 0.92rem;
+      }
+
+      .column-sub {
+        color: var(--ink-soft);
+        font-size: 0.76rem;
+        margin-top: 2px;
+      }
+
+      .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+        border-bottom: 1px dashed #dbc7aa;
+        padding-bottom: 8px;
+      }
+
+      .ticket {
+        background: #fff;
+        border: 1px solid #d7c29f;
+        border-left: 5px solid #ba8d4f;
+        border-radius: 11px;
+        padding: 8px;
+        margin-bottom: 8px;
+        cursor: grab;
+      }
+
+      .ticket[data-status='Working'] {
+        border-left-color: #c67700;
+      }
+
+      .ticket[data-status='Baked'] {
+        border-left-color: #327a48;
+      }
+
+      .ticket[data-status='Delivered'] {
+        border-left-color: #2b8ca7;
+        opacity: 0.9;
+      }
+
+      .ticket[data-status='Cancelled'] {
+        border-left-color: #8a8a8a;
+        background: #fafafa;
+      }
+
+      .ticket.late {
+        border-color: #d04b2f;
+        box-shadow: 0 0 0 2px rgba(208, 75, 47, 0.15);
+      }
+
+      .ticket .folio {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.8rem;
+      }
+
+      .ticket .ticket-age {
+        font-size: 0.74rem;
+        color: var(--ink-soft);
+      }
+
+      .ticket .name {
+        margin-top: 4px;
+        font-weight: 700;
+      }
+
+      .ticket .meta {
+        margin-top: 3px;
+        font-size: 0.77rem;
+        color: var(--ink-soft);
+      }
+
+      .ticket .chip-row {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+
+      .chip {
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 0.72rem;
+        border: 1px solid #dfceaf;
+        background: #fff8ed;
+      }
+
+      .chip.paid {
+        background: #eaf8ee;
+        border-color: #98c7a7;
+      }
+
+      .chip.unpaid {
+        background: #fff1f0;
+        border-color: #dd9b97;
+      }
+
+      .ticket .row {
+        margin-top: 8px;
+        display: flex;
+        gap: 6px;
+      }
+
+      .ticket .ghost-btn {
+        border: 1px solid var(--line);
+        background: #fffaf1;
+        border-radius: 8px;
+        padding: 5px 8px;
+        font-size: 0.74rem;
+        cursor: pointer;
+        flex: 1;
+      }
+
+      .density-wide .ticket {
+        padding: 10px;
+      }
+
+      .density-compact .ticket {
+        padding: 7px;
+      }
+
+      .density-compact .ticket .meta,
+      .density-compact .ticket .chip,
+      .density-compact .ticket .ticket-age {
+        font-size: 0.69rem;
+      }
+
+      .density-ultra .ticket {
+        padding: 6px;
+      }
+
+      .density-ultra .ticket .name {
+        font-size: 0.83rem;
+      }
+
+      .density-ultra .ticket .meta,
+      .density-ultra .ticket .chip,
+      .density-ultra .ticket .ticket-age,
+      .density-ultra .ticket .folio {
+        font-size: 0.66rem;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .metric span {
+        color: var(--ink-soft);
+        font-size: 0.78rem;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 3px;
+        font-size: 1.25rem;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .list-box {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .list-box ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .expense-list {
+        max-height: 300px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      .expense-list table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .expense-list th,
+      .expense-list td {
+        border-bottom: 1px solid #ebdcc1;
+        padding: 8px;
+        text-align: left;
+        font-size: 0.84rem;
+      }
+
+      .toast {
+        position: fixed;
+        right: 14px;
+        bottom: 14px;
+        max-width: 360px;
+        z-index: 9999;
+        background: #2e2a20;
+        color: #fff;
+        padding: 10px 12px;
+        border-radius: 10px;
+        opacity: 0;
+        transform: translateY(8px);
+        pointer-events: none;
+        transition: all 0.18s ease;
+      }
+
+      .toast.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @media (max-width: 1200px) {
+        .kanban {
+          grid-template-columns: repeat(5, minmax(200px, 1fr));
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+      }
+
+      @media (max-width: 960px) {
+        .grid.capture {
+          grid-template-columns: 1fr;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .split {
+          grid-template-columns: 1fr;
+        }
+
+        .role-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .menu-toolbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .tabs {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-row,
+        .form-row.triple {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="title-group">
+          <h1 data-i18n="appTitle">Bakery Ops Board v1</h1>
+          <p data-i18n="appSubtitle">FIFO visual + folio amigable para equipo de 4 roles</p>
+        </div>
+        <div class="header-actions">
+          <span id="syncStatus" class="status-pill" data-i18n="syncReady">Sincronizado</span>
+          <button id="langToggle" class="btn btn-soft">EN</button>
+        </div>
+      </header>
+
+      <section class="role-strip">
+        <div class="role-card"><strong data-i18n="roleTaker">Toma orden</strong><span data-i18n="roleTakerDesc">Captura rápida llamada/Facebook</span></div>
+        <div class="role-card"><strong data-i18n="roleCook">Cocinero</strong><span data-i18n="roleCookDesc">Trabaja columna Working</span></div>
+        <div class="role-card"><strong data-i18n="rolePack">Organizador/Empaque</strong><span data-i18n="rolePackDesc">Prepara salida en Baked</span></div>
+        <div class="role-card"><strong data-i18n="roleDispatch">Despacho</strong><span data-i18n="roleDispatchDesc">Confirma entrega final</span></div>
+      </section>
+
+      <nav class="tabs">
+        <button class="tab-btn active" data-screen="capture" data-i18n="tabCapture">Captura</button>
+        <button class="tab-btn" data-screen="board" data-i18n="tabBoard">Kanban</button>
+      </nav>
+
+      <div id="banner" class="banner"></div>
+
+      <main>
+        <section id="screen-capture" class="screen active">
+          <div class="grid capture">
+            <article class="card">
+              <h2 data-i18n="captureTitle">Captura Rápida</h2>
+              <div class="form-row">
+                <div id="field-customer" class="field">
+                  <label for="orderCustomer" data-i18n="customer">Cliente</label>
+                  <input id="orderCustomer" type="text" autocomplete="name" />
+                </div>
+                <div class="field">
+                  <label for="orderPhone" data-i18n="phone">Teléfono</label>
+                  <input id="orderPhone" type="tel" list="phoneHints" />
+                  <datalist id="phoneHints"></datalist>
+                </div>
+              </div>
+
+              <div class="form-row triple">
+                <div id="field-date" class="field">
+                  <label for="orderDate" data-i18n="date">Fecha</label>
+                  <input id="orderDate" type="date" />
+                </div>
+                <div class="field">
+                  <label for="orderTime" data-i18n="time">Hora (opcional)</label>
+                  <input id="orderTime" type="time" />
+                </div>
+                <div id="field-type" class="field">
+                  <label for="orderType" data-i18n="type">Tipo</label>
+                  <select id="orderType">
+                    <option value="Pickup" data-i18n="pickup">Pickup</option>
+                    <option value="Delivery" data-i18n="delivery">Delivery</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row triple">
+                <div class="field">
+                  <label for="orderPaymentStatus" data-i18n="paymentStatus">Estado pago</label>
+                  <select id="orderPaymentStatus">
+                    <option value="Unpaid" data-i18n="unpaid">Unpaid</option>
+                    <option value="Paid" data-i18n="paid">Paid</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="orderPaymentMethod" data-i18n="paymentMethod">Método pago</label>
+                  <select id="orderPaymentMethod">
+                    <option value="" data-i18n="notSelected">Sin definir</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="Transfer">Transfer</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="orderDeposit" data-i18n="deposit">Anticipo</label>
+                  <input id="orderDeposit" type="number" step="0.01" min="0" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="field">
+                  <label for="orderChannel" data-i18n="channel">Canal</label>
+                  <select id="orderChannel">
+                    <option value="Phone" data-i18n="channelPhone">Phone</option>
+                    <option value="Facebook" data-i18n="channelFacebook">Facebook</option>
+                    <option value="Square">Square</option>
+                    <option value="Walk-in" data-i18n="channelWalkin">Walk-in</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="orderAddress" data-i18n="address">Dirección</label>
+                  <input id="orderAddress" type="text" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="orderNotes" data-i18n="sourceNotes">Notas de origen</label>
+                <textarea id="orderNotes"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="aiPayload" data-i18n="aiPayloadLabel">Pegado JSON (Square/Agente GPT)</label>
+                <textarea id="aiPayload" placeholder='{"order_meta": {...}, "items": [...]}'></textarea>
+                <div class="action-row" style="margin-top: 6px;">
+                  <button id="btnAutofill" class="btn btn-soft" data-i18n="autofill">Autorrellenar</button>
+                  <button id="btnClearAi" class="btn btn-soft" data-i18n="clear">Limpiar</button>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <h2 data-i18n="itemsTitle">Productos e ítems</h2>
+              <div class="menu-launch">
+                <button id="btnOpenMenuScreen" class="btn btn-primary" data-i18n="openMenuScreen">Abrir menú por familias</button>
+                <div class="helper" data-i18n="menuHint">Agrega productos desde una pantalla separada organizada por familia.</div>
+              </div>
+
+              <h3 style="margin-top: 14px;" data-i18n="selectedItems">Ítems seleccionados</h3>
+              <div id="field-items" class="field">
+                <table class="items-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="item">Ítem</th>
+                      <th data-i18n="qty">Cant.</th>
+                      <th data-i18n="price">Precio</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="selectedItemsBody"></tbody>
+                </table>
+              </div>
+
+              <div class="totals">
+                <span data-i18n="total">Total</span>
+                <span id="orderTotal">$0.00</span>
+              </div>
+
+              <div class="helper" id="captureModeLabel" data-i18n="modeCreate">Modo: crear orden</div>
+              <div class="action-row">
+                <button id="btnSaveOrder" class="btn btn-primary" data-i18n="saveOrder">Guardar orden</button>
+                <button id="btnResetForm" class="btn btn-soft" data-i18n="resetForm">Reset</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="screen-board" class="screen">
+          <article class="card">
+            <div class="kanban-toolbar">
+              <div>
+                <h2 style="margin:0;" data-i18n="boardTitle">Kanban Producción</h2>
+                <div class="helper" data-i18n="boardSubtitle">FIFO por antigüedad de captura · borde rojo > 90 min</div>
+              </div>
+              <div class="action-row" style="margin-top:0; width: 290px;">
+                <button id="btnRefreshBoard" class="btn btn-soft" data-i18n="refresh">Refrescar</button>
+                <button id="btnJumpCapture" class="btn btn-soft" data-i18n="newOrder">Nueva orden</button>
+              </div>
+            </div>
+            <div id="kanbanBoard" class="kanban density-wide"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <div id="menuModal" class="menu-modal" aria-hidden="true">
+      <div class="menu-modal-overlay" data-close-menu="true"></div>
+      <div class="menu-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="menuModalTitle">
+        <div class="menu-toolbar">
+          <div>
+            <h2 id="menuModalTitle" style="margin:0;" data-i18n="menuScreenTitle">Menú por familias</h2>
+            <div class="helper" data-i18n="menuScreenSubtitle">Selecciona productos por categoría y vuelve a captura.</div>
+          </div>
+          <div class="action-row" style="margin-top:0; width: 220px;">
+            <button id="btnCloseMenuModal" class="btn btn-soft" data-i18n="closeMenu">Cerrar</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="menuSearch" data-i18n="searchProduct">Buscar producto</label>
+          <input id="menuSearch" type="text" />
+        </div>
+        <div id="menuFamilies" class="menu-families"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+      // Local test support: pass ?apiBase=https://.../exec
+      // Apps Script support: fallback to ScriptApp.getService().getUrl().
+      const API_BASE = (() => {
+        const params = new URLSearchParams(window.location.search || '');
+        const fromQuery = params.get('apiBase') || params.get('api_base');
+        if (fromQuery && /^https?:\/\//i.test(fromQuery)) return fromQuery;
+        const webAppUrl = '<?= ScriptApp.getService().getUrl() ?>';
+        if (webAppUrl && webAppUrl.indexOf('http') === 0) return webAppUrl;
+        return '';
+      })();
+      const STATUS_META = [
+        { status: 'Pending', roleKey: 'roleOrg', color: '#c09347' },
+        { status: 'Working', roleKey: 'roleCookShort', color: '#ce7d14' },
+        { status: 'Baked', roleKey: 'rolePackShort', color: '#327a48' },
+        { status: 'Delivered', roleKey: 'roleDispatchShort', color: '#2d8aa7' },
+        { status: 'Cancelled', roleKey: 'roleCancelled', color: '#8c8c8c' }
+      ];
+
+      const I18N = {
+        es: {
+          appTitle: 'Bakery Ops Board v1',
+          appSubtitle: 'FIFO visual + folio amigable para equipo de 4 roles',
+          syncReady: 'Sincronizado',
+          roleTaker: 'Toma orden',
+          roleTakerDesc: 'Captura rápida llamada/Facebook',
+          roleCook: 'Cocinero',
+          roleCookDesc: 'Trabaja columna Working',
+          rolePack: 'Organizador/Empaque',
+          rolePackDesc: 'Prepara salida en Baked',
+          roleDispatch: 'Despacho',
+          roleDispatchDesc: 'Confirma entrega final',
+          tabCapture: 'Captura',
+          tabBoard: 'Kanban',
+          captureTitle: 'Captura Rápida',
+          customer: 'Cliente',
+          phone: 'Teléfono',
+          date: 'Fecha',
+          time: 'Hora (opcional)',
+          type: 'Tipo',
+          pickup: 'Pickup',
+          delivery: 'Delivery',
+          paymentStatus: 'Estado pago',
+          paymentMethod: 'Método pago',
+          notSelected: 'Sin definir',
+          deposit: 'Anticipo',
+          channel: 'Canal',
+          channelPhone: 'Teléfono',
+          channelFacebook: 'Facebook',
+          channelWalkin: 'Mostrador',
+          address: 'Dirección',
+          sourceNotes: 'Notas de origen',
+          aiPayloadLabel: 'Pegado JSON (Square/Agente GPT)',
+          autofill: 'Autorrellenar',
+          clear: 'Limpiar',
+          itemsTitle: 'Productos e ítems',
+          openMenuScreen: 'Abrir menú por familias',
+          menuHint: 'Agrega productos desde un popup organizado por familia.',
+          menuScreenTitle: 'Menú por familias',
+          menuScreenSubtitle: 'Selecciona productos por categoría y cierra el popup.',
+          closeMenu: 'Cerrar',
+          searchProduct: 'Buscar producto',
+          selectedItems: 'Ítems seleccionados',
+          item: 'Ítem',
+          qty: 'Cant.',
+          price: 'Precio',
+          total: 'Total',
+          modeCreate: 'Modo: crear orden',
+          modeEdit: 'Modo: editar orden',
+          saveOrder: 'Guardar orden',
+          updateOrder: 'Actualizar orden',
+          resetForm: 'Reset',
+          boardTitle: 'Kanban Producción',
+          boardSubtitle: 'FIFO por antigüedad de captura · borde rojo > 90 min',
+          refresh: 'Refrescar',
+          newOrder: 'Nueva orden',
+          category: 'Categoría',
+          amount: 'Monto',
+          description: 'Descripción',
+          unpaid: 'No pagado',
+          paid: 'Pagado',
+          roleOrg: 'Organizador',
+          roleCookShort: 'Cocinero',
+          rolePackShort: 'Empaque',
+          roleDispatchShort: 'Despacho',
+          roleCancelled: 'Cancelado',
+          elapsed: 'Antigüedad',
+          minutes: 'min',
+          edit: 'Editar',
+          reactivate: 'Reactivar',
+          moveToCancelled: 'Cancelar',
+          state: 'Estado',
+          captured: 'Capturada',
+          noData: 'Sin datos',
+          remoteChanges: 'Se detectaron cambios remotos. Datos actualizados.',
+          saved: 'Guardado con éxito',
+          backendOutdated: 'Backend desactualizado detectado en /exec. Publica nueva versión de Code.gs (faltan campos de folio/FIFO o hay order_id vacío).',
+          apiInvalidJson: 'La API no devolvió JSON válido. Verifica el despliegue Web App (/exec).',
+          missingOrderIdResponse: 'La orden se guardó pero el backend no devolvió order_id. Actualiza Code.gs en producción.',
+          familyDefault: 'General',
+          warningDeliveryUnpaid: 'Delivery en Unpaid: se guardará con alerta visual.',
+          fillRequired: 'Completa cliente, fecha, tipo y al menos 1 ítem.',
+          invalidJson: 'JSON inválido para autorrelleno.',
+          reactivated: 'Orden reactivada.',
+          onlyFromBaked: 'Solo puedes pasar a Delivered desde Baked.',
+          deliveredLocked: 'Delivered no permite edición/cambio.',
+          confirmReactivate: '¿Confirmas reactivar esta orden cancelada?',
+          confirmCancel: '¿Confirmas mover a Cancelled?',
+          confirmDelivered: '¿Confirmas marcar esta orden como Delivered?'
+        },
+        en: {
+          appTitle: 'Bakery Ops Board v1',
+          appSubtitle: 'Visual FIFO + friendly folio for a 4-role team',
+          syncReady: 'Synced',
+          roleTaker: 'Order Taker',
+          roleTakerDesc: 'Fast capture from calls/Facebook',
+          roleCook: 'Cook',
+          roleCookDesc: 'Works Working column',
+          rolePack: 'Organizer/Packing',
+          rolePackDesc: 'Prepares output in Baked',
+          roleDispatch: 'Dispatch',
+          roleDispatchDesc: 'Confirms final delivery',
+          tabCapture: 'Capture',
+          tabBoard: 'Kanban',
+          captureTitle: 'Fast Capture',
+          customer: 'Customer',
+          phone: 'Phone',
+          date: 'Date',
+          time: 'Time (optional)',
+          type: 'Type',
+          pickup: 'Pickup',
+          delivery: 'Delivery',
+          paymentStatus: 'Payment status',
+          paymentMethod: 'Payment method',
+          notSelected: 'Not set',
+          deposit: 'Deposit',
+          channel: 'Channel',
+          channelPhone: 'Phone',
+          channelFacebook: 'Facebook',
+          channelWalkin: 'Walk-in',
+          address: 'Address',
+          sourceNotes: 'Source notes',
+          aiPayloadLabel: 'JSON paste (Square/GPT Agent)',
+          autofill: 'Autofill',
+          clear: 'Clear',
+          itemsTitle: 'Products & items',
+          openMenuScreen: 'Open menu by family',
+          menuHint: 'Add products from a popup grouped by family.',
+          menuScreenTitle: 'Menu by family',
+          menuScreenSubtitle: 'Pick products by category and close the popup.',
+          closeMenu: 'Close',
+          searchProduct: 'Search product',
+          selectedItems: 'Selected items',
+          item: 'Item',
+          qty: 'Qty',
+          price: 'Price',
+          total: 'Total',
+          modeCreate: 'Mode: create order',
+          modeEdit: 'Mode: edit order',
+          saveOrder: 'Save order',
+          updateOrder: 'Update order',
+          resetForm: 'Reset',
+          boardTitle: 'Production Kanban',
+          boardSubtitle: 'FIFO by capture age · red border > 90 min',
+          refresh: 'Refresh',
+          newOrder: 'New order',
+          category: 'Category',
+          amount: 'Amount',
+          description: 'Description',
+          unpaid: 'Unpaid',
+          paid: 'Paid',
+          roleOrg: 'Organizer',
+          roleCookShort: 'Cook',
+          rolePackShort: 'Packing',
+          roleDispatchShort: 'Dispatch',
+          roleCancelled: 'Cancelled',
+          elapsed: 'Age',
+          minutes: 'min',
+          edit: 'Edit',
+          reactivate: 'Reactivate',
+          moveToCancelled: 'Cancel',
+          state: 'State',
+          captured: 'Captured',
+          noData: 'No data',
+          remoteChanges: 'Remote changes detected. Data refreshed.',
+          saved: 'Saved',
+          backendOutdated: 'Outdated backend detected on /exec. Deploy a new Code.gs version (missing folio/FIFO fields or empty order_id).',
+          apiInvalidJson: 'API did not return valid JSON. Check Web App deployment (/exec).',
+          missingOrderIdResponse: 'Order was saved but backend did not return order_id. Update production Code.gs.',
+          familyDefault: 'General',
+          warningDeliveryUnpaid: 'Delivery is Unpaid: order will be saved with warning.',
+          fillRequired: 'Complete customer, date, type and at least one item.',
+          invalidJson: 'Invalid JSON payload for autofill.',
+          reactivated: 'Order reactivated.',
+          onlyFromBaked: 'Delivered is allowed only from Baked.',
+          deliveredLocked: 'Delivered cannot be edited/changed.',
+          confirmReactivate: 'Confirm reactivating this cancelled order?',
+          confirmCancel: 'Confirm moving order to Cancelled?',
+          confirmDelivered: 'Confirm marking this order as Delivered?'
+        }
+      };
+
+      const state = {
+        lang: 'es',
+        screen: 'capture',
+        products: [],
+        orders: [],
+        selectedItems: [],
+        editingOrderId: null,
+        knownVersions: {},
+        pendingWrites: new Set(),
+        backendOutdated: false,
+        pollId: null
+      };
+
+      function t(key) {
+        return (I18N[state.lang] && I18N[state.lang][key]) || key;
+      }
+
+      function statusLabel(status) {
+        const map = {
+          Pending: { es: 'Nueva', en: 'Pending' },
+          Working: { es: 'Preparando', en: 'Working' },
+          Baked: { es: 'Horneada', en: 'Baked' },
+          Delivered: { es: 'Entregada', en: 'Delivered' },
+          Cancelled: { es: 'Cancelada', en: 'Cancelled' }
+        };
+        return map[status] ? map[status][state.lang] : status;
+      }
+
+      function formatMoney(value) {
+        return '$' + Number(value || 0).toFixed(2);
+      }
+
+      function formatDateTime(input) {
+        if (!input) return '--';
+        const d = new Date(input);
+        if (Number.isNaN(d.getTime())) return '--';
+        return d.toLocaleString(state.lang === 'es' ? 'es-US' : 'en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+
+      function minutesElapsed(input) {
+        if (!input) return 0;
+        const d = new Date(input);
+        if (Number.isNaN(d.getTime())) return 0;
+        return Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+      }
+
+      function showToast(message, duration = 2200) {
+        const el = document.getElementById('toast');
+        el.textContent = message;
+        el.classList.add('visible');
+        window.clearTimeout(showToast._timer);
+        showToast._timer = window.setTimeout(() => el.classList.remove('visible'), duration);
+      }
+
+      function setBanner(message, level = 'warn') {
+        const banner = document.getElementById('banner');
+        if (!message) {
+          banner.className = 'banner';
+          banner.textContent = '';
+          return;
+        }
+        banner.className = `banner visible ${level}`;
+        banner.textContent = message;
+      }
+
+      function backendContractOutdated(rawOrders) {
+        if (!Array.isArray(rawOrders) || !rawOrders.length) return false;
+        const hasOrderNumber = rawOrders.some((order) => Object.prototype.hasOwnProperty.call(order, 'order_number'));
+        const hasCapturedAt = rawOrders.some((order) => Object.prototype.hasOwnProperty.call(order, 'captured_at'));
+        const hasEmptyOrderId = rawOrders.some((order) => !String(order && order.order_id ? order.order_id : '').trim());
+        return !hasOrderNumber || !hasCapturedAt || hasEmptyOrderId;
+      }
+
+      async function api(action, method = 'GET', payload = null) {
+        if (!API_BASE) {
+          throw new Error('Missing API base. Open local with ?apiBase=https://.../exec');
+        }
+        const url = `${API_BASE}?action=${encodeURIComponent(action)}`;
+        const options = { method };
+        if (method === 'POST') {
+          // Use a simple request content type to avoid browser CORS preflight on local UI tests.
+          options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+          options.body = JSON.stringify(payload || {});
+        }
+        const response = await fetch(url, options);
+        const raw = await response.text();
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        try {
+          return JSON.parse(raw);
+        } catch (err) {
+          throw new Error(t('apiInvalidJson'));
+        }
+      }
+
+      function applyI18n() {
+        document.querySelectorAll('[data-i18n]').forEach((node) => {
+          const key = node.dataset.i18n;
+          node.textContent = t(key);
+        });
+        document.getElementById('langToggle').textContent = state.lang === 'es' ? 'EN' : 'ES';
+        document.getElementById('syncStatus').textContent = t('syncReady');
+        document.getElementById('captureModeLabel').textContent = state.editingOrderId ? t('modeEdit') : t('modeCreate');
+        document.getElementById('btnSaveOrder').textContent = state.editingOrderId ? t('updateOrder') : t('saveOrder');
+      }
+
+      function todayStr() {
+        return new Date().toISOString().split('T')[0];
+      }
+
+      function switchScreen(name) {
+        state.screen = name;
+        document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+        document.getElementById(`screen-${name}`).classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach((b) => {
+          b.classList.toggle('active', b.dataset.screen === name);
+        });
+      }
+
+      function openMenuModal() {
+        const modal = document.getElementById('menuModal');
+        if (!modal) return;
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('menu-open');
+        renderMenuFamilies();
+        window.setTimeout(() => {
+          const input = document.getElementById('menuSearch');
+          if (input) input.focus();
+        }, 20);
+      }
+
+      function closeMenuModal() {
+        const modal = document.getElementById('menuModal');
+        if (!modal) return;
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('menu-open');
+      }
+
+      function cleanRequiredMarks() {
+        ['field-customer', 'field-date', 'field-type', 'field-items'].forEach((id) => {
+          document.getElementById(id).classList.remove('missing');
+        });
+      }
+
+      function validateOrderForm() {
+        cleanRequiredMarks();
+        const customer = document.getElementById('orderCustomer').value.trim();
+        const date = document.getElementById('orderDate').value;
+        const type = document.getElementById('orderType').value;
+        const validItems = state.selectedItems.length > 0;
+        const missing = [];
+        if (!customer) missing.push('field-customer');
+        if (!date) missing.push('field-date');
+        if (!type) missing.push('field-type');
+        if (!validItems) missing.push('field-items');
+        missing.forEach((id) => document.getElementById(id).classList.add('missing'));
+        return missing.length === 0;
+      }
+
+      function formPayload() {
+        const total = state.selectedItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity || 1)), 0);
+        return {
+          customer_name: document.getElementById('orderCustomer').value.trim(),
+          phone: document.getElementById('orderPhone').value.trim(),
+          delivery_date: document.getElementById('orderDate').value,
+          delivery_time: document.getElementById('orderTime').value,
+          type: document.getElementById('orderType').value,
+          payment_status: document.getElementById('orderPaymentStatus').value,
+          payment_method: document.getElementById('orderPaymentMethod').value,
+          deposit_amount: document.getElementById('orderDeposit').value,
+          channel: document.getElementById('orderChannel').value,
+          address: document.getElementById('orderAddress').value.trim(),
+          source_notes: document.getElementById('orderNotes').value.trim(),
+          items_json: state.selectedItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: Number(item.price),
+            quantity: Number(item.quantity || 1),
+            variant: item.variant || '',
+            details: item.details || ''
+          })),
+          total_amount: total
+        };
+      }
+
+      function setSyncStatus(text, timeout = 1200) {
+        const node = document.getElementById('syncStatus');
+        node.textContent = text;
+        window.clearTimeout(setSyncStatus._timer);
+        setSyncStatus._timer = window.setTimeout(() => {
+          node.textContent = t('syncReady');
+        }, timeout);
+      }
+
+      function resetForm() {
+        state.editingOrderId = null;
+        state.selectedItems = [];
+        document.getElementById('orderCustomer').value = '';
+        document.getElementById('orderPhone').value = '';
+        document.getElementById('orderDate').value = todayStr();
+        document.getElementById('orderTime').value = '';
+        document.getElementById('orderType').value = 'Pickup';
+        document.getElementById('orderPaymentStatus').value = 'Unpaid';
+        document.getElementById('orderPaymentMethod').value = '';
+        document.getElementById('orderDeposit').value = '';
+        document.getElementById('orderChannel').value = 'Phone';
+        document.getElementById('orderAddress').value = '';
+        document.getElementById('orderNotes').value = '';
+        document.getElementById('aiPayload').value = '';
+        cleanRequiredMarks();
+        renderSelectedItems();
+        applyI18n();
+      }
+
+      function renderMenuFamilies() {
+        const mount = document.getElementById('menuFamilies');
+        if (!mount) return;
+
+        const term = (document.getElementById('menuSearch').value || '').trim().toLowerCase();
+        const filtered = state.products.filter((p) => {
+          const name = (p.name || '').toLowerCase();
+          const family = (p.category || t('familyDefault')).toLowerCase();
+          return !term || name.includes(term) || family.includes(term);
+        });
+
+        if (!filtered.length) {
+          mount.innerHTML = `<div class="helper">${t('noData')}</div>`;
+          return;
+        }
+
+        const grouped = {};
+        filtered.forEach((product) => {
+          const family = product.category || t('familyDefault');
+          if (!grouped[family]) grouped[family] = [];
+          grouped[family].push(product);
+        });
+
+        const families = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+        mount.innerHTML = families.map((family) => {
+          const items = grouped[family].sort((a, b) => a.name.localeCompare(b.name));
+          return `
+            <section class="family-block">
+              <div class="family-head">
+                <h3 class="family-title">${family}</h3>
+                <span class="family-count">${items.length}</span>
+              </div>
+              <div class="product-grid">
+                ${items.map((p) => `
+                  <button class="product-btn" data-product-id="${p.id}">
+                    <strong>${p.name}</strong>
+                    <span>${family} · ${formatMoney(p.price)}</span>
+                  </button>
+                `).join('')}
+              </div>
+            </section>
+          `;
+        }).join('');
+      }
+
+      function addItem(productId) {
+        const product = state.products.find((p) => String(p.id) === String(productId));
+        if (!product) return;
+        const existing = state.selectedItems.find((i) => i.id === product.id);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          state.selectedItems.push({
+            id: product.id,
+            name: product.name,
+            price: Number(product.price),
+            quantity: 1,
+            variant: 'Standard',
+            details: ''
+          });
+        }
+        renderSelectedItems();
+      }
+
+      function renderSelectedItems() {
+        const body = document.getElementById('selectedItemsBody');
+        if (!state.selectedItems.length) {
+          body.innerHTML = `<tr><td colspan="4" class="helper">${t('noData')}</td></tr>`;
+          document.getElementById('orderTotal').textContent = formatMoney(0);
+          return;
+        }
+
+        body.innerHTML = state.selectedItems.map((item, index) => `
+          <tr>
+            <td>${item.name}</td>
+            <td><input class="qty-input" type="number" min="1" value="${item.quantity}" data-qty-index="${index}" /></td>
+            <td>${formatMoney(item.price * item.quantity)}</td>
+            <td><button class="btn btn-soft" data-remove-index="${index}">×</button></td>
+          </tr>
+        `).join('');
+
+        const total = state.selectedItems.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+        document.getElementById('orderTotal').textContent = formatMoney(total);
+      }
+
+      function compareVersionSnapshots(nextOrders) {
+        const nextMap = {};
+        let remoteChange = false;
+        nextOrders.forEach((order) => {
+          const key = order.order_id;
+          const version = Number(order.sync_version || 1);
+          nextMap[key] = version;
+          if (state.knownVersions[key] && state.knownVersions[key] !== version && !state.pendingWrites.has(key)) {
+            remoteChange = true;
+          }
+        });
+        state.knownVersions = nextMap;
+        if (remoteChange) {
+          showToast(t('remoteChanges'));
+        }
+      }
+
+      function ticketSortValue(order) {
+        const captured = new Date(order.captured_at || order.updated_at || order.delivery_at || order.delivery_date || 0).getTime();
+        return Number.isNaN(captured) ? 0 : captured;
+      }
+
+      function activeOrderCount() {
+        return state.orders.filter((o) => o.status !== 'Cancelled').length;
+      }
+
+      function applyDensityClass() {
+        const board = document.getElementById('kanbanBoard');
+        board.classList.remove('density-wide', 'density-compact', 'density-ultra');
+        const count = activeOrderCount();
+        if (count <= 8) board.classList.add('density-wide');
+        else if (count <= 20) board.classList.add('density-compact');
+        else board.classList.add('density-ultra');
+      }
+
+      function renderKanban() {
+        const board = document.getElementById('kanbanBoard');
+        applyDensityClass();
+
+        board.innerHTML = STATUS_META.map((meta) => {
+          const list = state.orders
+            .filter((o) => o.status === meta.status)
+            .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+
+          const cards = list.map((order) => {
+            const age = minutesElapsed(order.captured_at);
+            const isLate = age > 90;
+            const canEdit = order.status !== 'Delivered';
+
+            return `
+              <div class="ticket ${isLate ? 'late' : ''}" draggable="true" data-order-id="${order.order_id}" data-status="${order.status}">
+                <div class="folio">${order.order_number || 'LEGACY'}</div>
+                <div class="ticket-age">${t('captured')}: ${formatDateTime(order.captured_at)} · ${age} ${t('minutes')}</div>
+                <div class="name">${order.customer_name || '-'}</div>
+                <div class="meta">${formatDateTime(order.delivery_at || order.delivery_date)} · ${order.type || '-'}</div>
+                <div class="chip-row">
+                  <span class="chip">${order.channel || 'Phone'}</span>
+                  <span class="chip ${order.payment_status === 'Paid' ? 'paid' : 'unpaid'}">${order.payment_status}</span>
+                  <span class="chip">${formatMoney(order.total_amount)}</span>
+                </div>
+                <div class="meta">${statusLabel(order.status)}</div>
+                <div class="row">
+                  <button class="ghost-btn" data-edit-order="${order.order_id}" ${canEdit ? '' : 'disabled'}>${t('edit')}</button>
+                  <button class="ghost-btn" data-cancel-order="${order.order_id}">${order.status === 'Cancelled' ? t('reactivate') : t('moveToCancelled')}</button>
+                </div>
+              </div>
+            `;
+          }).join('') || `<div class="helper">${t('noData')}</div>`;
+
+          return `
+            <div class="kanban-column" data-drop-status="${meta.status}">
+              <div class="column-header">
+                <div>
+                  <h3>${statusLabel(meta.status)}</h3>
+                  <div class="column-sub">${t(meta.roleKey)}</div>
+                </div>
+                <strong>${list.length}</strong>
+              </div>
+              ${cards}
+            </div>
+          `;
+        }).join('');
+
+        bindKanbanInteractions();
+      }
+
+      function bindKanbanInteractions() {
+        document.querySelectorAll('.ticket[draggable="true"]').forEach((ticket) => {
+          ticket.addEventListener('dragstart', (event) => {
+            const orderId = event.currentTarget.dataset.orderId;
+            const status = event.currentTarget.dataset.status;
+            event.dataTransfer.setData('text/plain', JSON.stringify({ orderId, status }));
+          });
+        });
+
+        document.querySelectorAll('.kanban-column').forEach((column) => {
+          column.addEventListener('dragover', (event) => event.preventDefault());
+          column.addEventListener('drop', async (event) => {
+            event.preventDefault();
+            const raw = event.dataTransfer.getData('text/plain');
+            if (!raw) return;
+            const payload = JSON.parse(raw);
+            const targetStatus = event.currentTarget.dataset.dropStatus;
+            if (payload.status === targetStatus) return;
+            const order = state.orders.find((o) => o.order_id === payload.orderId);
+            if (!order) return;
+            await requestStatusTransition(order, targetStatus);
+          });
+        });
+
+        document.querySelectorAll('[data-edit-order]').forEach((button) => {
+          button.addEventListener('click', () => startEditing(button.dataset.editOrder));
+        });
+
+        document.querySelectorAll('[data-cancel-order]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            const order = state.orders.find((o) => o.order_id === button.dataset.cancelOrder);
+            if (!order) return;
+            const target = order.status === 'Cancelled' ? 'Pending' : 'Cancelled';
+            await requestStatusTransition(order, target);
+          });
+        });
+      }
+
+      async function requestStatusTransition(order, targetStatus) {
+        try {
+          if (order.status === 'Delivered') {
+            showToast(t('deliveredLocked'));
+            return;
+          }
+
+          let confirmReactivate = false;
+          if (targetStatus === 'Delivered' && order.status !== 'Baked') {
+            showToast(t('onlyFromBaked'));
+            return;
+          }
+
+          if (targetStatus === 'Cancelled') {
+            const ok = window.confirm(t('confirmCancel'));
+            if (!ok) return;
+          }
+
+          if (order.status === 'Cancelled' && targetStatus !== 'Cancelled') {
+            const ok = window.confirm(t('confirmReactivate'));
+            if (!ok) return;
+            confirmReactivate = true;
+          }
+
+          if (targetStatus === 'Delivered') {
+            const ok = window.confirm(t('confirmDelivered'));
+            if (!ok) return;
+          }
+
+          const response = await api('updateOrderStatus', 'POST', {
+            action: 'updateOrderStatus',
+            order_id: order.order_id,
+            status: targetStatus,
+            confirm_reactivate: confirmReactivate,
+            base_sync_version: order.sync_version
+          });
+
+          if (response.status !== 'success') {
+            showToast(response.message || 'Error');
+            return;
+          }
+
+          markPendingWrite(order.order_id);
+          await refreshOrders();
+          setSyncStatus('OK');
+        } catch (err) {
+          setBanner(err.message || String(err), 'warn');
+        }
+      }
+
+      function markPendingWrite(orderId) {
+        state.pendingWrites.add(orderId);
+        window.setTimeout(() => state.pendingWrites.delete(orderId), 6000);
+      }
+
+      function buildPhoneHints() {
+        const datalist = document.getElementById('phoneHints');
+        const byPhone = {};
+        state.orders.forEach((order) => {
+          const phone = (order.phone || '').trim();
+          if (!phone) return;
+          if (!byPhone[phone]) byPhone[phone] = order;
+        });
+        datalist.innerHTML = Object.keys(byPhone).slice(0, 120).map((phone) => {
+          const order = byPhone[phone];
+          return `<option value="${phone}">${order.customer_name || ''}</option>`;
+        }).join('');
+      }
+
+      function fillByPhone(phone) {
+        const normalized = (phone || '').trim();
+        if (!normalized) return;
+        const order = state.orders.find((o) => (o.phone || '').trim() === normalized);
+        if (!order) return;
+        if (!document.getElementById('orderCustomer').value.trim()) {
+          document.getElementById('orderCustomer').value = order.customer_name || '';
+        }
+        if (!document.getElementById('orderAddress').value.trim()) {
+          document.getElementById('orderAddress').value = order.address || '';
+        }
+      }
+
+      function parsePayloadToForm(rawText) {
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch (err) {
+          showToast(t('invalidJson'));
+          return;
+        }
+
+        const meta = data.order_meta || data.meta || {};
+        document.getElementById('orderCustomer').value = data.customer_name || meta.customer_name || document.getElementById('orderCustomer').value;
+        document.getElementById('orderPhone').value = data.phone || meta.phone || document.getElementById('orderPhone').value;
+        document.getElementById('orderAddress').value = data.address || meta.address || document.getElementById('orderAddress').value;
+
+        const date = data.delivery_date || meta.service_date || meta.invoice_date || '';
+        if (date) document.getElementById('orderDate').value = date.slice(0, 10);
+
+        const time = data.delivery_time || meta.delivery_time || '';
+        if (time) document.getElementById('orderTime').value = time;
+
+        const orderType = data.type || meta.order_type;
+        if (orderType && ['Pickup', 'Delivery'].includes(orderType)) {
+          document.getElementById('orderType').value = orderType;
+        }
+
+        if (data.payment_status) {
+          document.getElementById('orderPaymentStatus').value = data.payment_status === 'Paid' ? 'Paid' : 'Unpaid';
+        }
+
+        const rawItems = Array.isArray(data.items) ? data.items : [];
+        if (rawItems.length) {
+          state.selectedItems = rawItems.map((item) => ({
+            id: item.id || item.sku || item.name,
+            name: item.name,
+            price: Number(item.price || 0),
+            quantity: Number(item.quantity || item.qty || 1),
+            variant: item.variant || '',
+            details: item.details || ''
+          }));
+          renderSelectedItems();
+        }
+
+        validateOrderForm();
+      }
+
+      function startEditing(orderId) {
+        const order = state.orders.find((o) => o.order_id === orderId);
+        if (!order || order.status === 'Delivered') {
+          showToast(t('deliveredLocked'));
+          return;
+        }
+
+        state.editingOrderId = orderId;
+        document.getElementById('orderCustomer').value = order.customer_name || '';
+        document.getElementById('orderPhone').value = order.phone || '';
+        document.getElementById('orderDate').value = (order.delivery_date || '').slice(0, 10);
+        document.getElementById('orderTime').value = order.delivery_time || '';
+        document.getElementById('orderType').value = order.type || 'Pickup';
+        document.getElementById('orderPaymentStatus').value = order.payment_status || 'Unpaid';
+        document.getElementById('orderPaymentMethod').value = order.payment_method || '';
+        document.getElementById('orderDeposit').value = order.deposit_amount || '';
+        document.getElementById('orderChannel').value = order.channel || 'Phone';
+        document.getElementById('orderAddress').value = order.address || '';
+        document.getElementById('orderNotes').value = order.source_notes || '';
+
+        try {
+          const parsed = JSON.parse(order.items_json || '[]');
+          if (Array.isArray(parsed)) {
+            state.selectedItems = parsed.map((item) => ({
+              id: item.id || item.name,
+              name: item.name,
+              price: Number(item.price || 0),
+              quantity: Number(item.quantity || 1),
+              variant: item.variant || '',
+              details: item.details || ''
+            }));
+          } else {
+            state.selectedItems = [];
+          }
+        } catch (err) {
+          state.selectedItems = [];
+        }
+
+        renderSelectedItems();
+        switchScreen('capture');
+        applyI18n();
+      }
+
+      async function saveOrder() {
+        try {
+          if (!validateOrderForm()) {
+            showToast(t('fillRequired'));
+            return;
+          }
+
+          const payload = formPayload();
+          if (payload.type === 'Delivery' && payload.payment_status === 'Unpaid') {
+            showToast(t('warningDeliveryUnpaid'));
+          }
+
+          let response;
+          if (state.editingOrderId) {
+            const order = state.orders.find((o) => o.order_id === state.editingOrderId);
+            response = await api('updateOrderDetails', 'POST', {
+              action: 'updateOrderDetails',
+              order_id: state.editingOrderId,
+              base_sync_version: order ? order.sync_version : 1,
+              ...payload
+            });
+            if (response.status === 'success') {
+              markPendingWrite(state.editingOrderId);
+            }
+          } else {
+            response = await api('createOrder', 'POST', {
+              action: 'createOrder',
+              ...payload,
+              status: 'Pending'
+            });
+            if (response.status === 'success' && response.order_id) {
+              markPendingWrite(response.order_id);
+              const optimisticOrder = {
+                order_id: response.order_id,
+                order_number: response.order_number || '',
+                customer_name: payload.customer_name || '',
+                phone: payload.phone || '',
+                delivery_date: payload.delivery_date || '',
+                delivery_time: payload.delivery_time || '',
+                delivery_at: '',
+                type: payload.type || 'Pickup',
+                address: payload.address || '',
+                web_link: '',
+                channel: payload.channel || 'Phone',
+                source_notes: payload.source_notes || '',
+                items_json: JSON.stringify(payload.items_json || []),
+                total_amount: Number(payload.total_amount || 0),
+                status: 'Pending',
+                payment_status: payload.payment_status || 'Unpaid',
+                payment_method: payload.payment_method || '',
+                deposit_amount: payload.deposit_amount || '',
+                captured_at: response.captured_at || new Date().toISOString(),
+                updated_at: response.captured_at || new Date().toISOString(),
+                sync_version: 1,
+                is_legacy: false
+              };
+              state.orders = state.orders
+                .filter((order) => order.order_id !== optimisticOrder.order_id)
+                .concat([optimisticOrder])
+                .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+              buildPhoneHints();
+              renderKanban();
+            }
+            if (response.status === 'success' && !response.order_id) {
+              setBanner(t('missingOrderIdResponse'), 'warn');
+            }
+          }
+
+          if (response.status !== 'success') {
+            showToast(response.message || 'Error');
+            return;
+          }
+
+          showToast(t('saved'));
+          resetForm();
+          await refreshOrders();
+        } catch (err) {
+          setBanner(err.message || String(err), 'warn');
+        }
+      }
+
+      async function refreshProducts() {
+        const data = await api('getProducts');
+        state.products = Array.isArray(data) ? data : [];
+        renderMenuFamilies();
+      }
+
+      async function refreshOrders() {
+        const data = await api('getOrders');
+        const rawOrders = Array.isArray(data) ? data : [];
+        state.backendOutdated = backendContractOutdated(rawOrders);
+        state.orders = rawOrders.filter((order) => String(order && order.order_id ? order.order_id : '').trim());
+        if (state.backendOutdated) {
+          setBanner(t('backendOutdated'), 'warn');
+        }
+        compareVersionSnapshots(state.orders);
+        buildPhoneHints();
+        renderKanban();
+      }
+
+      async function refreshAll() {
+        try {
+          await Promise.all([refreshProducts(), refreshOrders()]);
+          if (!state.backendOutdated) setBanner('');
+        } catch (err) {
+          setBanner(err.message || String(err), 'warn');
+        }
+      }
+
+      function bindEvents() {
+        document.getElementById('langToggle').addEventListener('click', () => {
+          state.lang = state.lang === 'es' ? 'en' : 'es';
+          applyI18n();
+          renderKanban();
+          renderMenuFamilies();
+          renderSelectedItems();
+        });
+
+        document.querySelectorAll('.tab-btn').forEach((button) => {
+          button.addEventListener('click', () => switchScreen(button.dataset.screen));
+        });
+
+        document.getElementById('menuSearch').addEventListener('input', renderMenuFamilies);
+        document.getElementById('menuFamilies').addEventListener('click', (event) => {
+          const target = event.target.closest('.product-btn');
+          if (!target) return;
+          addItem(target.dataset.productId);
+        });
+
+        document.getElementById('btnOpenMenuScreen').addEventListener('click', openMenuModal);
+        document.getElementById('btnCloseMenuModal').addEventListener('click', closeMenuModal);
+        document.querySelectorAll('[data-close-menu=\"true\"]').forEach((el) => {
+          el.addEventListener('click', closeMenuModal);
+        });
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') closeMenuModal();
+        });
+
+        document.getElementById('selectedItemsBody').addEventListener('input', (event) => {
+          const idx = event.target.dataset.qtyIndex;
+          if (idx === undefined) return;
+          const item = state.selectedItems[Number(idx)];
+          if (!item) return;
+          item.quantity = Math.max(1, Number(event.target.value || 1));
+          renderSelectedItems();
+        });
+
+        document.getElementById('selectedItemsBody').addEventListener('click', (event) => {
+          const idx = event.target.dataset.removeIndex;
+          if (idx === undefined) return;
+          state.selectedItems.splice(Number(idx), 1);
+          renderSelectedItems();
+        });
+
+        document.getElementById('orderPhone').addEventListener('change', (e) => fillByPhone(e.target.value));
+
+        document.getElementById('btnAutofill').addEventListener('click', () => {
+          parsePayloadToForm(document.getElementById('aiPayload').value.trim());
+        });
+
+        document.getElementById('btnClearAi').addEventListener('click', () => {
+          document.getElementById('aiPayload').value = '';
+        });
+
+        document.getElementById('btnSaveOrder').addEventListener('click', saveOrder);
+        document.getElementById('btnResetForm').addEventListener('click', resetForm);
+        document.getElementById('btnRefreshBoard').addEventListener('click', refreshOrders);
+        document.getElementById('btnJumpCapture').addEventListener('click', () => switchScreen('capture'));
+      }
+
+      async function start() {
+        document.getElementById('orderDate').value = todayStr();
+
+        bindEvents();
+        applyI18n();
+        resetForm();
+        await refreshAll();
+
+        state.pollId = window.setInterval(async () => {
+          try {
+            await refreshOrders();
+          } catch (err) {}
+        }, 5000);
+      }
+
+      start();
+    </script>
+  </body>
+</html>

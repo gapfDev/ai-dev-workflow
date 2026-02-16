@@ -1,0 +1,6 @@
+{
+  "spreadsheet_id": "YOUR_SPREADSHEET_ID",
+  "script_id": "YOUR_APPS_SCRIPT_ID",
+  "deployment_id": "YOUR_WEBAPP_DEPLOYMENT_ID",
+  "notes": "Copy to apps-script/private.local.json (ignored by git) and fill real values."
+}

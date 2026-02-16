@@ -51,6 +51,16 @@ The `.agent/skills/` directory contains reusable, independent skills:
 2. Use skills as needed for each step
 3. Follow the gates to ensure quality at each phase
 
+## 🧪 Example Implementation In This Repo
+
+This repository now includes a concrete MVP implementation for a bakery order workflow using Google Apps Script:
+
+- Code location: `apps-script/`
+- Backend/API: `apps-script/Code.gs`
+- Web UI: `apps-script/Index.html`
+- Manifest: `apps-script/appsscript.json`
+- Setup/deploy notes: `apps-script/README.md`
+
 ## 📖 Documentation
 
 All documentation is in English to ensure consistency across teams and AI agents.

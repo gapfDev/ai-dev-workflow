@@ -17,3 +17,11 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Apps Script local/private config
+apps-script/.clasp.json
+apps-script/private.local.json
+apps-script/private.local.*.json
+apps-script/.env
+apps-script/.env.*
+!apps-script/.env.example
