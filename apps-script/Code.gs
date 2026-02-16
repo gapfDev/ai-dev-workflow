@@ -393,6 +393,10 @@ function getProducts_() {
     const name = cleanString_(row[map.name]);
     const category = cleanString_(row[map.category]) || 'General';
     const inferred = inferFamilyMeta_(name, category);
+    const rawFamilyKey = map.family_key === undefined ? '' : cleanString_(row[map.family_key]);
+    const rawFamilyLabel = map.family_label === undefined ? '' : cleanString_(row[map.family_label]);
+    const rawFamilyColor = map.family_color === undefined ? '' : cleanString_(row[map.family_color]);
+    const useInferredFamily = shouldFallbackFamilyMeta_(rawFamilyKey, rawFamilyLabel, category);
     const familyOrderRaw = map.family_order === undefined ? '' : row[map.family_order];
     const variantOrderRaw = map.variant_order === undefined ? '' : row[map.variant_order];
     return {
@@ -400,10 +404,10 @@ function getProducts_() {
       name: name,
       price: normalizeNumber_(row[map.price], 0),
       category: category,
-      family_key: map.family_key === undefined ? inferred.family_key : (cleanString_(row[map.family_key]) || inferred.family_key),
-      family_label: map.family_label === undefined ? inferred.family_label : (cleanString_(row[map.family_label]) || inferred.family_label),
-      family_color: map.family_color === undefined ? inferred.family_color : (cleanString_(row[map.family_color]) || inferred.family_color),
-      family_order: map.family_order === undefined ? inferred.family_order : normalizeNumber_(familyOrderRaw, inferred.family_order),
+      family_key: useInferredFamily ? inferred.family_key : (rawFamilyKey || inferred.family_key),
+      family_label: useInferredFamily ? inferred.family_label : (rawFamilyLabel || inferred.family_label),
+      family_color: useInferredFamily ? inferred.family_color : (rawFamilyColor || inferred.family_color),
+      family_order: useInferredFamily ? inferred.family_order : (map.family_order === undefined ? inferred.family_order : normalizeNumber_(familyOrderRaw, inferred.family_order)),
       variant_order: map.variant_order === undefined ? inferred.variant_order : normalizeNumber_(variantOrderRaw, inferred.variant_order),
       active: map.active === undefined ? true : boolValue_(row[map.active], true)
     };
@@ -548,24 +552,27 @@ function backfillProductFamilies_() {
     if (!name) continue;
     const category = cleanString_(row[map.category]) || 'General';
     const family = inferFamilyMeta_(name, category);
+    const rawFamilyKey = map.family_key === undefined ? '' : cleanString_(row[map.family_key]);
+    const rawFamilyLabel = map.family_label === undefined ? '' : cleanString_(row[map.family_label]);
+    const useInferredFamily = shouldFallbackFamilyMeta_(rawFamilyKey, rawFamilyLabel, category);
 
-    if (map.family_key !== undefined && !cleanString_(row[map.family_key])) {
+    if (map.family_key !== undefined && (useInferredFamily || !rawFamilyKey)) {
       row[map.family_key] = family.family_key;
       dirty = true;
     }
-    if (map.family_label !== undefined && !cleanString_(row[map.family_label])) {
+    if (map.family_label !== undefined && (useInferredFamily || !rawFamilyLabel)) {
       row[map.family_label] = family.family_label;
       dirty = true;
     }
-    if (map.family_color !== undefined && !cleanString_(row[map.family_color])) {
+    if (map.family_color !== undefined && (useInferredFamily || !cleanString_(row[map.family_color]))) {
       row[map.family_color] = family.family_color;
       dirty = true;
     }
-    if (map.family_order !== undefined && cleanString_(row[map.family_order]) === '') {
+    if (map.family_order !== undefined && (useInferredFamily || cleanString_(row[map.family_order]) === '')) {
       row[map.family_order] = family.family_order;
       dirty = true;
     }
-    if (map.variant_order !== undefined && cleanString_(row[map.variant_order]) === '') {
+    if (map.variant_order !== undefined && (useInferredFamily || cleanString_(row[map.variant_order]) === '')) {
       row[map.variant_order] = family.variant_order;
       dirty = true;
     }
@@ -574,6 +581,37 @@ function backfillProductFamilies_() {
   if (dirty) {
     sheet.getRange(2, 1, data.length, lastCol).setValues(data);
   }
+}
+
+function isGenericFamilyValue_(value) {
+  const normalized = normalizeForMatch_(value);
+  if (!normalized) return true;
+  const genericValues = [
+    'food', 'foods', 'comida',
+    'menu', 'menus',
+    'product', 'products', 'producto', 'productos',
+    'item', 'items',
+    'general',
+    'all', 'todo', 'todos',
+    'bakery', 'panaderia',
+    'catalog', 'catalogo'
+  ];
+  return genericValues.indexOf(normalized) >= 0;
+}
+
+function shouldFallbackFamilyMeta_(familyKey, familyLabel, category) {
+  const normalizedCategory = normalizeForMatch_(category);
+  const normalizedKey = normalizeForMatch_(familyKey);
+  const normalizedLabel = normalizeForMatch_(familyLabel);
+
+  if (!normalizedKey && !normalizedLabel) return true;
+
+  const keyGeneric = isGenericFamilyValue_(familyKey);
+  const labelGeneric = isGenericFamilyValue_(familyLabel);
+  const keyMatchesCategory = normalizedKey && normalizedCategory && normalizedKey === normalizedCategory && normalizedCategory !== 'delivery';
+  const labelMatchesCategory = normalizedLabel && normalizedCategory && normalizedLabel === normalizedCategory && normalizedCategory !== 'delivery';
+
+  return keyGeneric || labelGeneric || keyMatchesCategory || labelMatchesCategory;
 }
 
 function inferFamilyMeta_(name, category) {

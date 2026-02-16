@@ -2,7 +2,8 @@
 
 ## Live Website
 - Open this URL in your browser:
-  - `https://script.google.com/macros/s/AKfycbxCDxwqXmy61qKIiOAa9fbZTzCGFFnpwG1aJwreVc1fnEs1ZxcRBcZqLZretCyxMKjYUg/exec`
+  - `https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec`
+- Latest deployed version: `@22` (2026-02-16)
 
 ## What Is Included
 - Fast order capture (manual + JSON paste from Square/GPT agent).

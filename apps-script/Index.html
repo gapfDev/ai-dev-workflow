@@ -1197,6 +1197,37 @@
           .trim();
       }
 
+      function isGenericFamilyValueClient(value) {
+        const normalized = normalizeTextForMatch(value);
+        if (!normalized) return true;
+        const generic = [
+          'food', 'foods', 'comida',
+          'menu', 'menus',
+          'product', 'products', 'producto', 'productos',
+          'item', 'items',
+          'general',
+          'all', 'todo', 'todos',
+          'bakery', 'panaderia',
+          'catalog', 'catalogo'
+        ];
+        return generic.includes(normalized);
+      }
+
+      function shouldFallbackFamilyClient(product, rawFamilyKey, rawFamilyLabel) {
+        const normalizedCategory = normalizeTextForMatch(product && product.category);
+        const normalizedKey = normalizeTextForMatch(rawFamilyKey);
+        const normalizedLabel = normalizeTextForMatch(rawFamilyLabel);
+
+        if (!rawFamilyKey && !rawFamilyLabel) return true;
+
+        const keyGeneric = isGenericFamilyValueClient(rawFamilyKey);
+        const labelGeneric = isGenericFamilyValueClient(rawFamilyLabel);
+        const keyMatchesCategory = normalizedKey && normalizedCategory && normalizedKey === normalizedCategory && normalizedCategory !== 'delivery';
+        const labelMatchesCategory = normalizedLabel && normalizedCategory && normalizedLabel === normalizedCategory && normalizedCategory !== 'delivery';
+
+        return keyGeneric || labelGeneric || keyMatchesCategory || labelMatchesCategory;
+      }
+
       function inferVariantOrder(normalizedName) {
         const checks = [
           { order: 10, terms: ['unidad', 'unit'] },
@@ -1233,16 +1264,22 @@
       function normalizeProductClient(rawProduct) {
         const p = rawProduct || {};
         const inferred = inferFamilyMetaClient(p);
+        const rawFamilyKey = String(p.family_key || '').trim();
+        const rawFamilyLabel = String(p.family_label || '').trim();
+        const rawFamilyColor = String(p.family_color || '').trim();
+        const useInferredFamily = shouldFallbackFamilyClient(p, rawFamilyKey, rawFamilyLabel);
+        const parsedFamilyOrder = Number(p.family_order);
+        const parsedVariantOrder = Number(p.variant_order);
         return {
           id: p.id,
           name: p.name || '',
           price: Number(p.price || 0),
           category: p.category || t('familyDefault'),
-          family_key: p.family_key || inferred.family_key,
-          family_label: p.family_label || inferred.family_label,
-          family_color: p.family_color || inferred.family_color,
-          family_order: Number(p.family_order !== undefined ? p.family_order : inferred.family_order),
-          variant_order: Number(p.variant_order !== undefined ? p.variant_order : inferred.variant_order),
+          family_key: useInferredFamily || !rawFamilyKey ? inferred.family_key : rawFamilyKey,
+          family_label: useInferredFamily || !rawFamilyLabel ? inferred.family_label : rawFamilyLabel,
+          family_color: useInferredFamily || !rawFamilyColor ? inferred.family_color : rawFamilyColor,
+          family_order: useInferredFamily || !Number.isFinite(parsedFamilyOrder) ? Number(inferred.family_order) : parsedFamilyOrder,
+          variant_order: Number.isFinite(parsedVariantOrder) ? parsedVariantOrder : Number(inferred.variant_order),
           active: p.active !== false
         };
       }
@@ -1813,7 +1850,7 @@
               price: Number(item.price || 0),
               quantity: Number(item.quantity || item.qty || 1),
               family_key: item.family_key || normalized.family_key,
-              family_label: item.family_label || item.family || item.category || normalized.family_label,
+              family_label: item.family_label || item.family || normalized.family_label || item.category || t('familyDefault'),
               family_color: item.family_color || normalized.family_color,
               variant: item.variant || '',
               details: item.details || ''
@@ -1862,7 +1899,7 @@
                 price: Number(item.price || 0),
                 quantity: Number(item.quantity || 1),
                 family_key: item.family_key || normalized.family_key,
-                family_label: item.family_label || item.family || item.category || normalized.family_label,
+                family_label: item.family_label || item.family || normalized.family_label || item.category || t('familyDefault'),
                 family_color: item.family_color || normalized.family_color,
                 variant: item.variant || '',
                 details: item.details || ''
