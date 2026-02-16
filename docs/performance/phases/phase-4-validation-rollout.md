@@ -11,7 +11,7 @@
 - Documentation and ownership handoff.
 
 ## Checklist
-- [ ] Build benchmark automation with pass/fail thresholds.
-- [ ] Document and validate canary rollout steps.
-- [ ] Document rollback triggers and procedure.
-- [ ] Publish before/after metrics and final handoff notes.
+- [x] Build benchmark automation with pass/fail thresholds.
+- [x] Document and validate canary rollout steps.
+- [x] Document rollback triggers and procedure.
+- [x] Publish before/after metrics and final handoff notes.

@@ -13,6 +13,7 @@ Provide one clear place to plan, execute, measure, and validate all Kanban perfo
 - `contracts/`: API and frontend contracts for performance paths.
 - `benchmarks/`: baseline and run reports.
 - `rollout/`: feature flags, canary, and rollback playbooks.
+- `final-handoff.md`: closure summary, evidence, and follow-up backlog.
 - `../../tools/performance/`: scripts and helpers for perf checks.
 
 ## Rules

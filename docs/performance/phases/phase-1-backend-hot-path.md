@@ -11,7 +11,7 @@
 - Stable `board_rev` signature.
 
 ## Checklist
-- [ ] Remove setup-heavy operations from hot path.
-- [ ] Add `getBoardSnapshot` contract implementation.
-- [ ] Add `board_rev` generation and validation.
-- [ ] Document API shape in `../contracts/`.
+- [x] Remove setup-heavy operations from hot path.
+- [x] Add `getBoardSnapshot` contract implementation.
+- [x] Add `board_rev` generation and validation.
+- [x] Document API shape in `../contracts/`.

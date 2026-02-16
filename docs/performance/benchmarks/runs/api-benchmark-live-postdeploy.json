@@ -1,0 +1,40 @@
+{
+  "timestamp_utc": "2026-02-16T06:19:55.531615+00:00",
+  "api_base": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+  "repeats": 5,
+  "actions": [
+    {
+      "action": "getOrders",
+      "repeats": 5,
+      "ok": 5,
+      "err": 0,
+      "p50_ms": 2408.03,
+      "p95_ms": 2758.14,
+      "avg_ms": 2483.24,
+      "avg_kb": 24.03,
+      "sample": "[{\"order_id\":\"ORD-1771210709891\",\"order_number\":\"ORD-15FEB-001\",\"customer_name\":\"QA Customer 1\",\"phone\":\"\",\"delivery_date\":\"2026-02-15\",\"delivery_time\":\"\",\"delivery_at\":\"2026-02-15T05:00:00.000Z\",\"type\":\"Pickup\",\"address\":\"\",\"channel\":\"Phone\",\"total_amount\":20,\"status\":\"Delivered\",\"payment_status\":\"Unpaid\",\"captured_at\":\"2026-02-16T02:58:29.891Z\",\"updated_at\":\"2026-02-16T02:59:32.256Z\",\"sync_versi"
+    },
+    {
+      "action": "getBoardSnapshot",
+      "repeats": 5,
+      "ok": 5,
+      "err": 0,
+      "p50_ms": 4304.54,
+      "p95_ms": 4692.53,
+      "avg_ms": 4168.25,
+      "avg_kb": 15.85,
+      "sample": "{\"status\":\"success\",\"board_rev\":\"6d67ee1cd3c1ed8e23239689eb3106a1\",\"items\":[{\"order_id\":\"ORD-1771210709891\",\"order_number\":\"ORD-15FEB-001\",\"customer_name\":\"QA Customer 1\",\"phone\":\"\",\"delivery_date\":\"2026-02-15\",\"delivery_time\":\"\",\"delivery_at\":\"2026-02-15T05:00:00.000Z\",\"type\":\"Pickup\",\"address\":\"\",\"channel\":\"Phone\",\"total_amount\":20,\"status\":\"Delivered\",\"payment_status\":\"Unpaid\",\"captured_at\":\"20"
+    },
+    {
+      "action": "getProducts",
+      "repeats": 5,
+      "ok": 5,
+      "err": 0,
+      "p50_ms": 3265.51,
+      "p95_ms": 4468.33,
+      "avg_ms": 3545.04,
+      "avg_kb": 3.1,
+      "sample": "[{\"id\":\"P001\",\"name\":\"Quesadilla Salvadore\u00f1a (1/4 Regular)\",\"price\":9,\"category\":\"Food\",\"family_key\":\"quesadilla_salvadorena\",\"family_label\":\"Quesadillas\",\"family_color\":\"#C96A2B\",\"family_order\":10,\"variant_order\":20,\"active\":true},{\"id\":\"P002\",\"name\":\"Quesadilla Salvadore\u00f1a (Media Familia)\",\"price\":15,\"category\":\"Food\",\"family_key\":\"quesadilla_salvadorena\",\"family_label\":\"Quesadillas\",\"family_col"
+    }
+  ]
+}

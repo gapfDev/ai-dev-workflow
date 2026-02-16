@@ -34,13 +34,16 @@ const CONFIG = {
   ],
   PRODUCT_HEADERS: ['id', 'name', 'price', 'category', 'family_key', 'family_label', 'family_color', 'family_order', 'variant_order', 'active'],
   EXPENSE_HEADERS: ['expense_id', 'date', 'category', 'amount', 'description', 'created_at'],
-  LATE_THRESHOLD_MINUTES: 15
+  LATE_THRESHOLD_MINUTES: 15,
+  RUNTIME_SETUP_CACHE_SECONDS: 300,
+  RUNTIME_SETUP_MAX_AGE_MS: 300000,
+  RUNTIME_SETUP_STAMP_KEY: 'RUNTIME_SETUP_STAMP_MS'
 };
 
 function doGet(e) {
-  setup();
+  ensureRuntimeReady_();
   if (e && e.parameter && e.parameter.action) {
-    return jsonOutput_(handleGetAction_(e.parameter.action));
+    return jsonOutput_(handleGetAction_(e.parameter.action, e.parameter || {}));
   }
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
@@ -49,7 +52,7 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  setup();
+  ensureRuntimeReady_();
   try {
     const payload = parsePostPayload_(e);
     const action = payload.action || (e && e.parameter && e.parameter.action);
@@ -70,6 +73,30 @@ function setup() {
   seedProductsIfEmpty_();
   backfillProductFamilies_();
   markLegacyOrders_();
+}
+
+function ensureRuntimeReady_() {
+  const cacheKey = 'runtime-ready-v2';
+  const cache = CacheService.getScriptCache();
+  try {
+    if (cache.get(cacheKey) === '1') return;
+  } catch (err) {}
+
+  const props = PropertiesService.getScriptProperties();
+  const now = Date.now();
+  const lastStamp = Number(props.getProperty(CONFIG.RUNTIME_SETUP_STAMP_KEY) || 0);
+  if (lastStamp > 0 && (now - lastStamp) < CONFIG.RUNTIME_SETUP_MAX_AGE_MS) {
+    try {
+      cache.put(cacheKey, '1', CONFIG.RUNTIME_SETUP_CACHE_SECONDS);
+    } catch (err) {}
+    return;
+  }
+
+  setup();
+  props.setProperty(CONFIG.RUNTIME_SETUP_STAMP_KEY, String(now));
+  try {
+    cache.put(cacheKey, '1', CONFIG.RUNTIME_SETUP_CACHE_SECONDS);
+  } catch (err) {}
 }
 
 function include(filename) {
@@ -96,10 +123,18 @@ function responseFn(payload) {
   return payload;
 }
 
-function handleGetAction_(action) {
+function handleGetAction_(action, params) {
   switch (action) {
     case 'getOrders':
       return getOrders_();
+    case 'getBoardSnapshot':
+      return getBoardSnapshot_();
+    case 'getBoardDelta':
+      return getBoardDelta_(params || {});
+    case 'getOrderDetails':
+      return getOrderDetails_(params || {});
+    case 'getClientConfig':
+      return getClientConfig_();
     case 'getProducts':
       return getProducts_();
     case 'getExpenses':
@@ -343,38 +378,48 @@ function addExpense_(payload) {
   return ok_({ message: 'Expense added', expense_id: record.expense_id });
 }
 
-function getOrders_() {
+function rowToOrder_(row, map, boardOnly) {
+  const order = {
+    order_id: cleanString_(row[map.order_id]),
+    order_number: cleanString_(row[map.order_number]) || 'LEGACY',
+    customer_name: cleanString_(row[map.customer_name]),
+    phone: cleanString_(row[map.phone]),
+    delivery_date: normalizeDateInput_(row[map.delivery_date]),
+    delivery_time: normalizeTimeInput_(row[map.delivery_time]),
+    delivery_at: cleanString_(row[map.delivery_at]),
+    type: normalizeOrderType_(row[map.type]) || 'Pickup',
+    address: cleanString_(row[map.address]),
+    channel: normalizeChannel_(row[map.channel]),
+    total_amount: normalizeNumber_(row[map.total_amount], 0),
+    status: normalizeStatus_(row[map.status]) || 'Pending',
+    payment_status: normalizePaymentStatus_(row[map.payment_status]),
+    captured_at: cleanString_(row[map.captured_at]),
+    updated_at: cleanString_(row[map.updated_at]),
+    sync_version: Number(row[map.sync_version] || 1)
+  };
+  if (!order.order_id) return null;
+
+  if (!boardOnly) {
+    order.web_link = cleanString_(row[map.web_link]);
+    order.source_notes = cleanString_(row[map.source_notes]);
+    order.items_json = cleanString_(row[map.items_json]);
+    order.payment_method = cleanString_(row[map.payment_method]);
+    order.deposit_amount = normalizeNumber_(row[map.deposit_amount], '');
+    order.is_legacy = boolValue_(row[map.is_legacy]);
+  }
+
+  return order;
+}
+
+function getOrders_(options) {
+  const opts = options || {};
+  const boardOnly = opts.boardOnly === true;
   const sheet = getSheet_(CONFIG.SHEETS.ORDERS);
   const map = headerMap_(sheet);
   const rows = dataRows_(sheet);
   const orders = rows.map(function (row) {
-    return {
-      order_id: cleanString_(row[map.order_id]),
-      order_number: cleanString_(row[map.order_number]) || 'LEGACY',
-      customer_name: cleanString_(row[map.customer_name]),
-      phone: cleanString_(row[map.phone]),
-      delivery_date: normalizeDateInput_(row[map.delivery_date]),
-      delivery_time: normalizeTimeInput_(row[map.delivery_time]),
-      delivery_at: cleanString_(row[map.delivery_at]),
-      type: normalizeOrderType_(row[map.type]) || 'Pickup',
-      address: cleanString_(row[map.address]),
-      web_link: cleanString_(row[map.web_link]),
-      channel: normalizeChannel_(row[map.channel]),
-      source_notes: cleanString_(row[map.source_notes]),
-      items_json: cleanString_(row[map.items_json]),
-      total_amount: normalizeNumber_(row[map.total_amount], 0),
-      status: normalizeStatus_(row[map.status]) || 'Pending',
-      payment_status: normalizePaymentStatus_(row[map.payment_status]),
-      payment_method: cleanString_(row[map.payment_method]),
-      deposit_amount: normalizeNumber_(row[map.deposit_amount], ''),
-      captured_at: cleanString_(row[map.captured_at]),
-      updated_at: cleanString_(row[map.updated_at]),
-      sync_version: Number(row[map.sync_version] || 1),
-      is_legacy: boolValue_(row[map.is_legacy])
-    };
-  }).filter(function (o) {
-    return !!o.order_id;
-  });
+    return rowToOrder_(row, map, boardOnly);
+  }).filter(function (o) { return !!o; });
 
   orders.sort(function (a, b) {
     const left = firstDate_(a.captured_at, a.updated_at, a.delivery_at, a.delivery_date);
@@ -383,6 +428,83 @@ function getOrders_() {
   });
 
   return orders;
+}
+
+function getOrderDetails_(params) {
+  const orderId = cleanString_(params && params.order_id);
+  if (!orderId) return fail_('order_id is required');
+
+  const sheet = getSheet_(CONFIG.SHEETS.ORDERS);
+  const map = headerMap_(sheet);
+  const rowIndex = findRowByOrderId_(sheet, map, orderId);
+  if (rowIndex < 2) return fail_('Order not found');
+  const row = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const order = rowToOrder_(row, map, false);
+  if (!order) return fail_('Order not found');
+  return ok_({ order: order });
+}
+
+function getBoardSnapshot_() {
+  const items = getOrders_({ boardOnly: true });
+  return ok_({
+    board_rev: buildBoardRevision_(items),
+    items: items
+  });
+}
+
+function getBoardDelta_(params) {
+  const items = getOrders_({ boardOnly: true });
+  const boardRev = buildBoardRevision_(items);
+  const sinceRev = cleanString_(params && params.since_rev);
+  const sinceUpdatedAt = cleanString_(params && params.since_updated_at);
+
+  if (sinceRev && sinceRev === boardRev) {
+    return ok_({
+      board_rev: boardRev,
+      changed: [],
+      removed: [],
+      full: false
+    });
+  }
+
+  if (!sinceUpdatedAt) {
+    return ok_({
+      board_rev: boardRev,
+      changed: items,
+      removed: [],
+      full: true
+    });
+  }
+
+  const sinceDate = new Date(sinceUpdatedAt);
+  if (isNaN(sinceDate.getTime())) {
+    return fail_('since_updated_at is invalid');
+  }
+
+  const changed = items.filter(function (order) {
+    const stamp = firstDate_(order.updated_at, order.captured_at).getTime();
+    return stamp > sinceDate.getTime();
+  });
+
+  return ok_({
+    board_rev: boardRev,
+    changed: changed,
+    removed: [],
+    full: false,
+    since_updated_at: sinceUpdatedAt
+  });
+}
+
+function getClientConfig_() {
+  const props = PropertiesService.getScriptProperties();
+  return ok_({
+    flags: {
+      board_snapshot_enabled: parseFlag_(props.getProperty('PERF_BOARD_SNAPSHOT_ENABLED'), true),
+      board_skip_nochange_render_enabled: parseFlag_(props.getProperty('PERF_BOARD_SKIP_NOCHANGE_RENDER'), true),
+      board_incremental_render_enabled: parseFlag_(props.getProperty('PERF_BOARD_INCREMENTAL_RENDER'), true),
+      board_delta_sync_enabled: parseFlag_(props.getProperty('PERF_BOARD_DELTA_SYNC'), true)
+    }
+  });
 }
 
 function getProducts_() {
@@ -890,6 +1012,14 @@ function boolValue_(value, fallback) {
   return false;
 }
 
+function parseFlag_(value, fallback) {
+  if (value === '' || value === null || value === undefined) return fallback || false;
+  const lowered = cleanString_(value).toLowerCase();
+  if (lowered === 'true' || lowered === '1' || lowered === 'yes' || lowered === 'on') return true;
+  if (lowered === 'false' || lowered === '0' || lowered === 'no' || lowered === 'off') return false;
+  return fallback || false;
+}
+
 function cleanString_(value) {
   if (value === null || value === undefined) return '';
   return String(value).trim();
@@ -903,6 +1033,33 @@ function firstDate_() {
     if (!isNaN(date.getTime())) return date;
   }
   return new Date(0);
+}
+
+function buildBoardRevision_(orders) {
+  const canonical = (orders || [])
+    .map(function (o) {
+      return [
+        cleanString_(o.order_id),
+        cleanString_(o.status),
+        cleanString_(o.sync_version),
+        cleanString_(o.updated_at || o.captured_at)
+      ].join('|');
+    })
+    .sort()
+    .join('||');
+  return hashString_(canonical);
+}
+
+function hashString_(input) {
+  const digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.MD5,
+    cleanString_(input),
+    Utilities.Charset.UTF_8
+  );
+  return digest.map(function (b) {
+    const value = (b + 256) % 256;
+    return ('0' + value.toString(16)).slice(-2);
+  }).join('');
 }
 
 function ok_(payload) {

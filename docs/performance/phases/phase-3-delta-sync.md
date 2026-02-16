@@ -8,7 +8,7 @@
 - Snapshot fallback for drift recovery.
 
 ## Checklist
-- [ ] Define delta request/response contract.
-- [ ] Implement backend delta generation.
-- [ ] Implement client reconcile/merge behavior.
-- [ ] Validate fallback to snapshot path.
+- [x] Define delta request/response contract.
+- [x] Implement backend delta generation.
+- [x] Implement client reconcile/merge behavior.
+- [x] Validate fallback to snapshot path.

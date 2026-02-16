@@ -86,9 +86,27 @@ function adminRunSmokeTests() {
     const orders = getOrders_();
     const products = getProducts_();
     const expenses = getExpenses_();
+    const boardSnapshot = getBoardSnapshot_();
+    const clientConfig = getClientConfig_();
     if (!Array.isArray(orders)) issues.push('getOrders_ did not return array');
     if (!Array.isArray(products)) issues.push('getProducts_ did not return array');
     if (!Array.isArray(expenses)) issues.push('getExpenses_ did not return array');
+    if (boardSnapshot.status !== 'success' || !Array.isArray(boardSnapshot.items)) {
+      issues.push('getBoardSnapshot_ did not return success/items');
+    }
+    if (!cleanString_(boardSnapshot.board_rev)) {
+      issues.push('getBoardSnapshot_ board_rev missing');
+    }
+    if (
+      clientConfig.status !== 'success' ||
+      !clientConfig.flags ||
+      typeof clientConfig.flags.board_snapshot_enabled !== 'boolean' ||
+      typeof clientConfig.flags.board_skip_nochange_render_enabled !== 'boolean' ||
+      typeof clientConfig.flags.board_incremental_render_enabled !== 'boolean' ||
+      typeof clientConfig.flags.board_delta_sync_enabled !== 'boolean'
+    ) {
+      issues.push('getClientConfig_ did not return valid flags');
+    }
 
     // 4) Sample status values valid
     const invalidStatus = (orders || []).filter(function (o) {

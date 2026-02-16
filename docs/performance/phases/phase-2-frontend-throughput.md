@@ -13,8 +13,8 @@
 - Incremental DOM patching with full-render fallback.
 
 ## Checklist
-- [ ] Implement board revision comparison in UI state.
-- [ ] Replace per-card listeners with delegated handlers.
-- [ ] Add visibility-aware polling and retry backoff.
-- [ ] Implement keyed incremental card updates.
-- [ ] Validate drag/drop and status rules parity.
+- [x] Implement board revision comparison in UI state.
+- [x] Replace per-card listeners with delegated handlers.
+- [x] Add visibility-aware polling and retry backoff.
+- [x] Implement keyed incremental card updates.
+- [x] Validate drag/drop and status rules parity.

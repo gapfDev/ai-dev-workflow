@@ -1075,12 +1075,21 @@
         screen: 'capture',
         products: FALLBACK_PRODUCTS.slice(),
         orders: [],
+        boardRev: '',
+        boardSnapshotEnabled: true,
+        boardDeltaEnabled: true,
+        skipNoChangeRenderEnabled: true,
+        incrementalRenderEnabled: true,
+        boardLastUpdatedAt: '',
         selectedItems: [],
         editingOrderId: null,
         knownVersions: {},
         pendingWrites: new Set(),
         backendOutdated: false,
-        pollId: null
+        pollId: null,
+        pollFailures: 0,
+        kanbanInitialized: false,
+        columnSignatures: {}
       };
 
       function t(key) {
@@ -1257,7 +1266,14 @@
         if (!API_BASE) {
           throw new Error('Missing API base. Open local with ?apiBase=https://.../exec');
         }
-        const url = `${API_BASE}?action=${encodeURIComponent(action)}`;
+        const query = new URLSearchParams({ action: String(action || '') });
+        if (method === 'GET' && payload && typeof payload === 'object') {
+          Object.keys(payload).forEach((key) => {
+            if (payload[key] === undefined || payload[key] === null || payload[key] === '') return;
+            query.set(key, String(payload[key]));
+          });
+        }
+        const url = `${API_BASE}?${query.toString()}`;
         const options = { method };
         if (method === 'POST') {
           // Use a simple request content type to avoid browser CORS preflight on local UI tests.
@@ -1296,6 +1312,7 @@
         document.querySelectorAll('.tab-btn').forEach((b) => {
           b.classList.toggle('active', b.dataset.screen === name);
         });
+        if (typeof restartPolling === 'function') restartPolling(false);
       }
 
       function openMenuModal() {
@@ -1533,6 +1550,84 @@
         }
       }
 
+      function computeBoardRevisionClient(orders) {
+        const canonical = (orders || [])
+          .map((o) => [o.order_id || '', o.status || '', Number(o.sync_version || 1), o.updated_at || o.captured_at || ''].join('|'))
+          .sort()
+          .join('||');
+        let hash = 2166136261;
+        for (let i = 0; i < canonical.length; i += 1) {
+          hash ^= canonical.charCodeAt(i);
+          hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+        }
+        return (hash >>> 0).toString(16);
+      }
+
+      function normalizeBoardResponse(data) {
+        if (Array.isArray(data)) {
+          return {
+            items: data,
+            boardRev: computeBoardRevisionClient(data),
+            fallback: true
+          };
+        }
+        if (data && data.status === 'success' && Array.isArray(data.items)) {
+          return {
+            items: data.items,
+            boardRev: String(data.board_rev || ''),
+            fallback: false
+          };
+        }
+        return {
+          items: [],
+          boardRev: '',
+          fallback: true
+        };
+      }
+
+      function normalizeBoardDeltaResponse(data) {
+        if (!data || data.status !== 'success') return null;
+        if (!Array.isArray(data.changed) || !Array.isArray(data.removed)) return null;
+        return {
+          boardRev: String(data.board_rev || ''),
+          changed: data.changed,
+          removed: data.removed.map((id) => String(id || '').trim()).filter(Boolean),
+          full: data.full === true
+        };
+      }
+
+      function mergeDeltaOrders(baseOrders, delta) {
+        const byId = {};
+        (baseOrders || []).forEach((order) => {
+          const id = String(order && order.order_id ? order.order_id : '').trim();
+          if (!id) return;
+          byId[id] = order;
+        });
+
+        (delta.changed || []).forEach((order) => {
+          const id = String(order && order.order_id ? order.order_id : '').trim();
+          if (!id) return;
+          byId[id] = order;
+        });
+
+        (delta.removed || []).forEach((id) => {
+          delete byId[id];
+        });
+
+        return Object.keys(byId).map((id) => byId[id]);
+      }
+
+      function latestOrderStamp(orders) {
+        let maxStamp = 0;
+        (orders || []).forEach((order) => {
+          const parsed = Date.parse(order.updated_at || order.captured_at || '');
+          if (!Number.isNaN(parsed) && parsed > maxStamp) {
+            maxStamp = parsed;
+          }
+        });
+        return maxStamp > 0 ? new Date(maxStamp).toISOString() : '';
+      }
+
       function ticketSortValue(order) {
         const captured = new Date(order.captured_at || order.updated_at || order.delivery_at || order.delivery_date || 0).getTime();
         return Number.isNaN(captured) ? 0 : captured;
@@ -1551,92 +1646,71 @@
         else board.classList.add('density-ultra');
       }
 
+      function buildTicketHtml(order) {
+        const age = minutesElapsed(order.captured_at);
+        const isLate = age > 90;
+        const canEdit = order.status !== 'Delivered';
+        return `
+          <div class="ticket ${isLate ? 'late' : ''}" draggable="true" data-order-id="${order.order_id}" data-status="${order.status}">
+            <div class="folio">${order.order_number || 'LEGACY'}</div>
+            <div class="ticket-age">${t('captured')}: ${formatDateTime(order.captured_at)} · ${age} ${t('minutes')}</div>
+            <div class="name">${order.customer_name || '-'}</div>
+            <div class="meta">${formatDateTime(order.delivery_at || order.delivery_date)} · ${order.type || '-'}</div>
+            <div class="chip-row">
+              <span class="chip">${order.channel || 'Phone'}</span>
+              <span class="chip ${order.payment_status === 'Paid' ? 'paid' : 'unpaid'}">${order.payment_status}</span>
+              <span class="chip">${formatMoney(order.total_amount)}</span>
+            </div>
+            <div class="meta">${statusLabel(order.status)}</div>
+            <div class="row">
+              <button class="ghost-btn" data-edit-order="${order.order_id}" ${canEdit ? '' : 'disabled'}>${t('edit')}</button>
+              <button class="ghost-btn" data-cancel-order="${order.order_id}">${order.status === 'Cancelled' ? t('reactivate') : t('moveToCancelled')}</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function ensureKanbanSkeleton() {
+        if (state.kanbanInitialized) return;
+        const board = document.getElementById('kanbanBoard');
+        board.innerHTML = STATUS_META.map((meta) => `
+          <div class="kanban-column" data-drop-status="${meta.status}">
+            <div class="column-header">
+              <div>
+                <h3>${statusLabel(meta.status)}</h3>
+                <div class="column-sub">${t(meta.roleKey)}</div>
+              </div>
+              <strong data-count="${meta.status}">0</strong>
+            </div>
+            <div class="column-body" data-body="${meta.status}"></div>
+          </div>
+        `).join('');
+        state.kanbanInitialized = true;
+      }
+
       function renderKanban() {
         const board = document.getElementById('kanbanBoard');
         applyDensityClass();
+        ensureKanbanSkeleton();
+        if (!state.incrementalRenderEnabled) {
+          state.columnSignatures = {};
+        }
 
-        board.innerHTML = STATUS_META.map((meta) => {
+        STATUS_META.forEach((meta) => {
           const list = state.orders
             .filter((o) => o.status === meta.status)
             .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
 
-          const cards = list.map((order) => {
-            const age = minutesElapsed(order.captured_at);
-            const isLate = age > 90;
-            const canEdit = order.status !== 'Delivered';
+          const signature = list.map((o) => `${o.order_id}:${o.status}:${o.sync_version}`).join('|');
+          const countNode = board.querySelector(`[data-count="${meta.status}"]`);
+          if (countNode) countNode.textContent = String(list.length);
 
-            return `
-              <div class="ticket ${isLate ? 'late' : ''}" draggable="true" data-order-id="${order.order_id}" data-status="${order.status}">
-                <div class="folio">${order.order_number || 'LEGACY'}</div>
-                <div class="ticket-age">${t('captured')}: ${formatDateTime(order.captured_at)} · ${age} ${t('minutes')}</div>
-                <div class="name">${order.customer_name || '-'}</div>
-                <div class="meta">${formatDateTime(order.delivery_at || order.delivery_date)} · ${order.type || '-'}</div>
-                <div class="chip-row">
-                  <span class="chip">${order.channel || 'Phone'}</span>
-                  <span class="chip ${order.payment_status === 'Paid' ? 'paid' : 'unpaid'}">${order.payment_status}</span>
-                  <span class="chip">${formatMoney(order.total_amount)}</span>
-                </div>
-                <div class="meta">${statusLabel(order.status)}</div>
-                <div class="row">
-                  <button class="ghost-btn" data-edit-order="${order.order_id}" ${canEdit ? '' : 'disabled'}>${t('edit')}</button>
-                  <button class="ghost-btn" data-cancel-order="${order.order_id}">${order.status === 'Cancelled' ? t('reactivate') : t('moveToCancelled')}</button>
-                </div>
-              </div>
-            `;
-          }).join('') || `<div class="helper">${t('noData')}</div>`;
+          if (state.incrementalRenderEnabled && state.columnSignatures[meta.status] === signature) return;
+          state.columnSignatures[meta.status] = signature;
 
-          return `
-            <div class="kanban-column" data-drop-status="${meta.status}">
-              <div class="column-header">
-                <div>
-                  <h3>${statusLabel(meta.status)}</h3>
-                  <div class="column-sub">${t(meta.roleKey)}</div>
-                </div>
-                <strong>${list.length}</strong>
-              </div>
-              ${cards}
-            </div>
-          `;
-        }).join('');
-
-        bindKanbanInteractions();
-      }
-
-      function bindKanbanInteractions() {
-        document.querySelectorAll('.ticket[draggable="true"]').forEach((ticket) => {
-          ticket.addEventListener('dragstart', (event) => {
-            const orderId = event.currentTarget.dataset.orderId;
-            const status = event.currentTarget.dataset.status;
-            event.dataTransfer.setData('text/plain', JSON.stringify({ orderId, status }));
-          });
-        });
-
-        document.querySelectorAll('.kanban-column').forEach((column) => {
-          column.addEventListener('dragover', (event) => event.preventDefault());
-          column.addEventListener('drop', async (event) => {
-            event.preventDefault();
-            const raw = event.dataTransfer.getData('text/plain');
-            if (!raw) return;
-            const payload = JSON.parse(raw);
-            const targetStatus = event.currentTarget.dataset.dropStatus;
-            if (payload.status === targetStatus) return;
-            const order = state.orders.find((o) => o.order_id === payload.orderId);
-            if (!order) return;
-            await requestStatusTransition(order, targetStatus);
-          });
-        });
-
-        document.querySelectorAll('[data-edit-order]').forEach((button) => {
-          button.addEventListener('click', () => startEditing(button.dataset.editOrder));
-        });
-
-        document.querySelectorAll('[data-cancel-order]').forEach((button) => {
-          button.addEventListener('click', async () => {
-            const order = state.orders.find((o) => o.order_id === button.dataset.cancelOrder);
-            if (!order) return;
-            const target = order.status === 'Cancelled' ? 'Pending' : 'Cancelled';
-            await requestStatusTransition(order, target);
-          });
+          const bodyNode = board.querySelector(`[data-body="${meta.status}"]`);
+          if (!bodyNode) return;
+          bodyNode.innerHTML = list.map((order) => buildTicketHtml(order)).join('') || `<div class="helper">${t('noData')}</div>`;
         });
       }
 
@@ -1693,6 +1767,7 @@
       function markPendingWrite(orderId) {
         state.pendingWrites.add(orderId);
         window.setTimeout(() => state.pendingWrites.delete(orderId), 6000);
+        restartPolling(true);
       }
 
       function buildPhoneHints() {
@@ -1779,11 +1854,20 @@
         validateOrderForm();
       }
 
-      function startEditing(orderId) {
-        const order = state.orders.find((o) => o.order_id === orderId);
+      async function startEditing(orderId) {
+        let order = state.orders.find((o) => o.order_id === orderId);
         if (!order || order.status === 'Delivered') {
           showToast(t('deliveredLocked'));
           return;
+        }
+
+        if (!order.items_json) {
+          try {
+            const response = await api('getOrderDetails', 'GET', { order_id: orderId });
+            if (response && response.status === 'success' && response.order && response.order.order_id === orderId) {
+              order = response.order;
+            }
+          } catch (err) {}
         }
 
         state.editingOrderId = orderId;
@@ -1928,14 +2012,90 @@
         renderMenuFamilies();
       }
 
+      async function loadClientConfig() {
+        try {
+          const config = await api('getClientConfig');
+          if (!config || config.status !== 'success' || !config.flags) return;
+          const flags = config.flags;
+          state.boardSnapshotEnabled = flags.board_snapshot_enabled !== false;
+          state.boardDeltaEnabled = flags.board_delta_sync_enabled !== false;
+          state.skipNoChangeRenderEnabled = flags.board_skip_nochange_render_enabled !== false;
+          state.incrementalRenderEnabled = flags.board_incremental_render_enabled !== false;
+          if (!state.incrementalRenderEnabled) {
+            state.columnSignatures = {};
+          }
+        } catch (err) {}
+      }
+
       async function refreshOrders() {
-        const data = await api('getOrders');
-        const rawOrders = Array.isArray(data) ? data : [];
+        let normalized;
+        if (state.boardSnapshotEnabled && state.boardDeltaEnabled && state.kanbanInitialized && state.boardRev) {
+          try {
+            const deltaParams = { since_rev: state.boardRev };
+            if (state.boardLastUpdatedAt) {
+              deltaParams.since_updated_at = state.boardLastUpdatedAt;
+            }
+            const delta = normalizeBoardDeltaResponse(await api('getBoardDelta', 'GET', deltaParams));
+            if (delta) {
+              const merged = delta.full ? delta.changed : mergeDeltaOrders(state.orders, delta);
+              normalized = {
+                items: merged,
+                boardRev: delta.boardRev || computeBoardRevisionClient(merged),
+                fallback: false
+              };
+            } else {
+              state.boardDeltaEnabled = false;
+            }
+          } catch (err) {
+            const msg = String(err && err.message ? err.message : err).toLowerCase();
+            if (msg.includes('unknown get action') || msg.includes('since_updated_at is invalid')) {
+              state.boardDeltaEnabled = false;
+            }
+          }
+        }
+
+        if (state.boardSnapshotEnabled) {
+          if (!normalized) {
+            try {
+              normalized = normalizeBoardResponse(await api('getBoardSnapshot'));
+              if (normalized.fallback) {
+                normalized = null;
+                state.boardSnapshotEnabled = false;
+                state.boardDeltaEnabled = false;
+              } else if (!normalized.boardRev) {
+                normalized.boardRev = computeBoardRevisionClient(normalized.items);
+              }
+            } catch (err) {
+              state.boardSnapshotEnabled = false;
+              state.boardDeltaEnabled = false;
+            }
+          }
+        }
+
+        if (!normalized) {
+          normalized = normalizeBoardResponse(await api('getOrders'));
+        }
+
+        const rawOrders = Array.isArray(normalized.items) ? normalized.items : [];
         state.backendOutdated = backendContractOutdated(rawOrders);
-        state.orders = rawOrders.filter((order) => String(order && order.order_id ? order.order_id : '').trim());
+        const nextOrders = rawOrders
+          .filter((order) => String(order && order.order_id ? order.order_id : '').trim())
+          .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+        const nextBoardRev = normalized.boardRev || computeBoardRevisionClient(nextOrders);
+        const unchanged = state.skipNoChangeRenderEnabled && state.kanbanInitialized && !!state.boardRev && state.boardRev === nextBoardRev;
+
+        state.orders = nextOrders;
+        state.boardRev = nextBoardRev;
+        state.boardLastUpdatedAt = latestOrderStamp(nextOrders) || new Date().toISOString();
         if (state.backendOutdated) {
           setBanner(t('backendOutdated'), 'warn');
         }
+
+        if (unchanged) {
+          setSyncStatus('OK', 450);
+          return;
+        }
+
         compareVersionSnapshots(state.orders);
         buildPhoneHints();
         renderKanban();
@@ -1956,6 +2116,35 @@
         if (ordersErr) {
           setBanner(ordersErr.message || String(ordersErr), 'warn');
         }
+      }
+
+      function desiredPollIntervalMs() {
+        if (document.visibilityState === 'hidden') return 20000;
+        if (state.screen === 'board') return 3000;
+        return 8000;
+      }
+
+      async function pollOnceAndSchedule() {
+        try {
+          await refreshOrders();
+          state.pollFailures = 0;
+        } catch (err) {
+          state.pollFailures += 1;
+        }
+
+        const base = desiredPollIntervalMs();
+        const backoffFactor = state.pollFailures > 0 ? Math.min(state.pollFailures + 1, 4) : 1;
+        const delay = base * backoffFactor;
+        state.pollId = window.setTimeout(pollOnceAndSchedule, delay);
+      }
+
+      function restartPolling(immediate) {
+        if (state.pollId) window.clearTimeout(state.pollId);
+        if (immediate) {
+          pollOnceAndSchedule();
+          return;
+        }
+        state.pollId = window.setTimeout(pollOnceAndSchedule, desiredPollIntervalMs());
       }
 
       function bindEvents() {
@@ -1985,6 +2174,51 @@
         });
         document.addEventListener('keydown', (event) => {
           if (event.key === 'Escape') closeMenuModal();
+        });
+
+        const board = document.getElementById('kanbanBoard');
+        board.addEventListener('dragstart', (event) => {
+          const ticket = event.target.closest('.ticket[draggable="true"]');
+          if (!ticket) return;
+          event.dataTransfer.setData('text/plain', JSON.stringify({
+            orderId: ticket.dataset.orderId,
+            status: ticket.dataset.status
+          }));
+        });
+        board.addEventListener('dragover', (event) => {
+          if (event.target.closest('.kanban-column')) event.preventDefault();
+        });
+        board.addEventListener('drop', async (event) => {
+          const column = event.target.closest('.kanban-column');
+          if (!column) return;
+          event.preventDefault();
+          const raw = event.dataTransfer.getData('text/plain');
+          if (!raw) return;
+          let payload;
+          try {
+            payload = JSON.parse(raw);
+          } catch (err) {
+            return;
+          }
+          const order = state.orders.find((o) => o.order_id === payload.orderId);
+          if (!order) return;
+          const targetStatus = column.dataset.dropStatus;
+          if (payload.status === targetStatus) return;
+          await requestStatusTransition(order, targetStatus);
+        });
+        board.addEventListener('click', async (event) => {
+          const editBtn = event.target.closest('[data-edit-order]');
+          if (editBtn) {
+            await startEditing(editBtn.dataset.editOrder);
+            return;
+          }
+          const cancelBtn = event.target.closest('[data-cancel-order]');
+          if (cancelBtn) {
+            const order = state.orders.find((o) => o.order_id === cancelBtn.dataset.cancelOrder);
+            if (!order) return;
+            const target = order.status === 'Cancelled' ? 'Pending' : 'Cancelled';
+            await requestStatusTransition(order, target);
+          }
         });
 
         document.getElementById('selectedItemsBody').addEventListener('input', (event) => {
@@ -2017,6 +2251,7 @@
         document.getElementById('btnResetForm').addEventListener('click', resetForm);
         document.getElementById('btnRefreshBoard').addEventListener('click', refreshOrders);
         document.getElementById('btnJumpCapture').addEventListener('click', () => switchScreen('capture'));
+        document.addEventListener('visibilitychange', () => restartPolling(false));
       }
 
       async function start() {
@@ -2025,13 +2260,9 @@
         bindEvents();
         applyI18n();
         resetForm();
+        await loadClientConfig();
         await refreshAll();
-
-        state.pollId = window.setInterval(async () => {
-          try {
-            await refreshOrders();
-          } catch (err) {}
-        }, 5000);
+        restartPolling(false);
       }
 
       start();

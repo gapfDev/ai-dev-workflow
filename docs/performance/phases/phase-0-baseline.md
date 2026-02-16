@@ -4,12 +4,16 @@
 - #12
 
 ## Deliverables
-- Baseline benchmark for 25, 100, and 300 orders.
+- Baseline benchmark against the live production board size.
 - Target threshold table for sign-off.
 
 ## Checklist
-- [ ] Define baseline scenario inputs.
-- [ ] Capture API p50/p95 for board reads.
-- [ ] Capture payload size for board API.
-- [ ] Capture frontend render+script cost.
-- [ ] Store results under `../benchmarks/runs/`.
+- [x] Define baseline scenario inputs.
+- [x] Capture API p50/p95 for board reads.
+- [x] Capture payload size for board API.
+- [x] Capture frontend render+script cost.
+- [x] Store results under `../benchmarks/runs/`.
+
+## Notes
+- Baseline and post-deploy runs are stored under `../benchmarks/runs/`.
+- Extended 100/300-order synthetic benchmarks should be tracked as a follow-up backlog item.

@@ -1,0 +1,40 @@
+{
+  "timestamp_utc": "2026-02-16T06:06:13.148835+00:00",
+  "api_base": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+  "repeats": 5,
+  "actions": [
+    {
+      "action": "getOrders",
+      "repeats": 5,
+      "ok": 4,
+      "err": 1,
+      "p50_ms": 4288.28,
+      "p95_ms": 5559.94,
+      "avg_ms": 4253.66,
+      "avg_kb": 18.33,
+      "sample": "[{\"order_id\":\"ORD-1771210709891\",\"order_number\":\"ORD-15FEB-001\",\"customer_name\":\"QA Customer 1\",\"phone\":\"\",\"delivery_date\":\"2026-02-15\",\"delivery_time\":\"\",\"delivery_at\":\"2026-02-15T05:00:00.000Z\",\"type\":\"Pickup\",\"address\":\"\",\"web_link\":\"\",\"channel\":\"Phone\",\"source_notes\":\"\",\"items_json\":\"[{\\\"name\\\":\\\"Pan\\\",\\\"price\\\":10,\\\"quantity\\\":2}]\",\"total_amount\":20,\"status\":\"Delivered\",\"payment_status\":\"Unpa"
+    },
+    {
+      "action": "getBoardSnapshot",
+      "repeats": 5,
+      "ok": 5,
+      "err": 0,
+      "p50_ms": 4164.88,
+      "p95_ms": 5118.84,
+      "avg_ms": 4179.27,
+      "avg_kb": 0.07,
+      "sample": "{\"status\":\"error\",\"message\":\"Unknown GET action: getBoardSnapshot\"}"
+    },
+    {
+      "action": "getProducts",
+      "repeats": 5,
+      "ok": 5,
+      "err": 0,
+      "p50_ms": 3817.24,
+      "p95_ms": 4835.6,
+      "avg_ms": 3997.22,
+      "avg_kb": 3.1,
+      "sample": "[{\"id\":\"P001\",\"name\":\"Quesadilla Salvadore\u00f1a (1/4 Regular)\",\"price\":9,\"category\":\"Food\",\"family_key\":\"quesadilla_salvadorena\",\"family_label\":\"Quesadillas\",\"family_color\":\"#C96A2B\",\"family_order\":10,\"variant_order\":20,\"active\":true},{\"id\":\"P002\",\"name\":\"Quesadilla Salvadore\u00f1a (Media Familia)\",\"price\":15,\"category\":\"Food\",\"family_key\":\"quesadilla_salvadorena\",\"family_label\":\"Quesadillas\",\"family_col"
+    }
+  ]
+}
