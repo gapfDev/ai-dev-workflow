@@ -1,70 +1,68 @@
-# AI Development Workflow Framework
+# Bakery Ops Board (MVP)
 
-A comprehensive, platform-agnostic workflow framework for AI-assisted software development. This framework guides Manager Agents and human developers through a structured 7-step process from vision to validation.
+Internal bakery operations system built with Google Apps Script + Google Sheets.
 
-## 🎯 Purpose
+## Live Project
+- Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycbxCDxwqXmy61qKIiOAa9fbZTzCGFFnpwG1aJwreVc1fnEs1ZxcRBcZqLZretCyxMKjYUg/exec)
+- URL to open in browser: `https://script.google.com/macros/s/AKfycbxCDxwqXmy61qKIiOAa9fbZTzCGFFnpwG1aJwreVc1fnEs1ZxcRBcZqLZretCyxMKjYUg/exec`
 
-This is a **process framework**, not a technology framework. It works for any type of project:
-- Mobile apps (Android, iOS)
-- Web applications (React, Vue, etc.)
-- Backend services (Python, Node, Go, etc.)
-- Desktop applications
-- CLI tools
-- APIs
+MVP goals:
+- Fast order capture (phone, Facebook, manual, and gradual Square replacement).
+- Visual Kanban board optimized for tablet workflow.
+- Strict FIFO prioritization by capture time.
+- Friendly daily folio numbering.
 
-![Workflow Diagram](images/workflow-diagram.jpg)
+## Operational Roles
+- Order taker
+- Cook
+- Organizer/Packing
+- Dispatch
 
-## 📋 Workflow Overview
+## Main Features
+- Fast order capture with minimum required validation.
+- Product selection popup grouped by family/category.
+- Kanban statuses:
+  - `Pending`
+  - `Working`
+  - `Baked`
+  - `Delivered`
+  - `Cancelled`
+- Business rules:
+  - `Delivered` is only allowed from `Baked`.
+  - `Delivered` cannot be edited.
+  - `Cancelled` can be reverted only with confirmation.
+- Periodic refresh and basic concurrency handling.
 
-The framework consists of 7 steps with validation gates:
+## Architecture
+- Frontend: `apps-script/Index.html`
+- Backend API: `apps-script/Code.gs`
+- Admin/operations: `apps-script/Admin.gs`
+- Data store: Google Sheets (`Orders`, `Products`, `Expenses`)
 
-1. **Product Discovery** — Understand the vision and requirements
-2. **Tech Analysis** — Map features to technical solutions
-3. **Setup & Backlog** — Initialize project and create tickets
-4. **Sprint Planning** — Prioritize and organize work
-5. **Implementation** — Build features with TDD
-6. **Code Review** — Validate quality and standards
-7. **QA Validation** — Test user flows and edge cases
+## Repository Structure
+- `apps-script/`: MVP application code.
+- `images/`: reference images.
+- `.agent/`: workflow and skills support material.
 
-## 🛠️ Skills Library
+## Quick Start
+1. Open your Apps Script project and load files from `apps-script/`.
+2. Set `SPREADSHEET_ID` in Script Properties.
+3. Run `adminPrepareEnvironment()`.
+4. Run `adminSeedDemoProductsIfEmpty()`.
+5. Run `adminRunSmokeTests()`.
+6. Publish the Web App (`/exec`) with access set to `Anyone with the link`.
 
-The `.agent/skills/` directory contains reusable, independent skills:
+Detailed docs:
+- `apps-script/README.md`
+- `apps-script/DEPLOYMENT_CHECKLIST.md`
 
-- **product-discovery** — Structured interviews for product vision
-- **tech-analysis** — Feature-to-tech mapping
-- **backlog-builder** — Ticket creation from requirements
-- **sprint-planner** — MoSCoW prioritization
-- **project-scaffold** — Project structure setup
-- **tdd-workflow** — Test-driven development guide
-- **code-review-checklist** — Quality validation
-- **qa-validation** — User flow testing
-- **github-flow** — GitHub CLI integration
-- **external-tracking** — Jira/Linear/Trello support
-- **agent-handoff** — Manager-Worker delegation
-- **agent-communication** — Multi-agent coordination via shared board
-- **manager-log** — Decision tracking for Manager Agents
-- **visual-summary** — ASCII art deliverable summaries
+## Automated QA
+From `apps-script/`:
+```bash
+python3 qa_e2e.py --api-base "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec" --local-dir "$(pwd)"
+```
 
-## 🚀 Getting Started
-
-1. Review the workflow: `.agent/workflows/ai-dev-flow-plan.md`
-2. Use skills as needed for each step
-3. Follow the gates to ensure quality at each phase
-
-## 🧪 Example Implementation In This Repo
-
-This repository now includes a concrete MVP implementation for a bakery order workflow using Google Apps Script:
-
-- Code location: `apps-script/`
-- Backend/API: `apps-script/Code.gs`
-- Web UI: `apps-script/Index.html`
-- Manifest: `apps-script/appsscript.json`
-- Setup/deploy notes: `apps-script/README.md`
-
-## 📖 Documentation
-
-All documentation is in English to ensure consistency across teams and AI agents.
-
-## 🤝 Contributing
-
-This framework is designed to evolve. Contributions and improvements are welcome.
+## Security
+- Do not commit hardcoded IDs or tokens.
+- Keep secrets only in Script Properties or git-ignored local files.
+- Local template: `apps-script/private.local.json.example`.
