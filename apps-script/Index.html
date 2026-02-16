@@ -917,6 +917,12 @@
         { status: 'Delivered', roleKey: 'roleDispatchShort', color: '#2d8aa7' },
         { status: 'Cancelled', roleKey: 'roleCancelled', color: '#8c8c8c' }
       ];
+      const FALLBACK_PRODUCTS = [
+        { id: 'P001', name: 'Quesadilla Salvadoreña (1/4 Regular)', price: 9, category: 'Food', active: true },
+        { id: 'P002', name: 'Pan Francés (Docena)', price: 10, category: 'Food', active: true },
+        { id: 'P003', name: 'Semita Alta (1/4 Regular)', price: 10, category: 'Food', active: true },
+        { id: 'P004', name: 'Delivery Fee', price: 5, category: 'Delivery', active: true }
+      ];
 
       const I18N = {
         es: {
@@ -1104,7 +1110,7 @@
       const state = {
         lang: 'es',
         screen: 'capture',
-        products: [],
+        products: FALLBACK_PRODUCTS.slice(),
         orders: [],
         selectedItems: [],
         editingOrderId: null,
@@ -1782,8 +1788,15 @@
       }
 
       async function refreshProducts() {
-        const data = await api('getProducts');
-        state.products = Array.isArray(data) ? data : [];
+        try {
+          const data = await api('getProducts');
+          state.products = Array.isArray(data) ? data : [];
+        } catch (err) {
+          state.products = [];
+        }
+        if (!Array.isArray(state.products) || state.products.length === 0) {
+          state.products = FALLBACK_PRODUCTS.slice();
+        }
         renderMenuFamilies();
       }
 
@@ -1801,11 +1814,19 @@
       }
 
       async function refreshAll() {
+        let ordersErr = null;
+        await refreshProducts();
         try {
-          await Promise.all([refreshProducts(), refreshOrders()]);
-          if (!state.backendOutdated) setBanner('');
+          await refreshOrders();
         } catch (err) {
-          setBanner(err.message || String(err), 'warn');
+          ordersErr = err;
+        }
+        if (!ordersErr && !state.backendOutdated) {
+          setBanner('');
+          return;
+        }
+        if (ordersErr) {
+          setBanner(ordersErr.message || String(ordersErr), 'warn');
         }
       }
 
