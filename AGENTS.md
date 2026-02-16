@@ -45,3 +45,21 @@ List discoverable skills:
 find .agent/skills -mindepth 1 -maxdepth 1 -type d | sort
 find "${CODEX_HOME:-$HOME/.codex}/skills" -mindepth 1 -maxdepth 1 | sort
 ```
+
+## Multi-Agent Delivery Skills
+Use these skills for parallel GitHub execution with dependency gates and minimal human intervention:
+
+- `gh-dependency-orchestrator`: Build dependency graph, enforce start gates, emit unblock instructions.
+- `gh-ticket-runner`: Standard issue execution contract (`STARTED`, `BLOCKED`, `DONE`) with evidence.
+- `git-worktree-runner`: Isolated branch/worktree per ticket for parallel coding.
+- `gh-pr-closeout`: PR-to-issue closure hygiene with `Closes #ticket` and test evidence.
+- `qa-release-gate`: Hard QA sign-off gate that starts final validation only after dependencies close.
+- `milestone-watchdog`: Detect stale/blocked tickets and escalate by owner.
+- `status-reporter`: Publish concise milestone status snapshots with bottlenecks and next actions.
+
+### Recommended Orchestration Chain
+1. Plan dependencies and gates with `gh-dependency-orchestrator`.
+2. Execute ticket work with `gh-ticket-runner` + `git-worktree-runner`.
+3. Close implementation with `gh-pr-closeout`.
+4. Monitor health with `milestone-watchdog` and report via `status-reporter`.
+5. Run final milestone validation with `qa-release-gate`.

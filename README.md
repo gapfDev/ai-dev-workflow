@@ -51,6 +51,14 @@ MVP goals:
 - Single source of truth: `.agent/skills`.
 - Bridge script: `.agent/scripts/sync-skills-bridge.sh`.
 - Agent standard: `AGENTS.md`.
+- Multi-agent GitHub delivery skills:
+  - `.agent/skills/gh-dependency-orchestrator`
+  - `.agent/skills/gh-ticket-runner`
+  - `.agent/skills/git-worktree-runner`
+  - `.agent/skills/gh-pr-closeout`
+  - `.agent/skills/qa-release-gate`
+  - `.agent/skills/milestone-watchdog`
+  - `.agent/skills/status-reporter`
 
 Sync for Codex:
 ```bash
