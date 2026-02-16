@@ -12,7 +12,7 @@
 - Product popup grouped and sorted by product family with color coding.
 - Product menu fallback to keep menu visible during temporary API delays.
 - Product upsert/import endpoint for catalog sync from external sheet sources.
-- ES/EN bilingual UI with manual language toggle.
+- English-first UI copy across capture, menu, and Kanban workflows.
 
 ## Structure
 - `Code.gs`: backend API + business rules + Sheets access.

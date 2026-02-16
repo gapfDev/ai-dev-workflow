@@ -744,23 +744,23 @@
       <header class="topbar">
         <div class="title-group">
           <h1 data-i18n="appTitle">Bakery Ops Board v1</h1>
-          <p data-i18n="appSubtitle">FIFO visual + folio amigable para equipo de 4 roles</p>
+          <p data-i18n="appSubtitle">Visual FIFO + friendly folio for a 4-role team</p>
         </div>
         <div class="header-actions">
-          <span id="syncStatus" class="status-pill" data-i18n="syncReady">Sincronizado</span>
+          <span id="syncStatus" class="status-pill" data-i18n="syncReady">Synced</span>
           <button id="langToggle" class="btn btn-soft">EN</button>
         </div>
       </header>
 
       <section class="role-strip">
-        <div class="role-card"><strong data-i18n="roleTaker">Toma orden</strong><span data-i18n="roleTakerDesc">Captura rápida llamada/Facebook</span></div>
-        <div class="role-card"><strong data-i18n="roleCook">Cocinero</strong><span data-i18n="roleCookDesc">Trabaja columna Working</span></div>
-        <div class="role-card"><strong data-i18n="rolePack">Organizador/Empaque</strong><span data-i18n="rolePackDesc">Prepara salida en Baked</span></div>
-        <div class="role-card"><strong data-i18n="roleDispatch">Despacho</strong><span data-i18n="roleDispatchDesc">Confirma entrega final</span></div>
+        <div class="role-card"><strong data-i18n="roleTaker">Order Taker</strong><span data-i18n="roleTakerDesc">Fast capture from calls/Facebook</span></div>
+        <div class="role-card"><strong data-i18n="roleCook">Cook</strong><span data-i18n="roleCookDesc">Works Working column</span></div>
+        <div class="role-card"><strong data-i18n="rolePack">Organizer/Packing</strong><span data-i18n="rolePackDesc">Prepares output in Baked</span></div>
+        <div class="role-card"><strong data-i18n="roleDispatch">Dispatch</strong><span data-i18n="roleDispatchDesc">Confirms final delivery</span></div>
       </section>
 
       <nav class="tabs">
-        <button class="tab-btn active" data-screen="capture" data-i18n="tabCapture">Captura</button>
+        <button class="tab-btn active" data-screen="capture" data-i18n="tabCapture">Capture</button>
         <button class="tab-btn" data-screen="board" data-i18n="tabBoard">Kanban</button>
       </nav>
 
@@ -770,14 +770,14 @@
         <section id="screen-capture" class="screen active">
           <div class="grid capture">
             <article class="card">
-              <h2 data-i18n="captureTitle">Captura Rápida</h2>
+              <h2 data-i18n="captureTitle">Fast Capture</h2>
               <div class="form-row">
                 <div id="field-customer" class="field">
-                  <label for="orderCustomer" data-i18n="customer">Cliente</label>
+                  <label for="orderCustomer" data-i18n="customer">Customer</label>
                   <input id="orderCustomer" type="text" autocomplete="name" />
                 </div>
                 <div class="field">
-                  <label for="orderPhone" data-i18n="phone">Teléfono</label>
+                  <label for="orderPhone" data-i18n="phone">Phone</label>
                   <input id="orderPhone" type="tel" list="phoneHints" />
                   <datalist id="phoneHints"></datalist>
                 </div>
@@ -785,15 +785,15 @@
 
               <div class="form-row triple">
                 <div id="field-date" class="field">
-                  <label for="orderDate" data-i18n="date">Fecha</label>
+                  <label for="orderDate" data-i18n="date">Date</label>
                   <input id="orderDate" type="date" />
                 </div>
                 <div class="field">
-                  <label for="orderTime" data-i18n="time">Hora (opcional)</label>
+                  <label for="orderTime" data-i18n="time">Time (optional)</label>
                   <input id="orderTime" type="time" />
                 </div>
                 <div id="field-type" class="field">
-                  <label for="orderType" data-i18n="type">Tipo</label>
+                  <label for="orderType" data-i18n="type">Type</label>
                   <select id="orderType">
                     <option value="Pickup" data-i18n="pickup">Pickup</option>
                     <option value="Delivery" data-i18n="delivery">Delivery</option>
@@ -803,16 +803,16 @@
 
               <div class="form-row triple">
                 <div class="field">
-                  <label for="orderPaymentStatus" data-i18n="paymentStatus">Estado pago</label>
+                  <label for="orderPaymentStatus" data-i18n="paymentStatus">Payment status</label>
                   <select id="orderPaymentStatus">
                     <option value="Unpaid" data-i18n="unpaid">Unpaid</option>
                     <option value="Paid" data-i18n="paid">Paid</option>
                   </select>
                 </div>
                 <div class="field">
-                  <label for="orderPaymentMethod" data-i18n="paymentMethod">Método pago</label>
+                  <label for="orderPaymentMethod" data-i18n="paymentMethod">Payment method</label>
                   <select id="orderPaymentMethod">
-                    <option value="" data-i18n="notSelected">Sin definir</option>
+                    <option value="" data-i18n="notSelected">Not set</option>
                     <option value="Cash">Cash</option>
                     <option value="Card">Card</option>
                     <option value="Transfer">Transfer</option>
@@ -820,14 +820,14 @@
                   </select>
                 </div>
                 <div class="field">
-                  <label for="orderDeposit" data-i18n="deposit">Anticipo</label>
+                  <label for="orderDeposit" data-i18n="deposit">Deposit</label>
                   <input id="orderDeposit" type="number" step="0.01" min="0" />
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="field">
-                  <label for="orderChannel" data-i18n="channel">Canal</label>
+                  <label for="orderChannel" data-i18n="channel">Channel</label>
                   <select id="orderChannel">
                     <option value="Phone" data-i18n="channelPhone">Phone</option>
                     <option value="Facebook" data-i18n="channelFacebook">Facebook</option>
@@ -836,41 +836,41 @@
                   </select>
                 </div>
                 <div class="field">
-                  <label for="orderAddress" data-i18n="address">Dirección</label>
+                  <label for="orderAddress" data-i18n="address">Address</label>
                   <input id="orderAddress" type="text" />
                 </div>
               </div>
 
               <div class="field">
-                <label for="orderNotes" data-i18n="sourceNotes">Notas de origen</label>
+                <label for="orderNotes" data-i18n="sourceNotes">Source notes</label>
                 <textarea id="orderNotes"></textarea>
               </div>
 
               <div class="field">
-                <label for="aiPayload" data-i18n="aiPayloadLabel">Pegado JSON (Square/Agente GPT)</label>
+                <label for="aiPayload" data-i18n="aiPayloadLabel">JSON paste (Square/GPT Agent)</label>
                 <textarea id="aiPayload" placeholder='{"order_meta": {...}, "items": [...]}'></textarea>
                 <div class="action-row" style="margin-top: 6px;">
-                  <button id="btnAutofill" class="btn btn-soft" data-i18n="autofill">Autorrellenar</button>
-                  <button id="btnClearAi" class="btn btn-soft" data-i18n="clear">Limpiar</button>
+                  <button id="btnAutofill" class="btn btn-soft" data-i18n="autofill">Autofill</button>
+                  <button id="btnClearAi" class="btn btn-soft" data-i18n="clear">Clear</button>
                 </div>
               </div>
             </article>
 
             <article class="card">
-              <h2 data-i18n="itemsTitle">Productos e ítems</h2>
+              <h2 data-i18n="itemsTitle">Products & items</h2>
               <div class="menu-launch">
-                <button id="btnOpenMenuScreen" class="btn btn-primary" data-i18n="openMenuScreen">Abrir menú por familias</button>
-                <div class="helper" data-i18n="menuHint">Agrega productos desde una pantalla separada organizada por familia.</div>
+                <button id="btnOpenMenuScreen" class="btn btn-primary" data-i18n="openMenuScreen">Open menu by family</button>
+                <div class="helper" data-i18n="menuHint">Add products from a popup grouped by family.</div>
               </div>
 
-              <h3 style="margin-top: 14px;" data-i18n="selectedItems">Ítems seleccionados</h3>
+              <h3 style="margin-top: 14px;" data-i18n="selectedItems">Selected items</h3>
               <div id="field-items" class="field">
                 <table class="items-table">
                   <thead>
                     <tr>
-                      <th data-i18n="item">Ítem</th>
-                      <th data-i18n="qty">Cant.</th>
-                      <th data-i18n="price">Precio</th>
+                      <th data-i18n="item">Item</th>
+                      <th data-i18n="qty">Qty</th>
+                      <th data-i18n="price">Price</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -883,9 +883,9 @@
                 <span id="orderTotal">$0.00</span>
               </div>
 
-              <div class="helper" id="captureModeLabel" data-i18n="modeCreate">Modo: crear orden</div>
+              <div class="helper" id="captureModeLabel" data-i18n="modeCreate">Mode: create order</div>
               <div class="action-row">
-                <button id="btnSaveOrder" class="btn btn-primary" data-i18n="saveOrder">Guardar orden</button>
+                <button id="btnSaveOrder" class="btn btn-primary" data-i18n="saveOrder">Save order</button>
                 <button id="btnResetForm" class="btn btn-soft" data-i18n="resetForm">Reset</button>
               </div>
             </article>
@@ -896,12 +896,12 @@
           <article class="card">
             <div class="kanban-toolbar">
               <div>
-                <h2 style="margin:0;" data-i18n="boardTitle">Kanban Producción</h2>
-                <div class="helper" data-i18n="boardSubtitle">FIFO por antigüedad de captura · borde rojo > 90 min</div>
+                <h2 style="margin:0;" data-i18n="boardTitle">Production Kanban</h2>
+                <div class="helper" data-i18n="boardSubtitle">FIFO by capture age · red border > 90 min</div>
               </div>
               <div class="action-row" style="margin-top:0; width: 290px;">
-                <button id="btnRefreshBoard" class="btn btn-soft" data-i18n="refresh">Refrescar</button>
-                <button id="btnJumpCapture" class="btn btn-soft" data-i18n="newOrder">Nueva orden</button>
+                <button id="btnRefreshBoard" class="btn btn-soft" data-i18n="refresh">Refresh</button>
+                <button id="btnJumpCapture" class="btn btn-soft" data-i18n="newOrder">New order</button>
               </div>
             </div>
             <div id="kanbanBoard" class="kanban density-wide"></div>
@@ -915,16 +915,16 @@
       <div class="menu-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="menuModalTitle">
         <div class="menu-toolbar">
           <div>
-            <h2 id="menuModalTitle" style="margin:0;" data-i18n="menuScreenTitle">Menú por familias</h2>
-            <div class="helper" data-i18n="menuScreenSubtitle">Selecciona productos por categoría y vuelve a captura.</div>
+            <h2 id="menuModalTitle" style="margin:0;" data-i18n="menuScreenTitle">Menu by family</h2>
+            <div class="helper" data-i18n="menuScreenSubtitle">Pick products by category and return to capture.</div>
           </div>
           <div class="action-row" style="margin-top:0; width: 220px;">
-            <button id="btnCloseMenuModal" class="btn btn-soft" data-i18n="closeMenu">Cerrar</button>
+            <button id="btnCloseMenuModal" class="btn btn-soft" data-i18n="closeMenu">Close</button>
           </div>
         </div>
 
         <div class="field">
-          <label for="menuSearch" data-i18n="searchProduct">Buscar producto</label>
+          <label for="menuSearch" data-i18n="searchProduct">Search product</label>
           <input id="menuSearch" type="text" />
         </div>
         <div id="menuFamilies" class="menu-families"></div>
@@ -978,191 +978,100 @@
         { key: 'delivery', label: 'Delivery', color: '#718096', order: 90, patterns: ['delivery fee', 'delivery'] }
       ];
 
-      const I18N = {
-        es: {
-          appTitle: 'Bakery Ops Board v1',
-          appSubtitle: 'FIFO visual + folio amigable para equipo de 4 roles',
-          syncReady: 'Sincronizado',
-          roleTaker: 'Toma orden',
-          roleTakerDesc: 'Captura rápida llamada/Facebook',
-          roleCook: 'Cocinero',
-          roleCookDesc: 'Trabaja columna Working',
-          rolePack: 'Organizador/Empaque',
-          rolePackDesc: 'Prepara salida en Baked',
-          roleDispatch: 'Despacho',
-          roleDispatchDesc: 'Confirma entrega final',
-          tabCapture: 'Captura',
-          tabBoard: 'Kanban',
-          captureTitle: 'Captura Rápida',
-          customer: 'Cliente',
-          phone: 'Teléfono',
-          date: 'Fecha',
-          time: 'Hora (opcional)',
-          type: 'Tipo',
-          pickup: 'Pickup',
-          delivery: 'Delivery',
-          paymentStatus: 'Estado pago',
-          paymentMethod: 'Método pago',
-          notSelected: 'Sin definir',
-          deposit: 'Anticipo',
-          channel: 'Canal',
-          channelPhone: 'Teléfono',
-          channelFacebook: 'Facebook',
-          channelWalkin: 'Mostrador',
-          address: 'Dirección',
-          sourceNotes: 'Notas de origen',
-          aiPayloadLabel: 'Pegado JSON (Square/Agente GPT)',
-          autofill: 'Autorrellenar',
-          clear: 'Limpiar',
-          itemsTitle: 'Productos e ítems',
-          openMenuScreen: 'Abrir menú por familias',
-          menuHint: 'Agrega productos desde un popup organizado por familia.',
-          menuScreenTitle: 'Menú por familias',
-          menuScreenSubtitle: 'Selecciona productos por categoría y cierra el popup.',
-          closeMenu: 'Cerrar',
-          searchProduct: 'Buscar producto',
-          selectedItems: 'Ítems seleccionados',
-          item: 'Ítem',
-          qty: 'Cant.',
-          price: 'Precio',
-          total: 'Total',
-          modeCreate: 'Modo: crear orden',
-          modeEdit: 'Modo: editar orden',
-          saveOrder: 'Guardar orden',
-          updateOrder: 'Actualizar orden',
-          resetForm: 'Reset',
-          boardTitle: 'Kanban Producción',
-          boardSubtitle: 'FIFO por antigüedad de captura · borde rojo > 90 min',
-          refresh: 'Refrescar',
-          newOrder: 'Nueva orden',
-          category: 'Categoría',
-          amount: 'Monto',
-          description: 'Descripción',
-          unpaid: 'No pagado',
-          paid: 'Pagado',
-          roleOrg: 'Organizador',
-          roleCookShort: 'Cocinero',
-          rolePackShort: 'Empaque',
-          roleDispatchShort: 'Despacho',
-          roleCancelled: 'Cancelado',
-          elapsed: 'Antigüedad',
-          minutes: 'min',
-          edit: 'Editar',
-          reactivate: 'Reactivar',
-          moveToCancelled: 'Cancelar',
-          state: 'Estado',
-          captured: 'Capturada',
-          noData: 'Sin datos',
-          remoteChanges: 'Se detectaron cambios remotos. Datos actualizados.',
-          saved: 'Guardado con éxito',
-          backendOutdated: 'Backend desactualizado detectado en /exec. Publica nueva versión de Code.gs (faltan campos de folio/FIFO o hay order_id vacío).',
-          apiInvalidJson: 'La API no devolvió JSON válido. Verifica el despliegue Web App (/exec).',
-          missingOrderIdResponse: 'La orden se guardó pero el backend no devolvió order_id. Actualiza Code.gs en producción.',
-          familyDefault: 'General',
-          warningDeliveryUnpaid: 'Delivery en Unpaid: se guardará con alerta visual.',
-          fillRequired: 'Completa cliente, fecha, tipo y al menos 1 ítem.',
-          invalidJson: 'JSON inválido para autorrelleno.',
-          reactivated: 'Orden reactivada.',
-          onlyFromBaked: 'Solo puedes pasar a Delivered desde Baked.',
-          deliveredLocked: 'Delivered no permite edición/cambio.',
-          confirmReactivate: '¿Confirmas reactivar esta orden cancelada?',
-          confirmCancel: '¿Confirmas mover a Cancelled?',
-          confirmDelivered: '¿Confirmas marcar esta orden como Delivered?'
-        },
-        en: {
-          appTitle: 'Bakery Ops Board v1',
-          appSubtitle: 'Visual FIFO + friendly folio for a 4-role team',
-          syncReady: 'Synced',
-          roleTaker: 'Order Taker',
-          roleTakerDesc: 'Fast capture from calls/Facebook',
-          roleCook: 'Cook',
-          roleCookDesc: 'Works Working column',
-          rolePack: 'Organizer/Packing',
-          rolePackDesc: 'Prepares output in Baked',
-          roleDispatch: 'Dispatch',
-          roleDispatchDesc: 'Confirms final delivery',
-          tabCapture: 'Capture',
-          tabBoard: 'Kanban',
-          captureTitle: 'Fast Capture',
-          customer: 'Customer',
-          phone: 'Phone',
-          date: 'Date',
-          time: 'Time (optional)',
-          type: 'Type',
-          pickup: 'Pickup',
-          delivery: 'Delivery',
-          paymentStatus: 'Payment status',
-          paymentMethod: 'Payment method',
-          notSelected: 'Not set',
-          deposit: 'Deposit',
-          channel: 'Channel',
-          channelPhone: 'Phone',
-          channelFacebook: 'Facebook',
-          channelWalkin: 'Walk-in',
-          address: 'Address',
-          sourceNotes: 'Source notes',
-          aiPayloadLabel: 'JSON paste (Square/GPT Agent)',
-          autofill: 'Autofill',
-          clear: 'Clear',
-          itemsTitle: 'Products & items',
-          openMenuScreen: 'Open menu by family',
-          menuHint: 'Add products from a popup grouped by family.',
-          menuScreenTitle: 'Menu by family',
-          menuScreenSubtitle: 'Pick products by category and close the popup.',
-          closeMenu: 'Close',
-          searchProduct: 'Search product',
-          selectedItems: 'Selected items',
-          item: 'Item',
-          qty: 'Qty',
-          price: 'Price',
-          total: 'Total',
-          modeCreate: 'Mode: create order',
-          modeEdit: 'Mode: edit order',
-          saveOrder: 'Save order',
-          updateOrder: 'Update order',
-          resetForm: 'Reset',
-          boardTitle: 'Production Kanban',
-          boardSubtitle: 'FIFO by capture age · red border > 90 min',
-          refresh: 'Refresh',
-          newOrder: 'New order',
-          category: 'Category',
-          amount: 'Amount',
-          description: 'Description',
-          unpaid: 'Unpaid',
-          paid: 'Paid',
-          roleOrg: 'Organizer',
-          roleCookShort: 'Cook',
-          rolePackShort: 'Packing',
-          roleDispatchShort: 'Dispatch',
-          roleCancelled: 'Cancelled',
-          elapsed: 'Age',
-          minutes: 'min',
-          edit: 'Edit',
-          reactivate: 'Reactivate',
-          moveToCancelled: 'Cancel',
-          state: 'State',
-          captured: 'Captured',
-          noData: 'No data',
-          remoteChanges: 'Remote changes detected. Data refreshed.',
-          saved: 'Saved',
-          backendOutdated: 'Outdated backend detected on /exec. Deploy a new Code.gs version (missing folio/FIFO fields or empty order_id).',
-          apiInvalidJson: 'API did not return valid JSON. Check Web App deployment (/exec).',
-          missingOrderIdResponse: 'Order was saved but backend did not return order_id. Update production Code.gs.',
-          familyDefault: 'General',
-          warningDeliveryUnpaid: 'Delivery is Unpaid: order will be saved with warning.',
-          fillRequired: 'Complete customer, date, type and at least one item.',
-          invalidJson: 'Invalid JSON payload for autofill.',
-          reactivated: 'Order reactivated.',
-          onlyFromBaked: 'Delivered is allowed only from Baked.',
-          deliveredLocked: 'Delivered cannot be edited/changed.',
-          confirmReactivate: 'Confirm reactivating this cancelled order?',
-          confirmCancel: 'Confirm moving order to Cancelled?',
-          confirmDelivered: 'Confirm marking this order as Delivered?'
-        }
+      const I18N_EN = {
+        appTitle: 'Bakery Ops Board v1',
+        appSubtitle: 'Visual FIFO + friendly folio for a 4-role team',
+        syncReady: 'Synced',
+        roleTaker: 'Order Taker',
+        roleTakerDesc: 'Fast capture from calls/Facebook',
+        roleCook: 'Cook',
+        roleCookDesc: 'Works Working column',
+        rolePack: 'Organizer/Packing',
+        rolePackDesc: 'Prepares output in Baked',
+        roleDispatch: 'Dispatch',
+        roleDispatchDesc: 'Confirms final delivery',
+        tabCapture: 'Capture',
+        tabBoard: 'Kanban',
+        captureTitle: 'Fast Capture',
+        customer: 'Customer',
+        phone: 'Phone',
+        date: 'Date',
+        time: 'Time (optional)',
+        type: 'Type',
+        pickup: 'Pickup',
+        delivery: 'Delivery',
+        paymentStatus: 'Payment status',
+        paymentMethod: 'Payment method',
+        notSelected: 'Not set',
+        deposit: 'Deposit',
+        channel: 'Channel',
+        channelPhone: 'Phone',
+        channelFacebook: 'Facebook',
+        channelWalkin: 'Walk-in',
+        address: 'Address',
+        sourceNotes: 'Source notes',
+        aiPayloadLabel: 'JSON paste (Square/GPT Agent)',
+        autofill: 'Autofill',
+        clear: 'Clear',
+        itemsTitle: 'Products & items',
+        openMenuScreen: 'Open menu by family',
+        menuHint: 'Add products from a popup grouped by family.',
+        menuScreenTitle: 'Menu by family',
+        menuScreenSubtitle: 'Pick products by category and close the popup.',
+        closeMenu: 'Close',
+        searchProduct: 'Search product',
+        selectedItems: 'Selected items',
+        item: 'Item',
+        qty: 'Qty',
+        price: 'Price',
+        total: 'Total',
+        modeCreate: 'Mode: create order',
+        modeEdit: 'Mode: edit order',
+        saveOrder: 'Save order',
+        updateOrder: 'Update order',
+        resetForm: 'Reset',
+        boardTitle: 'Production Kanban',
+        boardSubtitle: 'FIFO by capture age · red border > 90 min',
+        refresh: 'Refresh',
+        newOrder: 'New order',
+        category: 'Category',
+        amount: 'Amount',
+        description: 'Description',
+        unpaid: 'Unpaid',
+        paid: 'Paid',
+        roleOrg: 'Organizer',
+        roleCookShort: 'Cook',
+        rolePackShort: 'Packing',
+        roleDispatchShort: 'Dispatch',
+        roleCancelled: 'Cancelled',
+        elapsed: 'Age',
+        minutes: 'min',
+        edit: 'Edit',
+        reactivate: 'Reactivate',
+        moveToCancelled: 'Cancel',
+        state: 'State',
+        captured: 'Captured',
+        noData: 'No data',
+        remoteChanges: 'Remote changes detected. Data refreshed.',
+        saved: 'Saved',
+        backendOutdated: 'Outdated backend detected on /exec. Deploy a new Code.gs version (missing folio/FIFO fields or empty order_id).',
+        apiInvalidJson: 'API did not return valid JSON. Check Web App deployment (/exec).',
+        missingOrderIdResponse: 'Order was saved but backend did not return order_id. Update production Code.gs.',
+        familyDefault: 'General',
+        warningDeliveryUnpaid: 'Delivery is Unpaid: order will be saved with warning.',
+        fillRequired: 'Complete customer, date, type and at least one item.',
+        invalidJson: 'Invalid JSON payload for autofill.',
+        reactivated: 'Order reactivated.',
+        onlyFromBaked: 'Delivered is allowed only from Baked.',
+        deliveredLocked: 'Delivered cannot be edited/changed.',
+        confirmReactivate: 'Confirm reactivating this cancelled order?',
+        confirmCancel: 'Confirm moving order to Cancelled?',
+        confirmDelivered: 'Confirm marking this order as Delivered?'
       };
+      const I18N = { en: I18N_EN, es: I18N_EN };
 
       const state = {
-        lang: 'es',
+        lang: 'en',
         screen: 'capture',
         products: FALLBACK_PRODUCTS.slice(),
         orders: [],
@@ -1180,13 +1089,13 @@
 
       function statusLabel(status) {
         const map = {
-          Pending: { es: 'Nueva', en: 'Pending' },
-          Working: { es: 'Preparando', en: 'Working' },
-          Baked: { es: 'Horneada', en: 'Baked' },
-          Delivered: { es: 'Entregada', en: 'Delivered' },
-          Cancelled: { es: 'Cancelada', en: 'Cancelled' }
+          Pending: 'Pending',
+          Working: 'Working',
+          Baked: 'Baked',
+          Delivered: 'Delivered',
+          Cancelled: 'Cancelled'
         };
-        return map[status] ? map[status][state.lang] : status;
+        return map[status] || status;
       }
 
       function formatMoney(value) {
@@ -1302,7 +1211,7 @@
         if (!input) return '--';
         const d = new Date(input);
         if (Number.isNaN(d.getTime())) return '--';
-        return d.toLocaleString(state.lang === 'es' ? 'es-US' : 'en-US', {
+        return d.toLocaleString('en-US', {
           month: '2-digit',
           day: '2-digit',
           hour: '2-digit',
@@ -1370,7 +1279,7 @@
           const key = node.dataset.i18n;
           node.textContent = t(key);
         });
-        document.getElementById('langToggle').textContent = state.lang === 'es' ? 'EN' : 'ES';
+        document.getElementById('langToggle').textContent = 'EN';
         document.getElementById('syncStatus').textContent = t('syncReady');
         document.getElementById('captureModeLabel').textContent = state.editingOrderId ? t('modeEdit') : t('modeCreate');
         document.getElementById('btnSaveOrder').textContent = state.editingOrderId ? t('updateOrder') : t('saveOrder');
@@ -2051,7 +1960,7 @@
 
       function bindEvents() {
         document.getElementById('langToggle').addEventListener('click', () => {
-          state.lang = state.lang === 'es' ? 'en' : 'es';
+          state.lang = 'en';
           applyI18n();
           renderKanban();
           renderMenuFamilies();

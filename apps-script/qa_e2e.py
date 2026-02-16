@@ -72,10 +72,10 @@ class QaRunner:
                 await page.wait_for_selector("#btnOpenMenuScreen", timeout=20000)
 
                 tabs = [t.strip() for t in await page.locator(".tab-btn").all_text_contents()]
-                has_capture = any("Captura" in t or "Capture" in t for t in tabs)
+                has_capture = any("Capture" in t for t in tabs)
                 has_kanban = any("Kanban" in t for t in tabs)
                 has_dashboard = any("Dashboard" in t for t in tabs)
-                has_expenses = any("Gastos" in t or "Expenses" in t for t in tabs)
+                has_expenses = any("Expenses" in t for t in tabs)
                 self.record(
                     "UI tabs only Capture/Kanban",
                     has_capture and has_kanban and (not has_dashboard) and (not has_expenses),

@@ -1,30 +1,30 @@
 # Deployment Checklist (Staging -> Production)
 
 ## 0) Preconditions
-- Spreadsheet activo con pestañas `Orders`, `Products`, `Expenses`.
-- Proyecto Apps Script con estos archivos:
+- Active spreadsheet with tabs: `Orders`, `Products`, `Expenses`.
+- Apps Script project with these files:
   - `Code.gs`
   - `Admin.gs`
   - `Index.html`
   - `appsscript.json`
 
-## 1) Backup obligatorio
-En Apps Script, ejecutar:
+## 1) Mandatory backup
+In Apps Script, run:
 1. `adminBackupSpreadsheet()`
 
 Expected:
 - `status: success`
-- `backup_url` retornado
+- `backup_url` returned
 
-Guardar el `backup_url` en tu bitácora del deploy.
+Save `backup_url` in your deployment log.
 
-## 2) Preparación de entorno
-Ejecutar:
+## 2) Environment preparation
+Run:
 1. `adminPrepareEnvironment()`
 
 Expected:
 - `status: success`
-- `orders_headers` contiene nuevas columnas:
+- `orders_headers` includes these columns:
   - `order_number`
   - `captured_at`
   - `delivery_time`
@@ -38,45 +38,45 @@ Expected:
   - `is_legacy`
 
 ## 3) Smoke tests
-Ejecutar:
+Run:
 1. `adminRunSmokeTests()`
 
 Expected:
 - `status: success`
-- métricas de órdenes/productos/gastos
+- metrics for orders/products/expenses
 
-Si falla:
-- Corregir antes de deploy.
-- No pasar a producción.
+If it fails:
+- Fix before deploy.
+- Do not promote to production.
 
 ## 4) Staging deploy
-1. Deploy web app en staging.
-2. Validar en navegador:
-  - Captura: crear orden nueva.
-  - Kanban: mover `Pending -> Working -> Baked -> Delivered`.
-  - Bloqueo: no editar `Delivered`.
-  - Reglas: no `Pending -> Delivered` directo.
-  - FIFO: orden antigua primero.
-  - Folio: formato `ORD-DDMMM-###`.
-  - Dashboard: métricas visibles.
-  - Gastos: alta y reflejo.
+1. Deploy web app in staging.
+2. Validate in browser:
+  - Capture: create a new order.
+  - Kanban: move `Pending -> Working -> Baked -> Delivered`.
+  - Locking: cannot edit `Delivered`.
+  - Rules: cannot do `Pending -> Delivered` directly.
+  - FIFO: oldest order first.
+  - Folio format: `ORD-DDMMM-###`.
+  - Dashboard: metrics are visible.
+  - Expenses: can add and data is reflected.
 
 ## 5) Production deploy
-Solo si staging está OK:
-1. Nuevo deployment de producción.
-2. Ejecutar `adminRunSmokeTests()` en productivo.
-3. Validar 3 casos en vivo:
-  - Crear orden manual.
-  - Cambio de estado en Kanban.
-  - Registro de gasto.
+Only if staging is green:
+1. Create a new production deployment.
+2. Run `adminRunSmokeTests()` in production.
+3. Validate three live scenarios:
+  - Create manual order.
+  - Update status in Kanban.
+  - Register an expense.
 
 ## 6) Rollback plan
-Si hay problema crítico:
-1. Volver al deployment anterior.
-2. Restaurar spreadsheet desde `backup_url`.
-3. Revalidar operación con 3 casos básicos.
+If there is a critical issue:
+1. Revert to previous deployment.
+2. Restore spreadsheet from `backup_url`.
+3. Re-validate operation with three basic scenarios.
 
-## 7) Operación diaria (recomendado)
-- Monitorear bordes rojos (>90 min) en Kanban.
-- Revisar tardías en Dashboard al menos 2 veces al día.
-- Usar `LEGACY` solo para histórico, nuevas órdenes siempre con folio automático.
+## 7) Daily operations (recommended)
+- Monitor red border cards (>90 min) in Kanban.
+- Review delayed orders in dashboard at least twice per day.
+- Use `LEGACY` only for historical records; new orders must use automatic folio.

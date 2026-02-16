@@ -58,6 +58,14 @@ MVP goals:
 Detailed docs:
 - `apps-script/README.md`
 - `apps-script/DEPLOYMENT_CHECKLIST.md`
+- `docs/standards.md`
+- `docs/api-contract.md`
+- `docs/adr/ADR-001-modular-architecture.md`
+- `docs/dod.md`
+- `docs/runbooks/deploy-rollback.md`
+- `docs/runbooks/incident-triage.md`
+- `docs/ownership/module-owners.md`
+- `docs/templates/ticket-template.md`
 
 ## Automated QA
 From `apps-script/`:
