@@ -1241,7 +1241,10 @@
         refreshOrders: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
         startEditing: { scope: 'section', sectionId: 'screen-capture' },
         saveOrder: { scope: 'button', buttons: ['btnSaveOrder'], sectionId: 'screen-capture' },
-        statusTransition: { scope: 'section', sectionId: 'screen-board' }
+        statusTransition: { scope: 'section', sectionId: 'screen-board' },
+        switchBoardDay: { scope: 'section', sectionId: 'screen-board' },
+        archiveBoardDay: { scope: 'button', buttons: ['btnArchiveDay'], sectionId: 'screen-board' },
+        unarchiveBoardDay: { scope: 'button', buttons: ['btnUnarchiveDay'], sectionId: 'screen-board' }
       };
 
       const state = {
@@ -1610,6 +1613,10 @@
         }
       }
 
+      function operationInFlight(name) {
+        return Number(state.loading.operation[name] || 0) > 0;
+      }
+
       async function api(action, method = 'GET', payload = null) {
         if (!API_BASE) {
           throw new Error('Missing API base. Open local with ?apiBase=https://.../exec');
@@ -1743,17 +1750,20 @@
       }
 
       async function setSelectedBoardDay(dayKey, options = {}) {
-        const next = normalizeDayKeyClient(dayKey);
-        if (!next || next === state.selectedBoardDay) return;
-        state.selectedBoardDay = next;
-        const selected = selectedDayMeta();
-        state.selectedDayArchived = !!(selected && selected.is_archived);
-        state.boardRev = '';
-        state.boardLastUpdatedAt = '';
-        renderDayRibbon();
-        if (options.refresh !== false) {
-          await refreshOrders();
-        }
+        if (operationInFlight('switchBoardDay')) return;
+        return withLoading('switchBoardDay', async () => {
+          const next = normalizeDayKeyClient(dayKey);
+          if (!next || next === state.selectedBoardDay) return;
+          state.selectedBoardDay = next;
+          const selected = selectedDayMeta();
+          state.selectedDayArchived = !!(selected && selected.is_archived);
+          state.boardRev = '';
+          state.boardLastUpdatedAt = '';
+          renderDayRibbon();
+          if (options.refresh !== false) {
+            await refreshOrders();
+          }
+        });
       }
 
       async function refreshBoardDays(force = false) {
@@ -1800,49 +1810,55 @@
       }
 
       async function archiveSelectedBoardDay() {
-        if (!state.selectedBoardDay) return;
-        if (!window.confirm(t('confirmArchiveStep1'))) return;
-        if (!window.confirm(t('confirmArchiveStep2'))) return;
-        const reason = window.prompt(t('archiveReasonPrompt'), '');
-        if (!reason || !reason.trim()) {
-          showToast(t('archiveReasonPrompt'));
-          return;
-        }
-        const response = await api('archiveBoardDay', 'POST', {
-          action: 'archiveBoardDay',
-          day_key: state.selectedBoardDay,
-          reason: reason.trim(),
-          confirm_step_1: true,
-          confirm_step_2: true
+        if (operationInFlight('archiveBoardDay')) return;
+        return withLoading('archiveBoardDay', async () => {
+          if (!state.selectedBoardDay) return;
+          if (!window.confirm(t('confirmArchiveStep1'))) return;
+          if (!window.confirm(t('confirmArchiveStep2'))) return;
+          const reason = window.prompt(t('archiveReasonPrompt'), '');
+          if (!reason || !reason.trim()) {
+            showToast(t('archiveReasonPrompt'));
+            return;
+          }
+          const response = await api('archiveBoardDay', 'POST', {
+            action: 'archiveBoardDay',
+            day_key: state.selectedBoardDay,
+            reason: reason.trim(),
+            confirm_step_1: true,
+            confirm_step_2: true
+          });
+          if (!response || response.status !== 'success') {
+            showToast((response && response.message) || 'Error');
+            return;
+          }
+          showToast(t('dayArchivedSaved'));
+          await refreshBoardDays(true);
+          await refreshOrders();
         });
-        if (!response || response.status !== 'success') {
-          showToast((response && response.message) || 'Error');
-          return;
-        }
-        showToast(t('dayArchivedSaved'));
-        await refreshBoardDays(true);
-        await refreshOrders();
       }
 
       async function unarchiveSelectedBoardDay() {
-        if (!state.selectedBoardDay) return;
-        const reason = window.prompt(t('unarchiveReasonPrompt'), '');
-        if (!reason || !reason.trim()) {
-          showToast(t('unarchiveReasonPrompt'));
-          return;
-        }
-        const response = await api('unarchiveBoardDay', 'POST', {
-          action: 'unarchiveBoardDay',
-          day_key: state.selectedBoardDay,
-          reason: reason.trim()
+        if (operationInFlight('unarchiveBoardDay')) return;
+        return withLoading('unarchiveBoardDay', async () => {
+          if (!state.selectedBoardDay) return;
+          const reason = window.prompt(t('unarchiveReasonPrompt'), '');
+          if (!reason || !reason.trim()) {
+            showToast(t('unarchiveReasonPrompt'));
+            return;
+          }
+          const response = await api('unarchiveBoardDay', 'POST', {
+            action: 'unarchiveBoardDay',
+            day_key: state.selectedBoardDay,
+            reason: reason.trim()
+          });
+          if (!response || response.status !== 'success') {
+            showToast((response && response.message) || 'Error');
+            return;
+          }
+          showToast(t('dayUnarchivedSaved'));
+          await refreshBoardDays(true);
+          await refreshOrders();
         });
-        if (!response || response.status !== 'success') {
-          showToast((response && response.message) || 'Error');
-          return;
-        }
-        showToast(t('dayUnarchivedSaved'));
-        await refreshBoardDays(true);
-        await refreshOrders();
       }
 
       function switchScreen(name) {
@@ -2261,6 +2277,7 @@
       }
 
       async function requestStatusTransition(order, targetStatus) {
+        if (operationInFlight('statusTransition')) return;
         return withLoading('statusTransition', async () => {
           try {
             if (order.status === 'Delivered') {
