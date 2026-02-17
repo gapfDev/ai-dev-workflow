@@ -38,6 +38,7 @@ const CONFIG = {
   BOARD_DAY_HEADERS: ['day_key', 'is_archived', 'archived_at', 'archived_reason', 'unarchived_at', 'updated_at'],
   LATE_THRESHOLD_MINUTES: 15,
   ITEM_DETAILS_MAX_LENGTH: 500,
+  RUNTIME_AUTO_SETUP: false,
   RUNTIME_SETUP_CACHE_SECONDS: 300,
   RUNTIME_SETUP_MAX_AGE_MS: 300000,
   RUNTIME_SETUP_STAMP_KEY: 'RUNTIME_SETUP_STAMP_MS'
@@ -109,11 +110,32 @@ function ensureRuntimeReady_() {
     return;
   }
 
-  setup();
+  if (CONFIG.RUNTIME_AUTO_SETUP) {
+    setup();
+  } else {
+    validateRuntimeEnvironment_();
+  }
   props.setProperty(CONFIG.RUNTIME_SETUP_STAMP_KEY, String(now));
   try {
     cache.put(cacheKey, '1', CONFIG.RUNTIME_SETUP_CACHE_SECONDS);
   } catch (err) {}
+}
+
+function validateRuntimeEnvironment_() {
+  const ss = getSpreadsheet_();
+  const requiredSheets = [
+    CONFIG.SHEETS.ORDERS,
+    CONFIG.SHEETS.PRODUCTS,
+    CONFIG.SHEETS.EXPENSES,
+    CONFIG.SHEETS.BOARD_DAYS
+  ];
+
+  const missing = requiredSheets.filter(function (name) {
+    return !ss.getSheetByName(name);
+  });
+  if (missing.length) {
+    throw new Error('Missing required sheets: ' + missing.join(', ') + '. Run adminPrepareEnvironment().');
+  }
 }
 
 function include(filename) {
