@@ -1238,7 +1238,9 @@
         loadClientConfig: { scope: 'global' },
         refreshAll: { scope: 'global' },
         refreshProducts: { scope: 'section', sectionId: 'screen-capture' },
+        refreshBoardDays: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
         refreshOrders: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
+        boardEntrySync: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
         startEditing: { scope: 'section', sectionId: 'screen-capture' },
         saveOrder: { scope: 'button', buttons: ['btnSaveOrder'], sectionId: 'screen-capture' },
         statusTransition: { scope: 'section', sectionId: 'screen-board' },
@@ -1766,47 +1768,61 @@
         });
       }
 
+      async function runBoardEntrySync(forceDays = true) {
+        if (operationInFlight('boardEntrySync')) return;
+        const syncNode = document.getElementById('syncStatus');
+        if (syncNode) syncNode.textContent = t('syncBusy');
+        return withLoading('boardEntrySync', async () => {
+          await refreshBoardDays(forceDays);
+          await refreshOrders();
+          setSyncStatus('OK');
+        });
+      }
+
       async function refreshBoardDays(force = false) {
-        const now = Date.now();
-        if (!force && state.boardDaysLastFetchMs && (now - state.boardDaysLastFetchMs) < 10000) {
-          renderDayRibbon();
-          return;
-        }
-
-        let raw = [];
-        try {
-          const response = await api('getBoardDays');
-          if (Array.isArray(response)) {
-            raw = response;
-          } else if (response && response.status === 'success' && Array.isArray(response.items)) {
-            raw = response.items;
+        if (operationInFlight('refreshBoardDays')) return;
+        return withLoading('refreshBoardDays', async () => {
+          const now = Date.now();
+          if (!force && state.boardDaysLastFetchMs && (now - state.boardDaysLastFetchMs) < 10000) {
+            renderDayRibbon();
+            return;
           }
-        } catch (err) {
-          raw = [];
-        }
 
-        state.boardDays = raw
-          .map((day) => ({
-            day_key: normalizeDayKeyClient(day.day_key),
-            order_count: Number(day.order_count || 0),
-            pending_count: Number(day.pending_count || 0),
-            is_archived: day.is_archived === true,
-            updated_at: String(day.updated_at || '')
-          }))
-          .filter((day) => !!day.day_key)
-          .sort((a, b) => String(a.day_key).localeCompare(String(b.day_key)));
+          let raw = [];
+          try {
+            const response = await api('getBoardDays');
+            if (Array.isArray(response)) {
+              raw = response;
+            } else if (response && response.status === 'success' && Array.isArray(response.items)) {
+              raw = response.items;
+            }
+          } catch (err) {
+            raw = [];
+          }
 
-        const keys = state.boardDays.map((day) => day.day_key);
-        if (!state.selectedBoardDay || !keys.includes(state.selectedBoardDay)) {
-          state.selectedBoardDay = pickInitialBoardDay(keys);
-          state.boardRev = '';
-          state.boardLastUpdatedAt = '';
-        }
+          state.boardDays = raw
+            .map((day) => ({
+              day_key: normalizeDayKeyClient(day.day_key),
+              order_count: Number(day.order_count || 0),
+              pending_count: Number(day.pending_count || 0),
+              is_archived: day.is_archived === true,
+              updated_at: String(day.updated_at || '')
+            }))
+            .filter((day) => !!day.day_key)
+            .sort((a, b) => String(a.day_key).localeCompare(String(b.day_key)));
 
-        const selected = selectedDayMeta();
-        state.selectedDayArchived = !!(selected && selected.is_archived);
-        state.boardDaysLastFetchMs = now;
-        renderDayRibbon();
+          const keys = state.boardDays.map((day) => day.day_key);
+          if (!state.selectedBoardDay || !keys.includes(state.selectedBoardDay)) {
+            state.selectedBoardDay = pickInitialBoardDay(keys);
+            state.boardRev = '';
+            state.boardLastUpdatedAt = '';
+          }
+
+          const selected = selectedDayMeta();
+          state.selectedDayArchived = !!(selected && selected.is_archived);
+          state.boardDaysLastFetchMs = now;
+          renderDayRibbon();
+        });
       }
 
       async function archiveSelectedBoardDay() {
@@ -1869,8 +1885,7 @@
           b.classList.toggle('active', b.dataset.screen === name);
         });
         if (name === 'board') {
-          refreshBoardDays(true)
-            .then(() => refreshOrders())
+          runBoardEntrySync(true)
             .catch(() => {});
         }
         if (typeof restartPolling === 'function') restartPolling(false);
@@ -2843,10 +2858,7 @@
 
         document.getElementById('btnSaveOrder').addEventListener('click', saveOrder);
         document.getElementById('btnResetForm').addEventListener('click', resetForm);
-        document.getElementById('btnRefreshBoard').addEventListener('click', async () => {
-          await refreshBoardDays(true);
-          await refreshOrders();
-        });
+        document.getElementById('btnRefreshBoard').addEventListener('click', () => runBoardEntrySync(true));
         document.getElementById('btnJumpCapture').addEventListener('click', () => switchScreen('capture'));
         document.getElementById('btnArchiveDay').addEventListener('click', archiveSelectedBoardDay);
         document.getElementById('btnUnarchiveDay').addEventListener('click', unarchiveSelectedBoardDay);
