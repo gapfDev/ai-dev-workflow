@@ -577,6 +577,19 @@
         border-radius: 14px;
         min-height: 60vh;
         padding: 8px;
+        transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+      }
+
+      .kanban-column.drop-target-valid {
+        background: #eef8f0;
+        border-color: #9dc8a6;
+        box-shadow: inset 0 0 0 1px rgba(44, 122, 67, 0.25), 0 0 0 2px rgba(44, 122, 67, 0.12);
+      }
+
+      .kanban-column.drop-target-invalid {
+        background: #fff0ed;
+        border-color: #dc8f88;
+        box-shadow: inset 0 0 0 1px rgba(180, 51, 46, 0.28), 0 0 0 2px rgba(180, 51, 46, 0.14);
       }
 
       .kanban-column h3 {
@@ -607,6 +620,13 @@
         padding: 8px;
         margin-bottom: 8px;
         cursor: grab;
+        transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+      }
+
+      .ticket.dragging {
+        background: #fff4df;
+        border-color: #bf955d;
+        box-shadow: 0 6px 16px rgba(133, 90, 35, 0.22);
       }
 
       .ticket[data-status='Working'] {
