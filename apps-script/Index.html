@@ -653,6 +653,41 @@
         color: var(--ink-soft);
       }
 
+      .ticket-comment {
+        margin-top: 6px;
+        border-top: 1px dashed #e1cfb3;
+        padding-top: 6px;
+      }
+
+      .ticket-comment-preview {
+        font-size: 0.76rem;
+        color: var(--ink-soft);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .ticket-comment-full {
+        display: none;
+        margin-top: 5px;
+        padding: 6px;
+        border: 1px solid #e6d5b9;
+        border-radius: 8px;
+        background: #fffaf1;
+        font-size: 0.76rem;
+        color: var(--ink);
+        white-space: pre-wrap;
+      }
+
+      .ticket-comment.expanded .ticket-comment-full {
+        display: block;
+      }
+
+      .ticket-comment-toggle {
+        margin-top: 5px;
+        width: auto;
+      }
+
       .ticket .chip-row {
         display: flex;
         gap: 4px;
@@ -1224,6 +1259,8 @@
         edit: 'Edit',
         reactivate: 'Reactivate',
         moveToCancelled: 'Cancel',
+        expand: 'Expand',
+        collapse: 'Collapse',
         state: 'State',
         captured: 'Captured',
         noData: 'No data',
@@ -1326,6 +1363,29 @@
 
       function formatMoney(value) {
         return '$' + Number(value || 0).toFixed(2);
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function extractTicketItemComments(order) {
+        if (!order || !order.items_json) return [];
+        let parsed = [];
+        try {
+          parsed = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
+        } catch (err) {
+          return [];
+        }
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .map((item) => String((item && item.details) || '').trim())
+          .filter(Boolean);
       }
 
       function normalizeTextForMatch(text) {
@@ -2294,6 +2354,9 @@
         const age = minutesElapsed(order.captured_at);
         const isLate = age > 90;
         const canEdit = order.status !== 'Delivered';
+        const comments = extractTicketItemComments(order);
+        const hasComments = comments.length > 0;
+        const escapedComments = hasComments ? escapeHtml(comments.join(' | ')) : '';
         return `
           <div class="ticket ${isLate ? 'late' : ''}" draggable="true" data-order-id="${order.order_id}" data-status="${order.status}">
             <div class="folio">${order.order_number || 'LEGACY'}</div>
@@ -2305,6 +2368,13 @@
               <span class="chip ${order.payment_status === 'Paid' ? 'paid' : 'unpaid'}">${order.payment_status}</span>
               <span class="chip">${formatMoney(order.total_amount)}</span>
             </div>
+            ${hasComments ? `
+            <div class="ticket-comment">
+              <div class="ticket-comment-preview">${escapedComments}</div>
+              <div class="ticket-comment-full">${escapedComments}</div>
+              <button class="ghost-btn ticket-comment-toggle" type="button" data-toggle-comment="${order.order_id}">${t('expand')}</button>
+            </div>
+            ` : ''}
             <div class="meta">${statusLabel(order.status)}</div>
             <div class="row">
               <button class="ghost-btn" data-edit-order="${order.order_id}" ${canEdit ? '' : 'disabled'}>${t('edit')}</button>
@@ -2898,6 +2968,14 @@
           await requestStatusTransition(order, targetStatus);
         });
         board.addEventListener('click', async (event) => {
+          const toggleBtn = event.target.closest('[data-toggle-comment]');
+          if (toggleBtn) {
+            const box = toggleBtn.closest('.ticket-comment');
+            if (!box) return;
+            const expanded = box.classList.toggle('expanded');
+            toggleBtn.textContent = expanded ? t('collapse') : t('expand');
+            return;
+          }
           const editBtn = event.target.closest('[data-edit-order]');
           if (editBtn) {
             await startEditing(editBtn.dataset.editOrder);
