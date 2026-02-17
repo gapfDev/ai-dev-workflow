@@ -1358,6 +1358,12 @@
         selectedBoardDay: '',
         selectedDayArchived: false,
         boardDaysLastFetchMs: 0,
+        dragRuntime: {
+          orderId: '',
+          sourceStatus: '',
+          activeColumnStatus: '',
+          draggingTicketId: ''
+        },
         loading: {
           operation: {},
           globalCount: 0,
@@ -2459,6 +2465,26 @@
         }
       }
 
+      function clearDropTargetClasses(board) {
+        const mount = board || document.getElementById('kanbanBoard');
+        if (!mount) return;
+        mount.querySelectorAll('.kanban-column.drop-target-valid, .kanban-column.drop-target-invalid').forEach((column) => {
+          column.classList.remove('drop-target-valid', 'drop-target-invalid');
+        });
+      }
+
+      function cleanupDragRuntime(board) {
+        clearDropTargetClasses(board);
+        if (state.dragRuntime.draggingTicketId) {
+          const ticket = document.querySelector(`.ticket[data-order-id="${state.dragRuntime.draggingTicketId}"]`);
+          if (ticket) ticket.classList.remove('dragging');
+        }
+        state.dragRuntime.orderId = '';
+        state.dragRuntime.sourceStatus = '';
+        state.dragRuntime.activeColumnStatus = '';
+        state.dragRuntime.draggingTicketId = '';
+      }
+
       async function requestStatusTransition(order, targetStatus) {
         if (operationInFlight('statusTransition')) return;
         return withLoading('statusTransition', async () => {
@@ -2972,31 +2998,67 @@
         board.addEventListener('dragstart', (event) => {
           const ticket = event.target.closest('.ticket[draggable="true"]');
           if (!ticket) return;
-          event.dataTransfer.setData('text/plain', JSON.stringify({
-            orderId: ticket.dataset.orderId,
-            status: ticket.dataset.status
-          }));
+          const payload = {
+            orderId: ticket.dataset.orderId || '',
+            status: ticket.dataset.status || ''
+          };
+          state.dragRuntime.orderId = payload.orderId;
+          state.dragRuntime.sourceStatus = payload.status;
+          state.dragRuntime.activeColumnStatus = '';
+          state.dragRuntime.draggingTicketId = payload.orderId;
+          ticket.classList.add('dragging');
+          if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', JSON.stringify(payload));
+          }
         });
         board.addEventListener('dragover', (event) => {
-          if (event.target.closest('.kanban-column')) event.preventDefault();
-        });
-        board.addEventListener('drop', async (event) => {
           const column = event.target.closest('.kanban-column');
           if (!column) return;
           event.preventDefault();
-          const raw = event.dataTransfer.getData('text/plain');
-          if (!raw) return;
-          let payload;
-          try {
-            payload = JSON.parse(raw);
-          } catch (err) {
-            return;
+          if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+          const targetStatus = column.dataset.dropStatus || '';
+          if (!state.dragRuntime.orderId || state.dragRuntime.activeColumnStatus === targetStatus) return;
+          clearDropTargetClasses(board);
+          column.classList.add('drop-target-valid');
+          state.dragRuntime.activeColumnStatus = targetStatus;
+        });
+        board.addEventListener('drop', async (event) => {
+          event.preventDefault();
+          const column = event.target.closest('.kanban-column');
+          const fallbackPayload = {
+            orderId: state.dragRuntime.orderId || '',
+            status: state.dragRuntime.sourceStatus || ''
+          };
+          let payload = fallbackPayload;
+          if (event.dataTransfer) {
+            const raw = event.dataTransfer.getData('text/plain');
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw);
+                payload = {
+                  orderId: parsed.orderId || fallbackPayload.orderId,
+                  status: parsed.status || fallbackPayload.status
+                };
+              } catch (err) {
+                payload = fallbackPayload;
+              }
+            }
           }
-          const order = state.orders.find((o) => o.order_id === payload.orderId);
-          if (!order) return;
-          const targetStatus = column.dataset.dropStatus;
-          if (payload.status === targetStatus) return;
-          await requestStatusTransition(order, targetStatus);
+
+          try {
+            if (!column || !payload.orderId) return;
+            const order = state.orders.find((o) => o.order_id === payload.orderId);
+            if (!order) return;
+            const targetStatus = column.dataset.dropStatus;
+            if (payload.status === targetStatus) return;
+            await requestStatusTransition(order, targetStatus);
+          } finally {
+            cleanupDragRuntime(board);
+          }
+        });
+        board.addEventListener('dragend', () => {
+          cleanupDragRuntime(board);
         });
         board.addEventListener('click', async (event) => {
           const toggleBtn = event.target.closest('[data-toggle-comment]');
