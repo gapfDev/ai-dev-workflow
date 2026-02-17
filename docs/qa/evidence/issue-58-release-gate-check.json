@@ -1,0 +1,42 @@
+{
+  "timestamp_utc": "2026-02-17T05:39:20.909882+00:00",
+  "api_base": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+  "checks": [
+    {
+      "action": "getProducts",
+      "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getProducts",
+      "ok": true,
+      "parsed_type": "list",
+      "count": 15
+    },
+    {
+      "action": "getOrders",
+      "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getOrders",
+      "ok": true,
+      "parsed_type": "list",
+      "count": 36
+    },
+    {
+      "action": "getBoardSnapshot",
+      "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardSnapshot",
+      "ok": true,
+      "parsed_type": "dict",
+      "status": "success"
+    },
+    {
+      "action": "getClientConfig",
+      "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getClientConfig",
+      "ok": true,
+      "parsed_type": "dict",
+      "status": "success"
+    },
+    {
+      "action": "adminRunSmokeTests",
+      "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=adminRunSmokeTests",
+      "ok": true,
+      "parsed_type": "dict",
+      "status": "success",
+      "smoke_ok": true
+    }
+  ]
+}
