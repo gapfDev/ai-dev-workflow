@@ -130,11 +130,48 @@ function validateRuntimeEnvironment_() {
     CONFIG.SHEETS.BOARD_DAYS
   ];
 
-  const missing = requiredSheets.filter(function (name) {
+  let missing = requiredSheets.filter(function (name) {
+    return !ss.getSheetByName(name);
+  });
+  if (!missing.length) return;
+
+  // Self-heal missing sheets (most commonly BoardDays) when runtime has edit permissions.
+  try {
+    missing.forEach(function (name) {
+      ensureSheetHeaders_(ss, name, headersForSheetName_(name));
+    });
+    if (missing.indexOf(CONFIG.SHEETS.BOARD_DAYS) !== -1) {
+      syncBoardDaysFromOrders_();
+    }
+  } catch (err) {
+    throw new Error(
+      'Missing required sheets: ' + missing.join(', ')
+      + '. Auto-create failed: '
+      + (err && err.message ? err.message : String(err))
+      + '. Run adminPrepareEnvironment().'
+    );
+  }
+
+  missing = requiredSheets.filter(function (name) {
     return !ss.getSheetByName(name);
   });
   if (missing.length) {
     throw new Error('Missing required sheets: ' + missing.join(', ') + '. Run adminPrepareEnvironment().');
+  }
+}
+
+function headersForSheetName_(sheetName) {
+  switch (sheetName) {
+    case CONFIG.SHEETS.ORDERS:
+      return CONFIG.ORDER_HEADERS;
+    case CONFIG.SHEETS.PRODUCTS:
+      return CONFIG.PRODUCT_HEADERS;
+    case CONFIG.SHEETS.EXPENSES:
+      return CONFIG.EXPENSE_HEADERS;
+    case CONFIG.SHEETS.BOARD_DAYS:
+      return CONFIG.BOARD_DAY_HEADERS;
+    default:
+      return [];
   }
 }
 
