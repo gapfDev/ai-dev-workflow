@@ -2485,6 +2485,14 @@
         state.dragRuntime.draggingTicketId = '';
       }
 
+      function isValidVisualDropTarget(sourceStatus, targetStatus) {
+        if (!sourceStatus || !targetStatus) return false;
+        if (sourceStatus === targetStatus) return false;
+        if (sourceStatus === 'Delivered') return false;
+        if (targetStatus === 'Delivered' && sourceStatus !== 'Baked') return false;
+        return true;
+      }
+
       async function requestStatusTransition(order, targetStatus) {
         if (operationInFlight('statusTransition')) return;
         return withLoading('statusTransition', async () => {
@@ -3020,7 +3028,8 @@
           const targetStatus = column.dataset.dropStatus || '';
           if (!state.dragRuntime.orderId || state.dragRuntime.activeColumnStatus === targetStatus) return;
           clearDropTargetClasses(board);
-          column.classList.add('drop-target-valid');
+          const valid = isValidVisualDropTarget(state.dragRuntime.sourceStatus, targetStatus);
+          column.classList.add(valid ? 'drop-target-valid' : 'drop-target-invalid');
           state.dragRuntime.activeColumnStatus = targetStatus;
         });
         board.addEventListener('drop', async (event) => {
