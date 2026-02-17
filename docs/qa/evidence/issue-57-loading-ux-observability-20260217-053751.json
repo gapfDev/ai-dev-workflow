@@ -1,0 +1,29 @@
+{
+  "timestamp_utc": "2026-02-17T05:37:06.917739Z",
+  "checks": [
+    {
+      "name": "Board entry triggers loading state",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Manual refresh triggers loading state",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Board remains interactive between polls",
+      "ok": false,
+      "detail": "busy_ratio=0.974 (76/78)"
+    },
+    {
+      "name": "Day ribbon can be interacted with under polling",
+      "ok": false,
+      "detail": ""
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2
+  }
+}
