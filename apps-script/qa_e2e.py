@@ -22,6 +22,10 @@ def now_tag():
     return datetime.utcnow().strftime("%Y%m%d%H%M%S")
 
 
+class QaApiError(Exception):
+    """Raised when API endpoint response is unusable for QA checks."""
+
+
 class QaRunner:
     def __init__(self, api_base, local_dir, port):
         self.api_base = api_base
@@ -41,10 +45,30 @@ class QaRunner:
         if not ok:
             self.errors.append({"name": name, "detail": detail})
 
+    def _decode_json_response(self, action, resp):
+        final_url = resp.geturl()
+        body = resp.read().decode("utf-8", errors="replace")
+        content_type = (resp.headers.get("Content-Type") or "").lower()
+        lowered = body.lstrip().lower()
+
+        # In restricted deployments Apps Script may redirect to Google login and return HTML.
+        if "accounts.google.com" in final_url or lowered.startswith("<!doctype html") or lowered.startswith("<html"):
+            raise QaApiError(
+                f"{action} returned non-JSON HTML (possible auth/domain restriction). "
+                f"url={final_url}"
+            )
+
+        try:
+            return json.loads(body)
+        except json.JSONDecodeError as exc:
+            raise QaApiError(
+                f"{action} returned invalid JSON (content-type={content_type}, url={final_url}): {exc}"
+            ) from exc
+
     def http_get_json(self, action):
         url = f"{self.api_base}?action={urllib.parse.quote(action)}"
         with urllib.request.urlopen(url, timeout=30) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+            return self._decode_json_response(action, resp)
 
     def http_post_json(self, payload):
         req = urllib.request.Request(
@@ -54,7 +78,8 @@ class QaRunner:
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+            action = payload.get("action", "POST")
+            return self._decode_json_response(action, resp)
 
     async def run_ui_checks(self, ui_customer):
         server = subprocess.Popen(
@@ -141,7 +166,15 @@ class QaRunner:
         customer_b = f"QA-API-B-{tag}"
         customer_ui = f"QA-UI-{tag}"
 
-        products = self.http_get_json("getProducts")
+        try:
+            products = self.http_get_json("getProducts")
+        except QaApiError as exc:
+            self.record("API access/config", False, str(exc))
+            print("\n=== QA SUMMARY ===")
+            print("Passed: 0")
+            print("Failed: 1")
+            print(f" - API access/config: {exc}")
+            return 2
         self.record("API getProducts", isinstance(products, list) and len(products) > 0, f"count={len(products) if isinstance(products, list) else 'n/a'}")
 
         items = [{"id": "P006", "name": "Semita Alta (1/4 Regular)", "price": 10, "quantity": 1}]
