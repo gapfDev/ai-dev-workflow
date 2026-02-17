@@ -164,6 +164,8 @@ function handleGetAction_(action, params) {
       return getSpreadsheetInfo_();
     case 'adminRunSmokeTests':
       return adminRunSmokeTests();
+    case 'adminSetSpreadsheetIdProperty':
+      return adminSetSpreadsheetIdProperty(params || {});
     case 'adminMigrateLegacySheetById':
       return adminMigrateLegacySheetById({});
     case 'adminImportProductsFromSpreadsheet':
@@ -189,6 +191,8 @@ function handlePostAction_(action, payload) {
       return addExpense_(payload);
     case 'adminPrepareEnvironment':
       return adminPrepareEnvironment();
+    case 'adminSetSpreadsheetIdProperty':
+      return adminSetSpreadsheetIdProperty(payload || {});
     case 'adminSeedDemoProductsIfEmpty':
       return adminSeedDemoProductsIfEmpty();
     case 'adminMigrateLegacySheetById':
@@ -1245,17 +1249,42 @@ function getSheet_(name) {
 
 function getSpreadsheet_() {
   const props = PropertiesService.getScriptProperties();
+  const configuredId = cleanString_(CONFIG.SPREADSHEET_ID) || cleanString_(props.getProperty('SPREADSHEET_ID'));
   const internalId = cleanString_(props.getProperty('BAKERY_INTERNAL_SPREADSHEET_ID'));
-  if (internalId) {
+
+  const candidateIds = [];
+  if (configuredId) candidateIds.push(configuredId);
+  if (internalId && internalId !== configuredId) candidateIds.push(internalId);
+
+  for (let i = 0; i < candidateIds.length; i += 1) {
+    const id = candidateIds[i];
     try {
-      return SpreadsheetApp.openById(internalId);
+      const ss = SpreadsheetApp.openById(id);
+      props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', ss.getId());
+      props.setProperty('SPREADSHEET_ID', ss.getId());
+      return ss;
     } catch (err) {}
   }
 
-  const created = SpreadsheetApp.create('Bakery Ops MVP Data');
-  props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', created.getId());
-  props.setProperty('SPREADSHEET_ID', created.getId());
-  return created;
+  // Container-bound fallback if the script is attached to a Sheet.
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) {
+      props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', active.getId());
+      props.setProperty('SPREADSHEET_ID', active.getId());
+      return active;
+    }
+  } catch (err) {}
+
+  // First-run bootstrap only when there is no explicit ID configured.
+  if (!configuredId && !internalId) {
+    const created = SpreadsheetApp.create('Bakery Ops MVP Data');
+    props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', created.getId());
+    props.setProperty('SPREADSHEET_ID', created.getId());
+    return created;
+  }
+
+  throw new Error('Unable to open configured spreadsheet. Check Script Property SPREADSHEET_ID and sharing permissions.');
 }
 
 function getSpreadsheetInfo_() {

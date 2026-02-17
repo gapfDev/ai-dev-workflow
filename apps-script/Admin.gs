@@ -6,16 +6,28 @@
  * 3) adminRunSmokeTests
  */
 
-function adminSetSpreadsheetIdProperty() {
-  const spreadsheetId = cleanString_(PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID'));
+function adminSetSpreadsheetIdProperty(payload) {
+  const props = PropertiesService.getScriptProperties();
+  const incomingId = cleanString_(payload && payload.spreadsheet_id);
+  const spreadsheetId = incomingId || cleanString_(props.getProperty('SPREADSHEET_ID'));
   if (!spreadsheetId) {
-    return fail_('Set Script Property SPREADSHEET_ID first (Apps Script > Project Settings).');
+    return fail_('spreadsheet_id is required (payload or Script Property SPREADSHEET_ID).');
   }
-  PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', spreadsheetId);
+
+  let opened;
+  try {
+    opened = SpreadsheetApp.openById(spreadsheetId);
+  } catch (err) {
+    return fail_('Invalid or inaccessible spreadsheet_id: ' + spreadsheetId);
+  }
+
+  props.setProperty('SPREADSHEET_ID', opened.getId());
+  props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', opened.getId());
   return ok_({
     message: 'Script property updated',
     key: 'SPREADSHEET_ID',
-    value: spreadsheetId
+    value: opened.getId(),
+    spreadsheet_url: opened.getUrl()
   });
 }
 

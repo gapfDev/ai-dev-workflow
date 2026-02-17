@@ -1288,6 +1288,7 @@
         saved: 'Saved',
         backendOutdated: 'Outdated backend detected on /exec. Deploy a new Code.gs version (missing folio/FIFO fields or empty order_id).',
         apiInvalidJson: 'API did not return valid JSON. Check Web App deployment (/exec).',
+        apiAccessRestricted: 'Web App access is restricted. Fix deployment access (Execute as: Me, Who has access: Anyone/Anyone with Google account) and domain policy.',
         missingOrderIdResponse: 'Order was saved but backend did not return order_id. Update production Code.gs.',
         familyDefault: 'General',
         warningDeliveryUnpaid: 'Delivery is Unpaid: order will be saved with warning.',
@@ -1754,6 +1755,16 @@
         const response = await fetch(url, options);
         const raw = await response.text();
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const lowered = String(raw || '').slice(0, 1600).toLowerCase();
+        const redirectedToLogin = response.redirected && String(response.url || '').toLowerCase().includes('accounts.google.com');
+        const looksLikeAccessGate = redirectedToLogin
+          || lowered.includes('unable to open the file at this time')
+          || lowered.includes('<title>moved temporarily</title>')
+          || lowered.includes('servicelogin')
+          || lowered.includes('accounts.google.com');
+        if (looksLikeAccessGate) {
+          throw new Error(t('apiAccessRestricted'));
+        }
         try {
           return JSON.parse(raw);
         } catch (err) {
@@ -2814,6 +2825,7 @@
             state.products = Array.isArray(data) ? data.map((p) => normalizeProductClient(p)) : [];
           } catch (err) {
             state.products = [];
+            setBanner(err.message || String(err), 'warn');
           }
           if (!Array.isArray(state.products) || state.products.length === 0) {
             state.products = FALLBACK_PRODUCTS.map((p) => normalizeProductClient(p));
