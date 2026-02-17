@@ -84,11 +84,18 @@
         color: var(--ink-soft);
       }
 
+      body.global-busy .status-pill {
+        color: var(--brand-strong);
+        border-color: #d8b786;
+        background: #fff4df;
+      }
+
       .btn {
         border: 0;
         border-radius: 10px;
         cursor: pointer;
         padding: 10px 14px;
+        position: relative;
         font-weight: 700;
         font-family: inherit;
         transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s ease;
@@ -117,6 +124,25 @@
       .btn-danger {
         background: var(--danger);
         color: #fff;
+      }
+
+      .btn.is-loading {
+        opacity: 0.85;
+        cursor: wait;
+      }
+
+      .btn.is-loading::after {
+        content: '';
+        position: absolute;
+        right: 9px;
+        top: 50%;
+        width: 12px;
+        height: 12px;
+        margin-top: -6px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        animation: spin 0.65s linear infinite;
       }
 
       .role-strip {
@@ -764,6 +790,42 @@
         transform: translateY(0);
       }
 
+      .section-busy {
+        position: relative;
+      }
+
+      .section-busy::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: rgba(255, 247, 232, 0.58);
+        z-index: 15;
+        pointer-events: all;
+      }
+
+      .section-busy::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 22px;
+        height: 22px;
+        margin-left: -11px;
+        margin-top: -11px;
+        border-radius: 50%;
+        border: 3px solid rgba(180, 87, 40, 0.28);
+        border-top-color: var(--brand-strong);
+        animation: spin 0.7s linear infinite;
+        z-index: 16;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
       @media (max-width: 1200px) {
         .kanban {
           grid-template-columns: repeat(5, minmax(200px, 1fr));
@@ -1072,6 +1134,7 @@
         appTitle: 'Bakery Ops Board v1',
         appSubtitle: 'Visual FIFO + friendly folio for a 4-role team',
         syncReady: 'Synced',
+        syncBusy: 'Syncing...',
         roleTaker: 'Order Taker',
         roleTakerDesc: 'Fast capture from calls/Facebook',
         roleCook: 'Cook',
@@ -1169,6 +1232,17 @@
         dayUnarchivedSaved: 'Day unarchived.'
       };
       const I18N = { en: I18N_EN, es: I18N_EN };
+      const LOADING_THRESHOLD_MS = 25;
+      const LOADING_MIN_VISIBLE_MS = 180;
+      const LOADING_OPS = {
+        loadClientConfig: { scope: 'global' },
+        refreshAll: { scope: 'global' },
+        refreshProducts: { scope: 'section', sectionId: 'screen-capture' },
+        refreshOrders: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
+        startEditing: { scope: 'section', sectionId: 'screen-capture' },
+        saveOrder: { scope: 'button', buttons: ['btnSaveOrder'], sectionId: 'screen-capture' },
+        statusTransition: { scope: 'section', sectionId: 'screen-board' }
+      };
 
       const state = {
         lang: 'en',
@@ -1193,7 +1267,14 @@
         boardDays: [],
         selectedBoardDay: '',
         selectedDayArchived: false,
-        boardDaysLastFetchMs: 0
+        boardDaysLastFetchMs: 0,
+        loading: {
+          operation: {},
+          globalCount: 0,
+          buttonCounts: {},
+          sectionCounts: {},
+          tokenSeq: 0
+        }
       };
 
       function t(key) {
@@ -1366,6 +1447,169 @@
         return !hasOrderNumber || !hasCapturedAt || hasEmptyOrderId;
       }
 
+      function resolveElements(targets) {
+        const list = Array.isArray(targets) ? targets : (targets ? [targets] : []);
+        return list.map((target) => {
+          if (!target) return null;
+          if (typeof target === 'string') return document.getElementById(target);
+          return target;
+        }).filter(Boolean);
+      }
+
+      function loadingTokenKey(target, prefix) {
+        if (target.id) return `${prefix}:${target.id}`;
+        if (!target.dataset.loadingKey) {
+          state.loading.tokenSeq += 1;
+          target.dataset.loadingKey = String(state.loading.tokenSeq);
+        }
+        return `${prefix}:anon:${target.dataset.loadingKey}`;
+      }
+
+      function setButtonBusy(button, busy) {
+        if (!button) return;
+        if (busy) {
+          if (!Object.prototype.hasOwnProperty.call(button.dataset, 'loadingPrevDisabled')) {
+            button.dataset.loadingPrevDisabled = button.disabled ? '1' : '0';
+          }
+          button.disabled = true;
+          button.classList.add('is-loading');
+          button.setAttribute('aria-busy', 'true');
+          return;
+        }
+
+        const wasDisabled = button.dataset.loadingPrevDisabled === '1';
+        button.disabled = wasDisabled;
+        delete button.dataset.loadingPrevDisabled;
+        button.classList.remove('is-loading');
+        button.removeAttribute('aria-busy');
+      }
+
+      function updateButtonCounts(buttons, delta) {
+        buttons.forEach((button) => {
+          const key = loadingTokenKey(button, 'btn');
+          const current = Number(state.loading.buttonCounts[key] || 0);
+          const next = Math.max(0, current + delta);
+          if (next === 0) delete state.loading.buttonCounts[key];
+          else state.loading.buttonCounts[key] = next;
+          if (current === 0 && next > 0) setButtonBusy(button, true);
+          if (current > 0 && next === 0) setButtonBusy(button, false);
+        });
+      }
+
+      function setSectionBusy(section, busy) {
+        if (!section) return;
+        section.classList.toggle('section-busy', busy);
+        if (busy) section.setAttribute('aria-busy', 'true');
+        else section.removeAttribute('aria-busy');
+      }
+
+      function updateSectionCounts(sections, delta) {
+        sections.forEach((section) => {
+          const key = loadingTokenKey(section, 'section');
+          const current = Number(state.loading.sectionCounts[key] || 0);
+          const next = Math.max(0, current + delta);
+          if (next === 0) delete state.loading.sectionCounts[key];
+          else state.loading.sectionCounts[key] = next;
+          if (current === 0 && next > 0) setSectionBusy(section, true);
+          if (current > 0 && next === 0) setSectionBusy(section, false);
+        });
+      }
+
+      function setGlobalBusy(isBusy) {
+        const body = document.body;
+        if (isBusy) body.classList.add('global-busy');
+        else body.classList.remove('global-busy');
+        const statusNode = document.getElementById('syncStatus');
+        if (!statusNode) return;
+        if (isBusy) statusNode.textContent = t('syncBusy');
+        else if (!setSyncStatus._timer) statusNode.textContent = t('syncReady');
+      }
+
+      function updateGlobalCount(delta) {
+        state.loading.globalCount = Math.max(0, Number(state.loading.globalCount || 0) + delta);
+        setGlobalBusy(state.loading.globalCount > 0);
+      }
+
+      function operationConfig(name, overrides) {
+        const base = LOADING_OPS[name] || {};
+        return {
+          scope: overrides && overrides.scope ? overrides.scope : (base.scope || 'section'),
+          sectionId: overrides && Object.prototype.hasOwnProperty.call(overrides, 'sectionId') ? overrides.sectionId : base.sectionId,
+          buttons: overrides && Object.prototype.hasOwnProperty.call(overrides, 'buttons') ? overrides.buttons : base.buttons,
+          minVisibleMs: Number((overrides && overrides.minVisibleMs) || base.minVisibleMs || LOADING_MIN_VISIBLE_MS)
+        };
+      }
+
+      function beginLoadingOperation(name, overrides) {
+        const cfg = operationConfig(name, overrides);
+        const buttons = resolveElements(cfg.buttons);
+        const sections = resolveElements(cfg.sectionId);
+        state.loading.operation[name] = Number(state.loading.operation[name] || 0) + 1;
+
+        const token = {
+          name,
+          cfg,
+          buttons,
+          sections,
+          shown: false,
+          showAt: 0,
+          timer: null
+        };
+
+        token.timer = window.setTimeout(() => {
+          token.shown = true;
+          token.showAt = Date.now();
+          if (cfg.scope === 'global') updateGlobalCount(1);
+          if (cfg.scope === 'section' || cfg.scope === 'button') updateSectionCounts(sections, 1);
+          if (cfg.scope === 'button') updateButtonCounts(buttons, 1);
+        }, LOADING_THRESHOLD_MS);
+
+        return token;
+      }
+
+      function endLoadingOperation(token) {
+        if (!token) return Promise.resolve();
+        window.clearTimeout(token.timer);
+
+        const finalize = () => {
+          if (token.shown) {
+            if (token.cfg.scope === 'global') updateGlobalCount(-1);
+            if (token.cfg.scope === 'section' || token.cfg.scope === 'button') updateSectionCounts(token.sections, -1);
+            if (token.cfg.scope === 'button') updateButtonCounts(token.buttons, -1);
+          }
+          const remaining = Math.max(0, Number(state.loading.operation[token.name] || 0) - 1);
+          if (remaining === 0) delete state.loading.operation[token.name];
+          else state.loading.operation[token.name] = remaining;
+        };
+
+        if (!token.shown) {
+          finalize();
+          return Promise.resolve();
+        }
+
+        const elapsed = Date.now() - token.showAt;
+        const wait = Math.max(0, Number(token.cfg.minVisibleMs || LOADING_MIN_VISIBLE_MS) - elapsed);
+        if (!wait) {
+          finalize();
+          return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+          window.setTimeout(() => {
+            finalize();
+            resolve();
+          }, wait);
+        });
+      }
+
+      async function withLoading(name, task, overrides) {
+        const token = beginLoadingOperation(name, overrides);
+        try {
+          return await task();
+        } finally {
+          await endLoadingOperation(token);
+        }
+      }
+
       async function api(action, method = 'GET', payload = null) {
         if (!API_BASE) {
           throw new Error('Missing API base. Open local with ?apiBase=https://.../exec');
@@ -1400,7 +1644,7 @@
           node.textContent = t(key);
         });
         document.getElementById('langToggle').textContent = 'EN';
-        document.getElementById('syncStatus').textContent = t('syncReady');
+        document.getElementById('syncStatus').textContent = state.loading.globalCount > 0 ? t('syncBusy') : t('syncReady');
         document.getElementById('captureModeLabel').textContent = state.editingOrderId ? t('modeEdit') : t('modeCreate');
         document.getElementById('btnSaveOrder').textContent = state.editingOrderId ? t('updateOrder') : t('saveOrder');
         document.getElementById('btnArchiveDay').textContent = t('archiveDay');
@@ -1692,7 +1936,8 @@
         node.textContent = text;
         window.clearTimeout(setSyncStatus._timer);
         setSyncStatus._timer = window.setTimeout(() => {
-          node.textContent = t('syncReady');
+          delete setSyncStatus._timer;
+          node.textContent = state.loading.globalCount > 0 ? t('syncBusy') : t('syncReady');
         }, timeout);
       }
 
@@ -2016,54 +2261,56 @@
       }
 
       async function requestStatusTransition(order, targetStatus) {
-        try {
-          if (order.status === 'Delivered') {
-            showToast(t('deliveredLocked'));
-            return;
+        return withLoading('statusTransition', async () => {
+          try {
+            if (order.status === 'Delivered') {
+              showToast(t('deliveredLocked'));
+              return;
+            }
+
+            let confirmReactivate = false;
+            if (targetStatus === 'Delivered' && order.status !== 'Baked') {
+              showToast(t('onlyFromBaked'));
+              return;
+            }
+
+            if (targetStatus === 'Cancelled') {
+              const ok = window.confirm(t('confirmCancel'));
+              if (!ok) return;
+            }
+
+            if (order.status === 'Cancelled' && targetStatus !== 'Cancelled') {
+              const ok = window.confirm(t('confirmReactivate'));
+              if (!ok) return;
+              confirmReactivate = true;
+            }
+
+            if (targetStatus === 'Delivered') {
+              const ok = window.confirm(t('confirmDelivered'));
+              if (!ok) return;
+            }
+
+            const response = await api('updateOrderStatus', 'POST', {
+              action: 'updateOrderStatus',
+              order_id: order.order_id,
+              status: targetStatus,
+              confirm_reactivate: confirmReactivate,
+              base_sync_version: order.sync_version
+            });
+
+            if (response.status !== 'success') {
+              showToast(response.message || 'Error');
+              return;
+            }
+
+            markPendingWrite(order.order_id);
+            await refreshBoardDays(true);
+            await refreshOrders();
+            setSyncStatus('OK');
+          } catch (err) {
+            setBanner(err.message || String(err), 'warn');
           }
-
-          let confirmReactivate = false;
-          if (targetStatus === 'Delivered' && order.status !== 'Baked') {
-            showToast(t('onlyFromBaked'));
-            return;
-          }
-
-          if (targetStatus === 'Cancelled') {
-            const ok = window.confirm(t('confirmCancel'));
-            if (!ok) return;
-          }
-
-          if (order.status === 'Cancelled' && targetStatus !== 'Cancelled') {
-            const ok = window.confirm(t('confirmReactivate'));
-            if (!ok) return;
-            confirmReactivate = true;
-          }
-
-          if (targetStatus === 'Delivered') {
-            const ok = window.confirm(t('confirmDelivered'));
-            if (!ok) return;
-          }
-
-          const response = await api('updateOrderStatus', 'POST', {
-            action: 'updateOrderStatus',
-            order_id: order.order_id,
-            status: targetStatus,
-            confirm_reactivate: confirmReactivate,
-            base_sync_version: order.sync_version
-          });
-
-          if (response.status !== 'success') {
-            showToast(response.message || 'Error');
-            return;
-          }
-
-          markPendingWrite(order.order_id);
-          await refreshBoardDays(true);
-          await refreshOrders();
-          setSyncStatus('OK');
-        } catch (err) {
-          setBanner(err.message || String(err), 'warn');
-        }
+        });
       }
 
       function markPendingWrite(orderId) {
@@ -2157,278 +2404,289 @@
       }
 
       async function startEditing(orderId) {
-        let order = state.orders.find((o) => o.order_id === orderId);
-        if (!order || order.status === 'Delivered') {
-          showToast(t('deliveredLocked'));
-          return;
-        }
+        return withLoading('startEditing', async () => {
+          let order = state.orders.find((o) => o.order_id === orderId);
+          if (!order || order.status === 'Delivered') {
+            showToast(t('deliveredLocked'));
+            return;
+          }
 
-        if (!order.items_json) {
+          if (!order.items_json) {
+            try {
+              const response = await api('getOrderDetails', 'GET', { order_id: orderId });
+              if (response && response.status === 'success' && response.order && response.order.order_id === orderId) {
+                order = response.order;
+              }
+            } catch (err) {}
+          }
+
+          state.editingOrderId = orderId;
+          document.getElementById('orderCustomer').value = order.customer_name || '';
+          document.getElementById('orderPhone').value = order.phone || '';
+          document.getElementById('orderDate').value = (order.delivery_date || '').slice(0, 10);
+          document.getElementById('orderTime').value = order.delivery_time || '';
+          document.getElementById('orderType').value = order.type || 'Pickup';
+          document.getElementById('orderPaymentStatus').value = order.payment_status || 'Unpaid';
+          document.getElementById('orderPaymentMethod').value = order.payment_method || '';
+          document.getElementById('orderDeposit').value = order.deposit_amount || '';
+          document.getElementById('orderChannel').value = order.channel || 'Phone';
+          document.getElementById('orderAddress').value = order.address || '';
+          document.getElementById('orderNotes').value = order.source_notes || '';
+
           try {
-            const response = await api('getOrderDetails', 'GET', { order_id: orderId });
-            if (response && response.status === 'success' && response.order && response.order.order_id === orderId) {
-              order = response.order;
-            }
-          } catch (err) {}
-        }
-
-        state.editingOrderId = orderId;
-        document.getElementById('orderCustomer').value = order.customer_name || '';
-        document.getElementById('orderPhone').value = order.phone || '';
-        document.getElementById('orderDate').value = (order.delivery_date || '').slice(0, 10);
-        document.getElementById('orderTime').value = order.delivery_time || '';
-        document.getElementById('orderType').value = order.type || 'Pickup';
-        document.getElementById('orderPaymentStatus').value = order.payment_status || 'Unpaid';
-        document.getElementById('orderPaymentMethod').value = order.payment_method || '';
-        document.getElementById('orderDeposit').value = order.deposit_amount || '';
-        document.getElementById('orderChannel').value = order.channel || 'Phone';
-        document.getElementById('orderAddress').value = order.address || '';
-        document.getElementById('orderNotes').value = order.source_notes || '';
-
-        try {
-          const parsed = JSON.parse(order.items_json || '[]');
-          if (Array.isArray(parsed)) {
-            state.selectedItems = parsed.map((item) => {
-              const normalized = normalizeProductClient({
-                id: item.id || item.name,
-                name: item.name,
-                price: item.price || 0,
-                category: item.family_label || item.category || ''
+            const parsed = JSON.parse(order.items_json || '[]');
+            if (Array.isArray(parsed)) {
+              state.selectedItems = parsed.map((item) => {
+                const normalized = normalizeProductClient({
+                  id: item.id || item.name,
+                  name: item.name,
+                  price: item.price || 0,
+                  category: item.family_label || item.category || ''
+                });
+                return {
+                  ...normalized,
+                  id: item.id || item.name,
+                  name: item.name,
+                  price: Number(item.price || 0),
+                  quantity: Number(item.quantity || 1),
+                  family_key: item.family_key || normalized.family_key,
+                  family_label: item.family_label || item.family || normalized.family_label || item.category || t('familyDefault'),
+                  family_color: item.family_color || normalized.family_color,
+                  variant: item.variant || '',
+                  details: item.details || ''
+                };
               });
-              return {
-                ...normalized,
-                id: item.id || item.name,
-                name: item.name,
-                price: Number(item.price || 0),
-                quantity: Number(item.quantity || 1),
-                family_key: item.family_key || normalized.family_key,
-                family_label: item.family_label || item.family || normalized.family_label || item.category || t('familyDefault'),
-                family_color: item.family_color || normalized.family_color,
-                variant: item.variant || '',
-                details: item.details || ''
-              };
-            });
-          } else {
+            } else {
+              state.selectedItems = [];
+            }
+          } catch (err) {
             state.selectedItems = [];
           }
-        } catch (err) {
-          state.selectedItems = [];
-        }
 
-        renderSelectedItems();
-        switchScreen('capture');
-        applyI18n();
+          renderSelectedItems();
+          switchScreen('capture');
+          applyI18n();
+        });
       }
 
       async function saveOrder() {
-        try {
-          if (!validateOrderForm()) {
-            showToast(t('fillRequired'));
-            return;
-          }
-
-          const payload = formPayload();
-          if (payload.type === 'Delivery' && payload.payment_status === 'Unpaid') {
-            showToast(t('warningDeliveryUnpaid'));
-          }
-
-          let response;
-          if (state.editingOrderId) {
-            const order = state.orders.find((o) => o.order_id === state.editingOrderId);
-            response = await api('updateOrderDetails', 'POST', {
-              action: 'updateOrderDetails',
-              order_id: state.editingOrderId,
-              base_sync_version: order ? order.sync_version : 1,
-              ...payload
-            });
-            if (response.status === 'success') {
-              markPendingWrite(state.editingOrderId);
+        return withLoading('saveOrder', async () => {
+          try {
+            if (!validateOrderForm()) {
+              showToast(t('fillRequired'));
+              return;
             }
-          } else {
-            response = await api('createOrder', 'POST', {
-              action: 'createOrder',
-              ...payload,
-              status: 'Pending'
-            });
-            if (response.status === 'success' && response.order_id) {
-              markPendingWrite(response.order_id);
-              const optimisticOrder = {
-                order_id: response.order_id,
-                order_number: response.order_number || '',
-                customer_name: payload.customer_name || '',
-                phone: payload.phone || '',
-                delivery_date: payload.delivery_date || '',
-                delivery_time: payload.delivery_time || '',
-                delivery_at: '',
-                type: payload.type || 'Pickup',
-                address: payload.address || '',
-                web_link: '',
-                channel: payload.channel || 'Phone',
-                source_notes: payload.source_notes || '',
-                items_json: JSON.stringify(payload.items_json || []),
-                total_amount: Number(payload.total_amount || 0),
-                status: 'Pending',
-                payment_status: payload.payment_status || 'Unpaid',
-                payment_method: payload.payment_method || '',
-                deposit_amount: payload.deposit_amount || '',
-                captured_at: response.captured_at || new Date().toISOString(),
-                updated_at: response.captured_at || new Date().toISOString(),
-                sync_version: 1,
-                is_legacy: false
-              };
-              state.orders = state.orders
-                .filter((order) => order.order_id !== optimisticOrder.order_id)
-                .concat([optimisticOrder])
-                .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
-              buildPhoneHints();
-              renderKanban();
-            }
-            if (response.status === 'success' && !response.order_id) {
-              setBanner(t('missingOrderIdResponse'), 'warn');
-            }
-          }
 
-          if (response.status !== 'success') {
-            showToast(response.message || 'Error');
-            return;
-          }
+            const payload = formPayload();
+            if (payload.type === 'Delivery' && payload.payment_status === 'Unpaid') {
+              showToast(t('warningDeliveryUnpaid'));
+            }
+            let response;
+            if (state.editingOrderId) {
+              const order = state.orders.find((o) => o.order_id === state.editingOrderId);
+              response = await api('updateOrderDetails', 'POST', {
+                action: 'updateOrderDetails',
+                order_id: state.editingOrderId,
+                base_sync_version: order ? order.sync_version : 1,
+                ...payload
+              });
+              if (response.status === 'success') {
+                markPendingWrite(state.editingOrderId);
+              }
+            } else {
+              response = await api('createOrder', 'POST', {
+                action: 'createOrder',
+                ...payload,
+                status: 'Pending'
+              });
+              if (response.status === 'success' && response.order_id) {
+                markPendingWrite(response.order_id);
+                const optimisticOrder = {
+                  order_id: response.order_id,
+                  order_number: response.order_number || '',
+                  customer_name: payload.customer_name || '',
+                  phone: payload.phone || '',
+                  delivery_date: payload.delivery_date || '',
+                  delivery_time: payload.delivery_time || '',
+                  delivery_at: '',
+                  type: payload.type || 'Pickup',
+                  address: payload.address || '',
+                  web_link: '',
+                  channel: payload.channel || 'Phone',
+                  source_notes: payload.source_notes || '',
+                  items_json: JSON.stringify(payload.items_json || []),
+                  total_amount: Number(payload.total_amount || 0),
+                  status: 'Pending',
+                  payment_status: payload.payment_status || 'Unpaid',
+                  payment_method: payload.payment_method || '',
+                  deposit_amount: payload.deposit_amount || '',
+                  captured_at: response.captured_at || new Date().toISOString(),
+                  updated_at: response.captured_at || new Date().toISOString(),
+                  sync_version: 1,
+                  is_legacy: false
+                };
+                state.orders = state.orders
+                  .filter((order) => order.order_id !== optimisticOrder.order_id)
+                  .concat([optimisticOrder])
+                  .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+                buildPhoneHints();
+                renderKanban();
+              }
+              if (response.status === 'success' && !response.order_id) {
+                setBanner(t('missingOrderIdResponse'), 'warn');
+              }
+            }
 
-          showToast(t('saved'));
-          resetForm();
-          await refreshBoardDays(true);
-          await refreshOrders();
-        } catch (err) {
-          setBanner(err.message || String(err), 'warn');
-        }
+            if (response.status !== 'success') {
+              showToast(response.message || 'Error');
+              return;
+            }
+
+            showToast(t('saved'));
+            resetForm();
+            await refreshBoardDays(true);
+            await refreshOrders();
+          } catch (err) {
+            setBanner(err.message || String(err), 'warn');
+          }
+        });
       }
 
       async function refreshProducts() {
-        try {
-          const data = await api('getProducts');
-          state.products = Array.isArray(data) ? data.map((p) => normalizeProductClient(p)) : [];
-        } catch (err) {
-          state.products = [];
-        }
-        if (!Array.isArray(state.products) || state.products.length === 0) {
-          state.products = FALLBACK_PRODUCTS.map((p) => normalizeProductClient(p));
-        }
-        renderMenuFamilies();
+        return withLoading('refreshProducts', async () => {
+          try {
+            const data = await api('getProducts');
+            state.products = Array.isArray(data) ? data.map((p) => normalizeProductClient(p)) : [];
+          } catch (err) {
+            state.products = [];
+          }
+          if (!Array.isArray(state.products) || state.products.length === 0) {
+            state.products = FALLBACK_PRODUCTS.map((p) => normalizeProductClient(p));
+          }
+          renderMenuFamilies();
+        });
       }
 
       async function loadClientConfig() {
-        try {
-          const config = await api('getClientConfig');
-          if (!config || config.status !== 'success' || !config.flags) return;
-          const flags = config.flags;
-          state.boardSnapshotEnabled = flags.board_snapshot_enabled !== false;
-          state.boardDeltaEnabled = flags.board_delta_sync_enabled !== false;
-          state.skipNoChangeRenderEnabled = flags.board_skip_nochange_render_enabled !== false;
-          state.incrementalRenderEnabled = flags.board_incremental_render_enabled !== false;
-          if (!state.incrementalRenderEnabled) {
-            state.columnSignatures = {};
-          }
-        } catch (err) {}
+        return withLoading('loadClientConfig', async () => {
+          try {
+            const config = await api('getClientConfig');
+            if (!config || config.status !== 'success' || !config.flags) return;
+            const flags = config.flags;
+            state.boardSnapshotEnabled = flags.board_snapshot_enabled !== false;
+            state.boardDeltaEnabled = flags.board_delta_sync_enabled !== false;
+            state.skipNoChangeRenderEnabled = flags.board_skip_nochange_render_enabled !== false;
+            state.incrementalRenderEnabled = flags.board_incremental_render_enabled !== false;
+            if (!state.incrementalRenderEnabled) {
+              state.columnSignatures = {};
+            }
+          } catch (err) {}
+        });
       }
 
       async function refreshOrders() {
-        const shouldRefreshDays = !state.selectedBoardDay || !state.boardDays.length || (Date.now() - state.boardDaysLastFetchMs) > 20000;
-        if (shouldRefreshDays) {
-          await refreshBoardDays(!state.boardDays.length || !state.selectedBoardDay);
-        }
-
-        const scopedDay = state.selectedBoardDay || '';
-        let normalized;
-        if (state.boardSnapshotEnabled && state.boardDeltaEnabled && state.kanbanInitialized && state.boardRev) {
-          try {
-            const deltaParams = { since_rev: state.boardRev };
-            if (scopedDay) {
-              deltaParams.board_day = scopedDay;
-            }
-            if (state.boardLastUpdatedAt) {
-              deltaParams.since_updated_at = state.boardLastUpdatedAt;
-            }
-            const delta = normalizeBoardDeltaResponse(await api('getBoardDelta', 'GET', deltaParams));
-            if (delta) {
-              const merged = delta.full ? delta.changed : mergeDeltaOrders(state.orders, delta);
-              normalized = {
-                items: merged,
-                boardRev: delta.boardRev || computeBoardRevisionClient(merged),
-                fallback: false
-              };
-            } else {
-              state.boardDeltaEnabled = false;
-            }
-          } catch (err) {
-            const msg = String(err && err.message ? err.message : err).toLowerCase();
-            if (msg.includes('unknown get action') || msg.includes('since_updated_at is invalid')) {
-              state.boardDeltaEnabled = false;
-            }
+        return withLoading('refreshOrders', async () => {
+          const shouldRefreshDays = !state.selectedBoardDay || !state.boardDays.length || (Date.now() - state.boardDaysLastFetchMs) > 20000;
+          if (shouldRefreshDays) {
+            await refreshBoardDays(!state.boardDays.length || !state.selectedBoardDay);
           }
-        }
 
-        if (state.boardSnapshotEnabled) {
-          if (!normalized) {
+          const scopedDay = state.selectedBoardDay || '';
+          let normalized;
+          if (state.boardSnapshotEnabled && state.boardDeltaEnabled && state.kanbanInitialized && state.boardRev) {
             try {
-              normalized = normalizeBoardResponse(await api('getBoardSnapshot', 'GET', scopedDay ? { board_day: scopedDay } : null));
-              if (normalized.fallback) {
-                normalized = null;
-                state.boardSnapshotEnabled = false;
+              const deltaParams = { since_rev: state.boardRev };
+              if (scopedDay) {
+                deltaParams.board_day = scopedDay;
+              }
+              if (state.boardLastUpdatedAt) {
+                deltaParams.since_updated_at = state.boardLastUpdatedAt;
+              }
+              const delta = normalizeBoardDeltaResponse(await api('getBoardDelta', 'GET', deltaParams));
+              if (delta) {
+                const merged = delta.full ? delta.changed : mergeDeltaOrders(state.orders, delta);
+                normalized = {
+                  items: merged,
+                  boardRev: delta.boardRev || computeBoardRevisionClient(merged),
+                  fallback: false
+                };
+              } else {
                 state.boardDeltaEnabled = false;
-              } else if (!normalized.boardRev) {
-                normalized.boardRev = computeBoardRevisionClient(normalized.items);
               }
             } catch (err) {
-              state.boardSnapshotEnabled = false;
-              state.boardDeltaEnabled = false;
+              const msg = String(err && err.message ? err.message : err).toLowerCase();
+              if (msg.includes('unknown get action') || msg.includes('since_updated_at is invalid')) {
+                state.boardDeltaEnabled = false;
+              }
             }
           }
-        }
 
-        if (!normalized) {
-          normalized = normalizeBoardResponse(await api('getOrders', 'GET', scopedDay ? { board_day: scopedDay } : null));
-        }
+          if (state.boardSnapshotEnabled) {
+            if (!normalized) {
+              try {
+                normalized = normalizeBoardResponse(await api('getBoardSnapshot', 'GET', scopedDay ? { board_day: scopedDay } : null));
+                if (normalized.fallback) {
+                  normalized = null;
+                  state.boardSnapshotEnabled = false;
+                  state.boardDeltaEnabled = false;
+                } else if (!normalized.boardRev) {
+                  normalized.boardRev = computeBoardRevisionClient(normalized.items);
+                }
+              } catch (err) {
+                state.boardSnapshotEnabled = false;
+                state.boardDeltaEnabled = false;
+              }
+            }
+          }
 
-        const rawOrders = Array.isArray(normalized.items) ? normalized.items : [];
-        state.backendOutdated = backendContractOutdated(rawOrders);
-        const nextOrders = rawOrders
-          .filter((order) => String(order && order.order_id ? order.order_id : '').trim())
-          .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
-        const nextBoardRev = normalized.boardRev || computeBoardRevisionClient(nextOrders);
-        const unchanged = state.skipNoChangeRenderEnabled && state.kanbanInitialized && !!state.boardRev && state.boardRev === nextBoardRev;
+          if (!normalized) {
+            normalized = normalizeBoardResponse(await api('getOrders', 'GET', scopedDay ? { board_day: scopedDay } : null));
+          }
 
-        state.orders = nextOrders;
-        state.boardRev = nextBoardRev;
-        state.boardLastUpdatedAt = latestOrderStamp(nextOrders) || new Date().toISOString();
-        if (state.backendOutdated) {
-          setBanner(t('backendOutdated'), 'warn');
-        }
+          const rawOrders = Array.isArray(normalized.items) ? normalized.items : [];
+          state.backendOutdated = backendContractOutdated(rawOrders);
+          const nextOrders = rawOrders
+            .filter((order) => String(order && order.order_id ? order.order_id : '').trim())
+            .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+          const nextBoardRev = normalized.boardRev || computeBoardRevisionClient(nextOrders);
+          const unchanged = state.skipNoChangeRenderEnabled && state.kanbanInitialized && !!state.boardRev && state.boardRev === nextBoardRev;
 
-        if (unchanged) {
-          setSyncStatus('OK', 450);
-          return;
-        }
+          state.orders = nextOrders;
+          state.boardRev = nextBoardRev;
+          state.boardLastUpdatedAt = latestOrderStamp(nextOrders) || new Date().toISOString();
+          if (state.backendOutdated) {
+            setBanner(t('backendOutdated'), 'warn');
+          }
 
-        compareVersionSnapshots(state.orders);
-        buildPhoneHints();
-        renderKanban();
+          if (unchanged) {
+            setSyncStatus('OK', 450);
+            return;
+          }
+
+          compareVersionSnapshots(state.orders);
+          buildPhoneHints();
+          renderKanban();
+        });
       }
 
       async function refreshAll() {
-        let ordersErr = null;
-        await refreshProducts();
-        await refreshBoardDays(true);
-        try {
-          await refreshOrders();
-        } catch (err) {
-          ordersErr = err;
-        }
-        if (!ordersErr && !state.backendOutdated) {
-          setBanner('');
-          return;
-        }
-        if (ordersErr) {
-          setBanner(ordersErr.message || String(ordersErr), 'warn');
-        }
+        return withLoading('refreshAll', async () => {
+          let ordersErr = null;
+          await refreshProducts();
+          await refreshBoardDays(true);
+          try {
+            await refreshOrders();
+          } catch (err) {
+            ordersErr = err;
+          }
+          if (!ordersErr && !state.backendOutdated) {
+            setBanner('');
+            return;
+          }
+          if (ordersErr) {
+            setBanner(ordersErr.message || String(ordersErr), 'warn');
+          }
+        });
       }
 
       function desiredPollIntervalMs() {
