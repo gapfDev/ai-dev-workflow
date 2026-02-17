@@ -1,0 +1,115 @@
+{
+  "generated_at_utc": "2026-02-16T08:14:05Z",
+  "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+  "frames": [
+    "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+    "https://n-y2vjutpuw5qfkn2fvrhehncajya3uvrdq3jvzdy-0lu-script.googleusercontent.com/userCodeAppPanel",
+    "https://n-y2vjutpuw5qfkn2fvrhehncajya3uvrdq3jvzdy-0lu-script.googleusercontent.com/blank"
+  ],
+  "tabs": [
+    "Capture",
+    "Kanban"
+  ],
+  "kanban_board_present": true,
+  "network_calls": {
+    "total_captured": 7,
+    "board_related_count": 5,
+    "board_day_scoped_count": 3,
+    "board_related": [
+      {
+        "method": "GET",
+        "action": "getBoardDays",
+        "board_day": "",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardDays"
+      },
+      {
+        "method": "GET",
+        "action": "getBoardDays",
+        "board_day": "",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardDays"
+      },
+      {
+        "method": "GET",
+        "action": "getBoardSnapshot",
+        "board_day": "2026-02-16",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardSnapshot&board_day=2026-02-16"
+      },
+      {
+        "method": "GET",
+        "action": "getBoardSnapshot",
+        "board_day": "2026-02-16",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardSnapshot&board_day=2026-02-16"
+      },
+      {
+        "method": "GET",
+        "action": "getBoardSnapshot",
+        "board_day": "2026-02-16",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardSnapshot&board_day=2026-02-16"
+      }
+    ]
+  },
+  "ui_checks": {
+    "has_day_ribbon_selectors": true,
+    "has_archive_day_controls": true,
+    "has_archived_badge_text": false,
+    "button_texts": [
+      "EN",
+      "Capture",
+      "Kanban",
+      "Autofill",
+      "Clear",
+      "Open menu by family",
+      "Save order",
+      "Reset",
+      "Refresh",
+      "New order",
+      "Feb 15\n              14",
+      "Feb 16\n              1",
+      "Feb 26\n              2",
+      "Feb 27\n              5",
+      "Feb 28\n              3",
+      "Archive Day",
+      "Unarchive Day",
+      "Edit",
+      "Cancel",
+      "Close",
+      "Quesadilla Salvadore\u00f1a (1/4 Regular)\n                    Quesadillas \u00b7 $9.00",
+      "Quesadilla Salvadore\u00f1a (Media Familia)\n                    Quesadillas \u00b7 $15.00",
+      "Quesadilla Salvadore\u00f1a (Familiar)\n                    Quesadillas \u00b7 $25.00",
+      "Semita Alta (1/4 Regular)\n                    Semita Alta \u00b7 $10.00",
+      "Semita Alta (Media Familia)\n                    Semita Alta \u00b7 $18.00",
+      "Semita Alta (Familiar)\n                    Semita Alta \u00b7 $32.00",
+      "Pan Franc\u00e9s (Unidad)\n                    Pan Frances \u00b7 $1.00",
+      "Pan Franc\u00e9s (Docena)\n                    Pan Frances \u00b7 $10.00",
+      "Pan Menudo (Unidad)\n                    Pan Menudo \u00b7 $1.00",
+      "Pan Menudo (Docena)\n                    Pan Menudo \u00b7 $10.00",
+      "Pastelitos Rellenos (Unidad)\n                    Pastelitos \u00b7 $2.00",
+      "Pastelitos Rellenos (Combo 3x)\n                    Pastelitos \u00b7 $5.00",
+      "Bud\u00edn de Guineo\n                    Budin \u00b7 $5.00",
+      "Delivery Fee\n                    Delivery \u00b7 $5.00",
+      "Delivery Fee External\n                    Delivery \u00b7 $7.00"
+    ]
+  },
+  "results": [
+    {
+      "tc_id": "DK-011",
+      "name": "Day Ribbon + day-scoped board selection behavior",
+      "passed": true,
+      "detail": {
+        "has_day_ribbon_selectors": true,
+        "board_day_scoped_call_count": 3,
+        "board_related_call_count": 5
+      }
+    },
+    {
+      "tc_id": "DK-012",
+      "name": "Archive/Unarchive UI flow + archived-day markers/operations",
+      "passed": true,
+      "detail": {
+        "has_archive_day_controls": true,
+        "has_archived_badge_text": false,
+        "board_day_scoped_call_count": 3
+      }
+    }
+  ]
+}

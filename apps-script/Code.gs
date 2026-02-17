@@ -762,7 +762,7 @@ function getBoardDays_() {
 
     const day = aggregatesByDay[dayKey];
     day.order_count += 1;
-    if (order.status === 'Pending') day.pending_count += 1;
+    if (order.status !== 'Delivered' && order.status !== 'Cancelled') day.pending_count += 1;
 
     const orderStamp = firstDate_(order.updated_at, order.captured_at);
     if (orderStamp.getTime() > firstDate_(day.latest_updated_at).getTime()) {
@@ -1326,9 +1326,29 @@ function getTotalAmount_(items, fallback) {
 }
 
 function normalizeDateInput_(value) {
-  const str = cleanString_(value);
-  if (!str) return '';
-  const date = new Date(str);
+  if (value === null || value === undefined || value === '') return '';
+
+  // Preserve canonical day keys exactly to avoid timezone drift (e.g. YYYY-MM-DD -> previous day).
+  if (typeof value === 'string') {
+    const raw = value.trim();
+    const isoOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoOnly) {
+      const year = Number(isoOnly[1]);
+      const month = Number(isoOnly[2]);
+      const day = Number(isoOnly[3]);
+      const probe = new Date(Date.UTC(year, month - 1, day));
+      if (
+        probe.getUTCFullYear() === year &&
+        (probe.getUTCMonth() + 1) === month &&
+        probe.getUTCDate() === day
+      ) {
+        return raw;
+      }
+      return '';
+    }
+  }
+
+  const date = value instanceof Date ? value : new Date(cleanString_(value));
   if (isNaN(date.getTime())) return '';
   return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
 }

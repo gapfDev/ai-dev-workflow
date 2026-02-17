@@ -453,6 +453,74 @@
         margin-bottom: 10px;
       }
 
+      .board-day-controls {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .day-ribbon {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 4px 2px 8px;
+      }
+
+      .day-pill {
+        border: 1px solid #d7c29f;
+        border-radius: 999px;
+        background: #fff;
+        color: var(--ink-soft);
+        padding: 6px 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .day-pill.active {
+        border-color: #8d3d19;
+        color: #fff;
+        background: linear-gradient(135deg, #c86530, #8d3d19);
+      }
+
+      .day-pill.archived {
+        border-style: dashed;
+      }
+
+      .day-pill .mini {
+        font-size: 0.72rem;
+        opacity: 0.85;
+      }
+
+      .board-day-state {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .board-day-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .archive-flag {
+        border-radius: 999px;
+        border: 1px dashed #a96b3a;
+        background: #fff3dd;
+        color: #8d3d19;
+        padding: 3px 8px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
       .kanban {
         display: grid;
         gap: 10px;
@@ -725,6 +793,15 @@
           flex-direction: column;
           align-items: stretch;
         }
+
+        .board-day-state {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .board-day-state .action-row {
+          width: 100% !important;
+        }
       }
 
       @media (max-width: 640px) {
@@ -904,6 +981,19 @@
                 <button id="btnJumpCapture" class="btn btn-soft" data-i18n="newOrder">New order</button>
               </div>
             </div>
+            <div class="board-day-controls">
+              <div id="dayRibbon" class="day-ribbon"></div>
+              <div class="board-day-state">
+                <div class="board-day-label">
+                  <span id="boardDayLabel" class="status-pill">Day: --</span>
+                  <span id="boardDayArchiveFlag" class="archive-flag" style="display:none;">ARCHIVED</span>
+                </div>
+                <div class="action-row" style="margin-top:0; width: 360px;">
+                  <button id="btnArchiveDay" class="btn btn-soft">Archive Day</button>
+                  <button id="btnUnarchiveDay" class="btn btn-soft">Unarchive Day</button>
+                </div>
+              </div>
+            </div>
             <div id="kanbanBoard" class="kanban density-wide"></div>
           </article>
         </section>
@@ -1066,7 +1156,17 @@
         deliveredLocked: 'Delivered cannot be edited/changed.',
         confirmReactivate: 'Confirm reactivating this cancelled order?',
         confirmCancel: 'Confirm moving order to Cancelled?',
-        confirmDelivered: 'Confirm marking this order as Delivered?'
+        confirmDelivered: 'Confirm marking this order as Delivered?',
+        archiveDay: 'Archive Day',
+        unarchiveDay: 'Unarchive Day',
+        dayPrefix: 'Day',
+        archivedTag: 'ARCHIVED',
+        confirmArchiveStep1: 'Archive selected day? Pending orders are still allowed.',
+        confirmArchiveStep2: 'Final confirmation: archive this day now?',
+        archiveReasonPrompt: 'Archive reason (required):',
+        unarchiveReasonPrompt: 'Unarchive reason (required):',
+        dayArchivedSaved: 'Day archived.',
+        dayUnarchivedSaved: 'Day unarchived.'
       };
       const I18N = { en: I18N_EN, es: I18N_EN };
 
@@ -1089,7 +1189,11 @@
         pollId: null,
         pollFailures: 0,
         kanbanInitialized: false,
-        columnSignatures: {}
+        columnSignatures: {},
+        boardDays: [],
+        selectedBoardDay: '',
+        selectedDayArchived: false,
+        boardDaysLastFetchMs: 0
       };
 
       function t(key) {
@@ -1299,10 +1403,202 @@
         document.getElementById('syncStatus').textContent = t('syncReady');
         document.getElementById('captureModeLabel').textContent = state.editingOrderId ? t('modeEdit') : t('modeCreate');
         document.getElementById('btnSaveOrder').textContent = state.editingOrderId ? t('updateOrder') : t('saveOrder');
+        document.getElementById('btnArchiveDay').textContent = t('archiveDay');
+        document.getElementById('btnUnarchiveDay').textContent = t('unarchiveDay');
+        renderBoardDayState();
       }
 
       function todayStr() {
         return new Date().toISOString().split('T')[0];
+      }
+
+      function normalizeDayKeyClient(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const strict = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (strict) return raw;
+        const parsed = new Date(raw);
+        if (Number.isNaN(parsed.getTime())) return '';
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, '0');
+        const day = String(parsed.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function formatDayLabel(dayKey) {
+        if (!dayKey) return '--';
+        const parsed = new Date(`${dayKey}T00:00:00`);
+        if (Number.isNaN(parsed.getTime())) return dayKey;
+        return parsed.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+      }
+
+      function pickInitialBoardDay(dayKeys) {
+        if (!Array.isArray(dayKeys) || !dayKeys.length) return '';
+        const today = todayStr();
+        if (dayKeys.includes(today)) return today;
+        const todayTs = new Date(`${today}T00:00:00`).getTime();
+        return dayKeys.reduce((best, current) => {
+          if (!best) return current;
+          const bestDiff = Math.abs(new Date(`${best}T00:00:00`).getTime() - todayTs);
+          const currDiff = Math.abs(new Date(`${current}T00:00:00`).getTime() - todayTs);
+          if (currDiff < bestDiff) return current;
+          return best;
+        }, '');
+      }
+
+      function selectedDayMeta() {
+        return state.boardDays.find((day) => day.day_key === state.selectedBoardDay) || null;
+      }
+
+      function renderBoardDayState() {
+        const labelNode = document.getElementById('boardDayLabel');
+        const archivedFlag = document.getElementById('boardDayArchiveFlag');
+        if (!labelNode || !archivedFlag) return;
+
+        if (!state.selectedBoardDay) {
+          labelNode.textContent = `${t('dayPrefix')}: --`;
+          archivedFlag.style.display = 'none';
+          return;
+        }
+
+        const selected = selectedDayMeta();
+        const count = selected ? Number(selected.order_count || 0) : 0;
+        labelNode.textContent = `${t('dayPrefix')}: ${formatDayLabel(state.selectedBoardDay)} (${count})`;
+        archivedFlag.textContent = t('archivedTag');
+        archivedFlag.style.display = state.selectedDayArchived ? 'inline-flex' : 'none';
+
+        const archiveBtn = document.getElementById('btnArchiveDay');
+        const unarchiveBtn = document.getElementById('btnUnarchiveDay');
+        if (archiveBtn) archiveBtn.disabled = !state.selectedBoardDay || state.selectedDayArchived;
+        if (unarchiveBtn) unarchiveBtn.disabled = !state.selectedBoardDay || !state.selectedDayArchived;
+      }
+
+      function renderDayRibbon() {
+        const mount = document.getElementById('dayRibbon');
+        if (!mount) return;
+
+        if (!state.boardDays.length) {
+          mount.innerHTML = `<div class="helper">${t('noData')}</div>`;
+          renderBoardDayState();
+          return;
+        }
+
+        mount.innerHTML = state.boardDays.map((day) => {
+          const isActive = day.day_key === state.selectedBoardDay;
+          const archived = day.is_archived === true;
+          const className = `day-pill${isActive ? ' active' : ''}${archived ? ' archived' : ''}`;
+          return `
+            <button class="${className}" data-day-key="${day.day_key}">
+              <span>${formatDayLabel(day.day_key)}</span>
+              <span class="mini">${Number(day.order_count || 0)}</span>
+              ${archived ? `<span class="mini">${t('archivedTag')}</span>` : ''}
+            </button>
+          `;
+        }).join('');
+        renderBoardDayState();
+      }
+
+      async function setSelectedBoardDay(dayKey, options = {}) {
+        const next = normalizeDayKeyClient(dayKey);
+        if (!next || next === state.selectedBoardDay) return;
+        state.selectedBoardDay = next;
+        const selected = selectedDayMeta();
+        state.selectedDayArchived = !!(selected && selected.is_archived);
+        state.boardRev = '';
+        state.boardLastUpdatedAt = '';
+        renderDayRibbon();
+        if (options.refresh !== false) {
+          await refreshOrders();
+        }
+      }
+
+      async function refreshBoardDays(force = false) {
+        const now = Date.now();
+        if (!force && state.boardDaysLastFetchMs && (now - state.boardDaysLastFetchMs) < 10000) {
+          renderDayRibbon();
+          return;
+        }
+
+        let raw = [];
+        try {
+          const response = await api('getBoardDays');
+          if (Array.isArray(response)) {
+            raw = response;
+          } else if (response && response.status === 'success' && Array.isArray(response.items)) {
+            raw = response.items;
+          }
+        } catch (err) {
+          raw = [];
+        }
+
+        state.boardDays = raw
+          .map((day) => ({
+            day_key: normalizeDayKeyClient(day.day_key),
+            order_count: Number(day.order_count || 0),
+            pending_count: Number(day.pending_count || 0),
+            is_archived: day.is_archived === true,
+            updated_at: String(day.updated_at || '')
+          }))
+          .filter((day) => !!day.day_key)
+          .sort((a, b) => String(a.day_key).localeCompare(String(b.day_key)));
+
+        const keys = state.boardDays.map((day) => day.day_key);
+        if (!state.selectedBoardDay || !keys.includes(state.selectedBoardDay)) {
+          state.selectedBoardDay = pickInitialBoardDay(keys);
+          state.boardRev = '';
+          state.boardLastUpdatedAt = '';
+        }
+
+        const selected = selectedDayMeta();
+        state.selectedDayArchived = !!(selected && selected.is_archived);
+        state.boardDaysLastFetchMs = now;
+        renderDayRibbon();
+      }
+
+      async function archiveSelectedBoardDay() {
+        if (!state.selectedBoardDay) return;
+        if (!window.confirm(t('confirmArchiveStep1'))) return;
+        if (!window.confirm(t('confirmArchiveStep2'))) return;
+        const reason = window.prompt(t('archiveReasonPrompt'), '');
+        if (!reason || !reason.trim()) {
+          showToast(t('archiveReasonPrompt'));
+          return;
+        }
+        const response = await api('archiveBoardDay', 'POST', {
+          action: 'archiveBoardDay',
+          day_key: state.selectedBoardDay,
+          reason: reason.trim(),
+          confirm_step_1: true,
+          confirm_step_2: true
+        });
+        if (!response || response.status !== 'success') {
+          showToast((response && response.message) || 'Error');
+          return;
+        }
+        showToast(t('dayArchivedSaved'));
+        await refreshBoardDays(true);
+        await refreshOrders();
+      }
+
+      async function unarchiveSelectedBoardDay() {
+        if (!state.selectedBoardDay) return;
+        const reason = window.prompt(t('unarchiveReasonPrompt'), '');
+        if (!reason || !reason.trim()) {
+          showToast(t('unarchiveReasonPrompt'));
+          return;
+        }
+        const response = await api('unarchiveBoardDay', 'POST', {
+          action: 'unarchiveBoardDay',
+          day_key: state.selectedBoardDay,
+          reason: reason.trim()
+        });
+        if (!response || response.status !== 'success') {
+          showToast((response && response.message) || 'Error');
+          return;
+        }
+        showToast(t('dayUnarchivedSaved'));
+        await refreshBoardDays(true);
+        await refreshOrders();
       }
 
       function switchScreen(name) {
@@ -1312,6 +1608,11 @@
         document.querySelectorAll('.tab-btn').forEach((b) => {
           b.classList.toggle('active', b.dataset.screen === name);
         });
+        if (name === 'board') {
+          refreshBoardDays(true)
+            .then(() => refreshOrders())
+            .catch(() => {});
+        }
         if (typeof restartPolling === 'function') restartPolling(false);
       }
 
@@ -1757,6 +2058,7 @@
           }
 
           markPendingWrite(order.order_id);
+          await refreshBoardDays(true);
           await refreshOrders();
           setSyncStatus('OK');
         } catch (err) {
@@ -1993,6 +2295,7 @@
 
           showToast(t('saved'));
           resetForm();
+          await refreshBoardDays(true);
           await refreshOrders();
         } catch (err) {
           setBanner(err.message || String(err), 'warn');
@@ -2028,10 +2331,19 @@
       }
 
       async function refreshOrders() {
+        const shouldRefreshDays = !state.selectedBoardDay || !state.boardDays.length || (Date.now() - state.boardDaysLastFetchMs) > 20000;
+        if (shouldRefreshDays) {
+          await refreshBoardDays(!state.boardDays.length || !state.selectedBoardDay);
+        }
+
+        const scopedDay = state.selectedBoardDay || '';
         let normalized;
         if (state.boardSnapshotEnabled && state.boardDeltaEnabled && state.kanbanInitialized && state.boardRev) {
           try {
             const deltaParams = { since_rev: state.boardRev };
+            if (scopedDay) {
+              deltaParams.board_day = scopedDay;
+            }
             if (state.boardLastUpdatedAt) {
               deltaParams.since_updated_at = state.boardLastUpdatedAt;
             }
@@ -2057,7 +2369,7 @@
         if (state.boardSnapshotEnabled) {
           if (!normalized) {
             try {
-              normalized = normalizeBoardResponse(await api('getBoardSnapshot'));
+              normalized = normalizeBoardResponse(await api('getBoardSnapshot', 'GET', scopedDay ? { board_day: scopedDay } : null));
               if (normalized.fallback) {
                 normalized = null;
                 state.boardSnapshotEnabled = false;
@@ -2073,7 +2385,7 @@
         }
 
         if (!normalized) {
-          normalized = normalizeBoardResponse(await api('getOrders'));
+          normalized = normalizeBoardResponse(await api('getOrders', 'GET', scopedDay ? { board_day: scopedDay } : null));
         }
 
         const rawOrders = Array.isArray(normalized.items) ? normalized.items : [];
@@ -2104,6 +2416,7 @@
       async function refreshAll() {
         let ordersErr = null;
         await refreshProducts();
+        await refreshBoardDays(true);
         try {
           await refreshOrders();
         } catch (err) {
@@ -2221,6 +2534,12 @@
           }
         });
 
+        document.getElementById('dayRibbon').addEventListener('click', async (event) => {
+          const chip = event.target.closest('[data-day-key]');
+          if (!chip) return;
+          await setSelectedBoardDay(chip.dataset.dayKey, { refresh: true });
+        });
+
         document.getElementById('selectedItemsBody').addEventListener('input', (event) => {
           const idx = event.target.dataset.qtyIndex;
           if (idx === undefined) return;
@@ -2249,8 +2568,13 @@
 
         document.getElementById('btnSaveOrder').addEventListener('click', saveOrder);
         document.getElementById('btnResetForm').addEventListener('click', resetForm);
-        document.getElementById('btnRefreshBoard').addEventListener('click', refreshOrders);
+        document.getElementById('btnRefreshBoard').addEventListener('click', async () => {
+          await refreshBoardDays(true);
+          await refreshOrders();
+        });
         document.getElementById('btnJumpCapture').addEventListener('click', () => switchScreen('capture'));
+        document.getElementById('btnArchiveDay').addEventListener('click', archiveSelectedBoardDay);
+        document.getElementById('btnUnarchiveDay').addEventListener('click', unarchiveSelectedBoardDay);
         document.addEventListener('visibilitychange', () => restartPolling(false));
       }
 
