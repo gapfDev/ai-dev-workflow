@@ -39,6 +39,11 @@ bash .agent/scripts/sync-skills-bridge.sh --mode link --dest "$HOME/.codex/skill
 3. Restart agent runtime after sync so new skills are discovered.
 4. If a runtime has issues with symlinks, switch to `--mode copy`.
 
+## Default Deploy Rule (Apps Script Projects)
+- For any deploy/redeploy task that affects a web app URL/version (`/exec`), use `deploy-readme-sync` by default.
+- Deployment is not complete until `README.md` and `apps-script/README.md` are verified and synchronized (if needed) in the same flow.
+- If no URL/version changed, explicitly report that README links were checked and left unchanged.
+
 ## Verification
 List discoverable skills:
 ```bash

@@ -1,6 +1,6 @@
 ---
 name: deploy-readme-sync
-description: Enforce README synchronization after each deployment. Use when a new deployment URL/version is created, when release docs are updated, or when validating that live links in repository documentation are current.
+description: Default deployment documentation gate for Apps Script/web-app projects. Use automatically on every deploy/redeploy task and whenever deployment URL/version references may change.
 ---
 
 # Deploy README Sync
@@ -50,5 +50,6 @@ rg -n "script.google.com/macros/s|/exec|deployment|live" README.md apps-script/R
 ## Rules
 1. **ALWAYS** update documentation in the same workflow as deployment.
 2. **ALWAYS** verify links with a repo-wide search before finishing.
-3. **NEVER** leave placeholder URLs for production references.
-4. **NEVER** mark deployment complete when docs are out of sync.
+3. **ALWAYS** treat this as default for Apps Script `/exec` deployment work (unless user explicitly opts out).
+4. **NEVER** leave placeholder URLs for production references.
+5. **NEVER** mark deployment complete when docs are out of sync.
