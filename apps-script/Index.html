@@ -2674,6 +2674,11 @@
             let response;
             if (state.editingOrderId) {
               const order = state.orders.find((o) => o.order_id === state.editingOrderId);
+              if (order && order.status === 'Delivered') {
+                showToast(t('deliveredLocked'));
+                await refreshOrders();
+                return;
+              }
               response = await api('updateOrderDetails', 'POST', {
                 action: 'updateOrderDetails',
                 order_id: state.editingOrderId,
@@ -2728,6 +2733,11 @@
             }
 
             if (response.status !== 'success') {
+              if (response.error_code === 'ORDER_DELIVERED_LOCKED') {
+                showToast(t('deliveredLocked'));
+                await refreshOrders();
+                return;
+              }
               showToast(response.message || 'Error');
               return;
             }
