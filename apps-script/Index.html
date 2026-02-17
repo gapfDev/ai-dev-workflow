@@ -1303,7 +1303,8 @@
         refreshAll: { scope: 'global' },
         refreshProducts: { scope: 'section', sectionId: 'screen-capture' },
         refreshBoardDays: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
-        refreshOrders: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
+        // Polling refresh must not lock board interactions with section overlay.
+        refreshOrders: { scope: 'global' },
         boardEntrySync: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
         startEditing: { scope: 'section', sectionId: 'screen-capture' },
         saveOrder: { scope: 'button', buttons: ['btnSaveOrder'], sectionId: 'screen-capture' },
