@@ -1,0 +1,336 @@
+{
+  "generated_at_utc": "2026-02-16T07:56:56Z",
+  "api_base": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+  "totals": {
+    "total": 10,
+    "pass": 2,
+    "fail": 8
+  },
+  "results": [
+    {
+      "tc_id": "DK-001",
+      "name": "BoardDays contract available",
+      "passed": true,
+      "detail": {
+        "status_ok": true,
+        "items_count": 2,
+        "sample": {
+          "day_key": "2026-02-14",
+          "order_count": 7,
+          "pending_count": 5,
+          "is_archived": false,
+          "updated_at": "2026-02-16T07:53:21.983Z"
+        }
+      },
+      "timestamp_utc": "2026-02-16T07:55:32Z"
+    },
+    {
+      "tc_id": "DK-002",
+      "name": "Backfill + idempotency indicators",
+      "passed": false,
+      "detail": {
+        "distinct_order_days": [
+          "2026-02-15",
+          "2026-02-16"
+        ],
+        "board_days": [
+          "2026-02-14",
+          "2026-02-15"
+        ],
+        "missing_order_days_in_boarddays": [
+          "2026-02-16"
+        ],
+        "unique_day_keys": true,
+        "stable_two_reads": true
+      },
+      "timestamp_utc": "2026-02-16T07:55:37Z"
+    },
+    {
+      "tc_id": "DK-003",
+      "name": "getBoardDays counts vs orders ground truth",
+      "passed": false,
+      "detail": {
+        "checked_days": 2,
+        "mismatches": [
+          {
+            "day_key": "2026-02-14",
+            "expected_order_count": 0,
+            "actual_order_count": 7,
+            "expected_pending_count": 0,
+            "actual_pending_count": 5
+          },
+          {
+            "day_key": "2026-02-15",
+            "expected_order_count": 7,
+            "actual_order_count": 1,
+            "expected_pending_count": 5,
+            "actual_pending_count": 1
+          }
+        ]
+      },
+      "timestamp_utc": "2026-02-16T07:55:37Z"
+    },
+    {
+      "tc_id": "DK-004",
+      "name": "getOrders board_day filter + backward compatibility",
+      "passed": false,
+      "detail": {
+        "target_day": "2026-02-14",
+        "expected_count_for_day": 0,
+        "actual_scoped_count": 0,
+        "actual_scoped_days": [],
+        "unscoped_count": 8
+      },
+      "timestamp_utc": "2026-02-16T07:55:40Z"
+    },
+    {
+      "tc_id": "DK-005",
+      "name": "getBoardSnapshot(board_day) isolation + stable rev",
+      "passed": false,
+      "detail": {
+        "requested_day": "2026-02-14",
+        "returned_day": "2026-02-13",
+        "item_days": [],
+        "board_rev_1": "d41d8cd98f00b204e9800998ecf8427e",
+        "board_rev_2": "d41d8cd98f00b204e9800998ecf8427e",
+        "item_count": 0
+      },
+      "timestamp_utc": "2026-02-16T07:55:44Z"
+    },
+    {
+      "tc_id": "DK-006",
+      "name": "getBoardDelta(board_day) includes removed for moved-out order",
+      "passed": false,
+      "detail": {
+        "source_day": "2026-02-26",
+        "target_day": "2026-02-27",
+        "order_id": "ORD-1771228546090",
+        "snapshot_rev_before": "d41d8cd98f00b204e9800998ecf8427e",
+        "move_response": {
+          "status": "success",
+          "message": "Order updated",
+          "order_id": "ORD-1771228546090",
+          "sync_version": 2,
+          "conflict": false,
+          "auto_unarchived_day": false,
+          "auto_unarchived_day_key": ""
+        },
+        "delta_response": {
+          "status": "success",
+          "board_rev": "d41d8cd98f00b204e9800998ecf8427e",
+          "changed": [],
+          "removed": [],
+          "full": false,
+          "board_day": "2026-02-25"
+        },
+        "removed_contains_order": false,
+        "changed_days": []
+      },
+      "timestamp_utc": "2026-02-16T07:56:01Z"
+    },
+    {
+      "tc_id": "DK-007",
+      "name": "archiveBoardDay validation errors for missing payload",
+      "passed": true,
+      "detail": {
+        "missing_reason_response": {
+          "status": "error",
+          "message": "reason is required"
+        },
+        "missing_confirm_response": {
+          "status": "error",
+          "message": "confirm_step_1 and confirm_step_2 must be true"
+        }
+      },
+      "timestamp_utc": "2026-02-16T07:56:05Z"
+    },
+    {
+      "tc_id": "DK-008",
+      "name": "Archive day with pending orders + persisted archive state",
+      "passed": false,
+      "detail": {
+        "archive_response": {
+          "status": "success",
+          "message": "Board day archived",
+          "day_key": "2026-02-26",
+          "is_archived": true,
+          "archived_at": "2026-02-16T07:56:06.949Z",
+          "archived_reason": "QA archive 20260216075529",
+          "updated_at": "2026-02-16T07:56:06.949Z"
+        },
+        "board_day_row_after_archive": null
+      },
+      "timestamp_utc": "2026-02-16T07:56:10Z"
+    },
+    {
+      "tc_id": "DK-009",
+      "name": "Unarchive day requires reason + clears archive state",
+      "passed": false,
+      "detail": {
+        "unarchive_missing_reason_response": {
+          "status": "error",
+          "message": "reason is required"
+        },
+        "unarchive_success_response": {
+          "status": "success",
+          "message": "Board day unarchived",
+          "day_key": "2026-02-26",
+          "is_archived": false,
+          "unarchived_at": "2026-02-16T07:56:14.494Z",
+          "updated_at": "2026-02-16T07:56:14.494Z"
+        },
+        "board_day_row_after_unarchive": null
+      },
+      "timestamp_utc": "2026-02-16T07:56:18Z"
+    },
+    {
+      "tc_id": "DK-010",
+      "name": "Auto-unarchive on create + move into archived day",
+      "passed": false,
+      "detail": {
+        "create_seed_response": {
+          "status": "success",
+          "message": "Order created",
+          "order_id": "ORD-1771228580086",
+          "order_number": "ORD-16FEB-011",
+          "captured_at": "2026-02-16T07:56:20.086Z",
+          "auto_unarchived_day": false,
+          "auto_unarchived_day_key": ""
+        },
+        "archive_response": {
+          "status": "success",
+          "message": "Board day archived",
+          "day_key": "2026-02-27",
+          "is_archived": true,
+          "archived_at": "2026-02-16T07:56:24.794Z",
+          "archived_reason": "QA archive d3 20260216075529",
+          "updated_at": "2026-02-16T07:56:24.794Z"
+        },
+        "create_on_archived_day_response": {
+          "status": "success",
+          "message": "Order created",
+          "order_id": "ORD-1771228586435",
+          "order_number": "ORD-16FEB-012",
+          "captured_at": "2026-02-16T07:56:26.435Z",
+          "auto_unarchived_day": false,
+          "auto_unarchived_day_key": ""
+        },
+        "archive_again_response": {
+          "status": "success",
+          "message": "Board day archived",
+          "day_key": "2026-02-27",
+          "is_archived": true,
+          "archived_at": "2026-02-16T07:56:30.547Z",
+          "archived_reason": "QA archive d3b 20260216075529",
+          "updated_at": "2026-02-16T07:56:30.547Z"
+        },
+        "create_source_move_response": {
+          "status": "success",
+          "message": "Order created",
+          "order_id": "ORD-1771228592395",
+          "order_number": "ORD-16FEB-013",
+          "captured_at": "2026-02-16T07:56:32.395Z",
+          "auto_unarchived_day": true,
+          "auto_unarchived_day_key": "2026-02-27"
+        },
+        "move_into_archived_day_response": {
+          "status": "success",
+          "message": "Order updated",
+          "order_id": "ORD-1771228592395",
+          "sync_version": 2,
+          "conflict": false,
+          "auto_unarchived_day": false,
+          "auto_unarchived_day_key": ""
+        },
+        "auto_unarchive_on_create": false,
+        "auto_unarchive_on_move": false
+      },
+      "timestamp_utc": "2026-02-16T07:56:40Z"
+    }
+  ],
+  "release_checks": {
+    "adminPrepareEnvironment": {
+      "status": "success",
+      "message": "Environment prepared",
+      "summary": {
+        "orders_rows": 13,
+        "products_rows": 15,
+        "expenses_rows": 0,
+        "board_days_rows": 9,
+        "orders_headers": [
+          "order_id",
+          "order_number",
+          "customer_name",
+          "phone",
+          "delivery_date",
+          "delivery_time",
+          "delivery_at",
+          "type",
+          "address",
+          "web_link",
+          "channel",
+          "source_notes",
+          "items_json",
+          "total_amount",
+          "status",
+          "payment_status",
+          "payment_method",
+          "deposit_amount",
+          "captured_at",
+          "updated_at",
+          "sync_version",
+          "is_legacy"
+        ],
+        "products_headers": [
+          "id",
+          "name",
+          "price",
+          "category",
+          "active",
+          "family_key",
+          "family_label",
+          "family_color",
+          "family_order",
+          "variant_order"
+        ],
+        "expenses_headers": [
+          "expense_id",
+          "date",
+          "category",
+          "amount",
+          "description",
+          "created_at"
+        ],
+        "board_days_headers": [
+          "day_key",
+          "is_archived",
+          "archived_at",
+          "archived_reason",
+          "unarchived_at",
+          "updated_at"
+        ]
+      }
+    },
+    "adminRunSmokeTests": {
+      "status": "error",
+      "message": "Smoke tests found issues: BoardDays missing delivery_date keys: 2026-02-15, 2026-02-26"
+    },
+    "adminBackupSpreadsheet_via_get": {
+      "status": "error",
+      "message": "Unknown GET action: adminBackupSpreadsheet"
+    },
+    "adminBackupSpreadsheet_via_clasp_run": {
+      "status": "not-run-in-script",
+      "note": "captured separately from shell: Script function not found. Please make sure script is deployed as API executable."
+    }
+  },
+  "artifacts": {
+    "created_order_ids": [
+      "ORD-1771228546090",
+      "ORD-1771228550169",
+      "ORD-1771228580086",
+      "ORD-1771228586435",
+      "ORD-1771228592395"
+    ]
+  }
+}

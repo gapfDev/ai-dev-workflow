@@ -1,0 +1,78 @@
+{
+  "generated_at_utc": "2026-02-16T07:58:44Z",
+  "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+  "frames": [
+    "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+    "https://n-y2vjutpuw5qfkn2fvrhehncajya3uvrdq3jvzdy-0lu-script.googleusercontent.com/userCodeAppPanel",
+    "https://n-y2vjutpuw5qfkn2fvrhehncajya3uvrdq3jvzdy-0lu-script.googleusercontent.com/blank"
+  ],
+  "tab_error": "Frame.wait_for_selector: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\".tab-btn\") to be visible\n",
+  "tabs": [],
+  "kanban_board_present": false,
+  "kanban_board_error": "Frame.wait_for_selector: Timeout 15000ms exceeded.\nCall log:\n  - waiting for locator(\"#kanbanBoard\") to be visible\n",
+  "network_calls": {
+    "total_captured": 7,
+    "board_related_count": 5,
+    "board_day_scoped_count": 0,
+    "board_related": [
+      {
+        "method": "GET",
+        "action": "getBoardSnapshot",
+        "board_day": "",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardSnapshot"
+      },
+      {
+        "method": "GET",
+        "action": "getBoardDelta",
+        "board_day": "",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardDelta&since_rev=bfac9aa2310a9766634147103bbda4ee&since_updated_at=2026-02-16T07%3A56%3A38.423Z"
+      },
+      {
+        "method": "GET",
+        "action": "getBoardDelta",
+        "board_day": "",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardDelta&since_rev=bfac9aa2310a9766634147103bbda4ee&since_updated_at=2026-02-16T07%3A56%3A38.423Z"
+      },
+      {
+        "method": "GET",
+        "action": "getBoardDelta",
+        "board_day": "",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardDelta&since_rev=bfac9aa2310a9766634147103bbda4ee&since_updated_at=2026-02-16T07%3A56%3A38.423Z"
+      },
+      {
+        "method": "GET",
+        "action": "getBoardDelta",
+        "board_day": "",
+        "url": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec?action=getBoardDelta&since_rev=bfac9aa2310a9766634147103bbda4ee&since_updated_at=2026-02-16T07%3A56%3A38.423Z"
+      }
+    ]
+  },
+  "ui_checks": {
+    "has_day_ribbon_selectors": false,
+    "has_archive_day_controls": false,
+    "has_archived_badge_text": false,
+    "button_texts": []
+  },
+  "results": [
+    {
+      "tc_id": "DK-011",
+      "name": "Day Ribbon + day-scoped board selection behavior",
+      "passed": false,
+      "detail": {
+        "has_day_ribbon_selectors": false,
+        "board_day_scoped_call_count": 0,
+        "board_related_call_count": 5
+      }
+    },
+    {
+      "tc_id": "DK-012",
+      "name": "Archive/Unarchive UI flow + archived-day markers/operations",
+      "passed": false,
+      "detail": {
+        "has_archive_day_controls": false,
+        "has_archived_badge_text": false,
+        "board_day_scoped_call_count": 0
+      }
+    }
+  ]
+}
