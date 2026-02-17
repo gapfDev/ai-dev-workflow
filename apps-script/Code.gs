@@ -37,6 +37,7 @@ const CONFIG = {
   EXPENSE_HEADERS: ['expense_id', 'date', 'category', 'amount', 'description', 'created_at'],
   BOARD_DAY_HEADERS: ['day_key', 'is_archived', 'archived_at', 'archived_reason', 'unarchived_at', 'updated_at'],
   LATE_THRESHOLD_MINUTES: 15,
+  ITEM_DETAILS_MAX_LENGTH: 500,
   RUNTIME_SETUP_CACHE_SECONDS: 300,
   RUNTIME_SETUP_MAX_AGE_MS: 300000,
   RUNTIME_SETUP_STAMP_KEY: 'RUNTIME_SETUP_STAMP_MS'
@@ -1305,15 +1306,61 @@ function parsePostPayload_(e) {
 
 function normalizeItemsJson_(value) {
   if (!value) return null;
+  let parsed = null;
   if (typeof value === 'string') {
     try {
-      return JSON.parse(value);
+      parsed = JSON.parse(value);
     } catch (err) {
       return null;
     }
+  } else if (typeof value === 'object') {
+    parsed = value;
+  } else {
+    return null;
   }
-  if (typeof value === 'object') return value;
-  return null;
+  return sanitizeItemsJson_(parsed);
+}
+
+function sanitizeItemsJson_(items) {
+  if (Array.isArray(items)) {
+    return items.map(function (item) {
+      return sanitizeItemEntry_(item);
+    });
+  }
+  if (items && typeof items === 'object') {
+    const sanitized = {};
+    Object.keys(items).forEach(function (key) {
+      sanitized[key] = sanitizeItemEntry_(items[key]);
+    });
+    return sanitized;
+  }
+  return items;
+}
+
+function sanitizeItemEntry_(entry) {
+  if (!entry || typeof entry !== 'object') return entry;
+  const copy = Object.assign({}, entry);
+  copy.details = normalizeItemDetails_(copy.details);
+  return copy;
+}
+
+function normalizeItemDetails_(value) {
+  if (value === null || value === undefined) return '';
+  let raw = '';
+  if (typeof value === 'string') {
+    raw = value;
+  } else {
+    try {
+      raw = JSON.stringify(value);
+    } catch (err) {
+      raw = String(value);
+    }
+  }
+  raw = raw.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ').trim();
+  if (raw.length > CONFIG.ITEM_DETAILS_MAX_LENGTH) {
+    raw = raw.slice(0, CONFIG.ITEM_DETAILS_MAX_LENGTH);
+  }
+  return raw;
 }
 
 function hasAtLeastOneItem_(items) {
