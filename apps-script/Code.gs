@@ -45,7 +45,15 @@ const CONFIG = {
 function doGet(e) {
   ensureRuntimeReady_();
   if (e && e.parameter && e.parameter.action) {
-    return jsonOutput_(handleGetAction_(e.parameter.action, e.parameter || {}));
+    try {
+      return jsonOutput_(handleGetAction_(e.parameter.action, e.parameter || {}));
+    } catch (err) {
+      return jsonOutput_(failWithCode_(
+        err && err.message ? err.message : String(err),
+        'UNEXPECTED_GET_ERROR',
+        true
+      ));
+    }
   }
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
@@ -59,11 +67,15 @@ function doPost(e) {
     const payload = parsePostPayload_(e);
     const action = payload.action || (e && e.parameter && e.parameter.action);
     if (!action) {
-      return jsonOutput_(fail_('Missing action'));
+      return jsonOutput_(failWithCode_('Missing action', 'MISSING_ACTION', false));
     }
     return jsonOutput_(handlePostAction_(action, payload));
   } catch (err) {
-    return jsonOutput_(fail_(err.message || String(err)));
+    return jsonOutput_(failWithCode_(
+      err && err.message ? err.message : String(err),
+      'UNEXPECTED_POST_ERROR',
+      true
+    ));
   }
 }
 
@@ -195,10 +207,10 @@ function createOrder_(payload) {
   const orderType = normalizeOrderType_(payload.type || 'Pickup');
   const itemsJson = normalizeItemsJson_(payload.items_json);
 
-  if (!customerName) return fail_('customer_name is required');
-  if (!deliveryDate) return fail_('delivery_date is required');
-  if (!orderType) return fail_('type must be Pickup or Delivery');
-  if (!itemsJson || !hasAtLeastOneItem_(itemsJson)) return fail_('At least one item is required');
+  if (!customerName) return failWithCode_('customer_name is required', 'VALIDATION_CUSTOMER_REQUIRED', false);
+  if (!deliveryDate) return failWithCode_('delivery_date is required', 'VALIDATION_DELIVERY_DATE_REQUIRED', false);
+  if (!orderType) return failWithCode_('type must be Pickup or Delivery', 'VALIDATION_TYPE_INVALID', false);
+  if (!itemsJson || !hasAtLeastOneItem_(itemsJson)) return failWithCode_('At least one item is required', 'VALIDATION_ITEMS_REQUIRED', false);
 
   const now = new Date();
   const sheet = getSheet_(CONFIG.SHEETS.ORDERS);
@@ -251,19 +263,19 @@ function createOrder_(payload) {
 
 function updateOrderDetails_(payload) {
   const orderId = cleanString_(payload.order_id);
-  if (!orderId) return fail_('order_id is required');
+  if (!orderId) return failWithCode_('order_id is required', 'VALIDATION_ORDER_ID_REQUIRED', false);
 
   const sheet = getSheet_(CONFIG.SHEETS.ORDERS);
   const map = headerMap_(sheet);
   const rowIndex = findRowByOrderId_(sheet, map, orderId);
-  if (rowIndex < 2) return fail_('Order not found');
+  if (rowIndex < 2) return failWithCode_('Order not found', 'ORDER_NOT_FOUND', false);
 
   const lastCol = sheet.getLastColumn();
   const row = sheet.getRange(rowIndex, 1, 1, lastCol).getValues()[0];
   const originalDeliveryDate = normalizeDateInput_(row[map.delivery_date]);
   const currentStatus = normalizeStatus_(row[map.status]);
   if (currentStatus === 'Delivered') {
-    return fail_('Delivered orders cannot be edited');
+    return failWithCode_('Delivered orders cannot be edited', 'ORDER_DELIVERED_LOCKED', false);
   }
 
   const currentSync = Number(row[map.sync_version] || 1);
@@ -343,26 +355,26 @@ function updateOrderStatus_(payload) {
   const orderId = cleanString_(payload.order_id);
   const newStatus = normalizeStatus_(payload.status);
   const confirmReactivate = payload.confirm_reactivate === true || payload.confirm_reactivate === 'true';
-  if (!orderId) return fail_('order_id is required');
-  if (!newStatus) return fail_('status is invalid');
+  if (!orderId) return failWithCode_('order_id is required', 'VALIDATION_ORDER_ID_REQUIRED', false);
+  if (!newStatus) return failWithCode_('status is invalid', 'VALIDATION_STATUS_INVALID', false);
 
   const sheet = getSheet_(CONFIG.SHEETS.ORDERS);
   const map = headerMap_(sheet);
   const rowIndex = findRowByOrderId_(sheet, map, orderId);
-  if (rowIndex < 2) return fail_('Order not found');
+  if (rowIndex < 2) return failWithCode_('Order not found', 'ORDER_NOT_FOUND', false);
 
   const lastCol = sheet.getLastColumn();
   const row = sheet.getRange(rowIndex, 1, 1, lastCol).getValues()[0];
   const currentStatus = normalizeStatus_(row[map.status]);
 
   if (currentStatus === 'Delivered') {
-    return fail_('Delivered orders cannot change status');
+    return failWithCode_('Delivered orders cannot change status', 'ORDER_DELIVERED_LOCKED', false);
   }
   if (currentStatus === 'Cancelled' && newStatus !== 'Cancelled' && !confirmReactivate) {
-    return fail_('Reactivation from Cancelled requires confirmation');
+    return failWithCode_('Reactivation from Cancelled requires confirmation', 'STATUS_REACTIVATE_CONFIRM_REQUIRED', false);
   }
   if (newStatus === 'Delivered' && currentStatus !== 'Baked') {
-    return fail_('Only Baked orders can move to Delivered');
+    return failWithCode_('Only Baked orders can move to Delivered', 'STATUS_TRANSITION_INVALID', false);
   }
 
   const currentSync = Number(row[map.sync_version] || 1);
@@ -437,7 +449,7 @@ function getOrders_(options) {
   const boardOnly = opts.boardOnly === true;
   const boardDayInput = cleanString_(opts.board_day || opts.boardDay);
   const boardDay = boardDayInput ? normalizeDateInput_(boardDayInput) : '';
-  if (boardDayInput && !boardDay) return fail_('board_day must be YYYY-MM-DD');
+  if (boardDayInput && !boardDay) return failWithCode_('board_day must be YYYY-MM-DD', 'VALIDATION_BOARD_DAY_INVALID', false);
   const sheet = getSheet_(CONFIG.SHEETS.ORDERS);
   const map = headerMap_(sheet);
   const rows = dataRows_(sheet);
@@ -460,15 +472,15 @@ function getOrders_(options) {
 
 function getOrderDetails_(params) {
   const orderId = cleanString_(params && params.order_id);
-  if (!orderId) return fail_('order_id is required');
+  if (!orderId) return failWithCode_('order_id is required', 'VALIDATION_ORDER_ID_REQUIRED', false);
 
   const sheet = getSheet_(CONFIG.SHEETS.ORDERS);
   const map = headerMap_(sheet);
   const rowIndex = findRowByOrderId_(sheet, map, orderId);
-  if (rowIndex < 2) return fail_('Order not found');
+  if (rowIndex < 2) return failWithCode_('Order not found', 'ORDER_NOT_FOUND', false);
   const row = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
   const order = rowToOrder_(row, map, false);
-  if (!order) return fail_('Order not found');
+  if (!order) return failWithCode_('Order not found', 'ORDER_NOT_FOUND', false);
   return ok_({ order: order });
 }
 
@@ -548,7 +560,7 @@ function getBoardDelta_(params) {
 
   const sinceDate = new Date(sinceUpdatedAt);
   if (isNaN(sinceDate.getTime())) {
-    return fail_('since_updated_at is invalid');
+    return failWithCode_('since_updated_at is invalid', 'VALIDATION_SINCE_UPDATED_AT_INVALID', false);
   }
 
   const changed = items.filter(function (order) {
@@ -582,7 +594,7 @@ function resolveBoardDayScope_(params) {
   if (!rawBoardDay) return { board_day: '' };
   const dayKey = normalizeDateInput_(rawBoardDay);
   if (!dayKey) {
-    return { error: fail_('board_day must be YYYY-MM-DD') };
+    return { error: failWithCode_('board_day must be YYYY-MM-DD', 'VALIDATION_BOARD_DAY_INVALID', false) };
   }
   return { board_day: dayKey };
 }
@@ -800,9 +812,9 @@ function archiveBoardDay_(payload) {
   const confirmStep1 = payload.confirm_step_1 === true || payload.confirm_step_1 === 'true';
   const confirmStep2 = payload.confirm_step_2 === true || payload.confirm_step_2 === 'true';
 
-  if (!dayKey) return fail_('day_key is required and must be YYYY-MM-DD');
-  if (!reason) return fail_('reason is required');
-  if (!confirmStep1 || !confirmStep2) return fail_('confirm_step_1 and confirm_step_2 must be true');
+  if (!dayKey) return failWithCode_('day_key is required and must be YYYY-MM-DD', 'VALIDATION_DAY_KEY_INVALID', false);
+  if (!reason) return failWithCode_('reason is required', 'VALIDATION_REASON_REQUIRED', false);
+  if (!confirmStep1 || !confirmStep2) return failWithCode_('confirm_step_1 and confirm_step_2 must be true', 'VALIDATION_ARCHIVE_CONFIRM_REQUIRED', false);
 
   const boardDayState = getOrCreateBoardDayState_(dayKey);
   const nowIso = new Date().toISOString();
@@ -826,8 +838,8 @@ function archiveBoardDay_(payload) {
 function unarchiveBoardDay_(payload) {
   const dayKey = normalizeDateInput_(payload.day_key);
   const reason = cleanString_(payload.reason);
-  if (!dayKey) return fail_('day_key is required and must be YYYY-MM-DD');
-  if (!reason) return fail_('reason is required');
+  if (!dayKey) return failWithCode_('day_key is required and must be YYYY-MM-DD', 'VALIDATION_DAY_KEY_INVALID', false);
+  if (!reason) return failWithCode_('reason is required', 'VALIDATION_REASON_REQUIRED', false);
 
   const boardDayState = getOrCreateBoardDayState_(dayKey);
   const nowIso = new Date().toISOString();
@@ -1478,8 +1490,21 @@ function ok_(payload) {
   return Object.assign({ status: 'success' }, payload || {});
 }
 
+function failWithCode_(message, code, retryable, details) {
+  const payload = {
+    status: 'error',
+    message: message,
+    error_code: cleanString_(code) || 'ERROR',
+    retryable: retryable === true
+  };
+  if (details && typeof details === 'object') {
+    payload.details = details;
+  }
+  return payload;
+}
+
 function fail_(message) {
-  return { status: 'error', message: message };
+  return failWithCode_(message, 'ERROR', false);
 }
 
 function jsonOutput_(obj) {
