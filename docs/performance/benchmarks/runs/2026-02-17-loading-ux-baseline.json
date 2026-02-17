@@ -1,0 +1,84 @@
+{
+  "timestamp_utc": "2026-02-17T05:08:24.717770+00:00",
+  "api_base": "https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec",
+  "repeats": 3,
+  "timeout_s": 5,
+  "resolved_context": {
+    "sample_order_id": "ORD-1771225786216",
+    "board_rev": "d3c96ca7b0ed867dc16531f7d1d0e1be",
+    "since_updated_at": "2026-02-17T04:11:41.487Z"
+  },
+  "actions": [
+    {
+      "action": "getOrders",
+      "params": {},
+      "ok": 2,
+      "err": 1,
+      "p50_ms": 2483.13,
+      "p95_ms": 3357.89,
+      "avg_ms": 2920.51,
+      "avg_kb": 18.86,
+      "sample": "[{\"order_id\":\"ORD-1771225786216\",\"order_number\":\"ORD-16FEB-001\",\"customer_name\":\"B1-BoardDay-2026-02-16-1\",\"phone\":\"\",\"delivery_date\":\"2026-02-15\",\"delivery_time\":\"\",\"delivery_at\":\"2026-02-15T05:00:00.000Z\",\"type\":\"Picku"
+    },
+    {
+      "action": "getBoardSnapshot",
+      "params": {},
+      "ok": 3,
+      "err": 0,
+      "p50_ms": 2824.66,
+      "p95_ms": 4227.13,
+      "avg_ms": 3262.91,
+      "avg_kb": 11.8,
+      "sample": "{\"status\":\"success\",\"board_rev\":\"d3c96ca7b0ed867dc16531f7d1d0e1be\",\"items\":[{\"order_id\":\"ORD-1771225786216\",\"order_number\":\"ORD-16FEB-001\",\"customer_name\":\"B1-BoardDay-2026-02-16-1\",\"phone\":\"\",\"delivery_date\":\"2026-02-15"
+    },
+    {
+      "action": "getProducts",
+      "params": {},
+      "ok": 3,
+      "err": 0,
+      "p50_ms": 2594.87,
+      "p95_ms": 3076.93,
+      "avg_ms": 2624.38,
+      "avg_kb": 3.1,
+      "sample": "[{\"id\":\"P001\",\"name\":\"Quesadilla Salvadore\u00f1a (1/4 Regular)\",\"price\":9,\"category\":\"Food\",\"family_key\":\"quesadilla_salvadorena\",\"family_label\":\"Quesadillas\",\"family_color\":\"#C96A2B\",\"family_order\":10,\"variant_order\":20,\"a"
+    },
+    {
+      "action": "getClientConfig",
+      "params": {},
+      "ok": 3,
+      "err": 0,
+      "p50_ms": 1904.54,
+      "p95_ms": 1937.92,
+      "avg_ms": 1910.45,
+      "avg_kb": 0.17,
+      "sample": "{\"status\":\"success\",\"flags\":{\"board_snapshot_enabled\":true,\"board_skip_nochange_render_enabled\":true,\"board_incremental_render_enabled\":true,\"board_delta_sync_enabled\":true}}"
+    },
+    {
+      "action": "getOrderDetails",
+      "params": {
+        "order_id": "ORD-1771225786216"
+      },
+      "ok": 3,
+      "err": 0,
+      "p50_ms": 2694.2,
+      "p95_ms": 3597.78,
+      "avg_ms": 2970.86,
+      "avg_kb": 0.6,
+      "sample": "{\"status\":\"success\",\"order\":{\"order_id\":\"ORD-1771225786216\",\"order_number\":\"ORD-16FEB-001\",\"customer_name\":\"B1-BoardDay-2026-02-16-1\",\"phone\":\"\",\"delivery_date\":\"2026-02-15\",\"delivery_time\":\"\",\"delivery_at\":\"2026-02-15T0"
+    },
+    {
+      "action": "getBoardDelta",
+      "params": {
+        "since_rev": "d3c96ca7b0ed867dc16531f7d1d0e1be",
+        "since_updated_at": "2026-02-17T04:11:41.487Z"
+      },
+      "ok": 3,
+      "err": 0,
+      "p50_ms": 2717.51,
+      "p95_ms": 3299.21,
+      "avg_ms": 2840.42,
+      "avg_kb": 0.1,
+      "sample": "{\"status\":\"success\",\"board_rev\":\"d3c96ca7b0ed867dc16531f7d1d0e1be\",\"changed\":[],\"removed\":[],\"full\":false}"
+    }
+  ]
+}
