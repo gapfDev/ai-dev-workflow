@@ -126,6 +126,12 @@ Latest verified run:
 - Passed: `25`
 - Failed: `0`
 
+Loading UX release gate (Milestone 4):
+- Decision date: `2026-02-17`
+- Decision: `NO-GO`
+- Blocking finding: `LUX-BLOCKER-001` (board interaction degradation under active polling)
+- Evidence report: `docs/qa/issue-57-loading-ux-qa-report.md`
+
 ## Product Catalog Sync
 - Source spreadsheet used: `18hvcTtVil8Yc9hO9NYanGo6-qJVJ1iPf9gFXGcyFoII` (`gid=0`)
 - Imported products in active menu: `15`

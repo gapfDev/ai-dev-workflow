@@ -22,3 +22,12 @@
 3. Restore spreadsheet from `backup_url` if data integrity is impacted.
 4. Re-run smoke checks.
 5. Confirm core flows (capture, Kanban transitions, expenses).
+
+## Latest Release Gate Record
+- Date (UTC): `2026-02-17`
+- Gate decision: `NO-GO` for Loading UX release promotion.
+- Blocker: `LUX-BLOCKER-001` (board UI interaction blocked under near-continuous busy overlay while polling).
+- Validation evidence:
+  - `docs/qa/issue-57-loading-ux-qa-report.md`
+  - `docs/qa/evidence/issue-57-loading-ux-observability-20260217-053751.json`
+  - `docs/qa/evidence/issue-58-release-gate-check.json`
