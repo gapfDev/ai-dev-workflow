@@ -445,6 +445,23 @@
         width: 64px;
       }
 
+      .item-details-input {
+        width: 100%;
+        min-height: 38px;
+        resize: vertical;
+      }
+
+      .item-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .item-actions .btn {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 0.74rem;
+      }
+
       .family-chip {
         display: inline-flex;
         align-items: center;
@@ -1010,7 +1027,8 @@
                       <th data-i18n="item">Item</th>
                       <th data-i18n="qty">Qty</th>
                       <th data-i18n="price">Price</th>
-                      <th></th>
+                      <th data-i18n="itemComment">Comment</th>
+                      <th data-i18n="actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="selectedItemsBody"></tbody>
@@ -1177,6 +1195,10 @@
         item: 'Item',
         qty: 'Qty',
         price: 'Price',
+        itemComment: 'Comment',
+        actions: 'Actions',
+        duplicate: 'Duplicate',
+        remove: 'Remove',
         total: 'Total',
         modeCreate: 'Mode: create order',
         modeEdit: 'Mode: edit order',
@@ -2109,7 +2131,7 @@
         if (renderSections.length) updateSectionCounts(renderSections, 1);
         try {
           if (!state.selectedItems.length) {
-            body.innerHTML = `<tr><td colspan="4" class="helper">${t('noData')}</td></tr>`;
+            body.innerHTML = `<tr><td colspan="5" class="helper">${t('noData')}</td></tr>`;
             document.getElementById('orderTotal').textContent = formatMoney(0);
             return;
           }
@@ -2122,7 +2144,15 @@
               </td>
               <td><input class="qty-input" type="number" min="1" value="${item.quantity}" data-qty-index="${index}" /></td>
               <td>${formatMoney(item.price * item.quantity)}</td>
-              <td><button class="btn btn-soft" data-remove-index="${index}">×</button></td>
+              <td>
+                <textarea class="item-details-input" rows="2" data-details-index="${index}" placeholder="${t('itemComment')}">${item.details || ''}</textarea>
+              </td>
+              <td>
+                <div class="item-actions">
+                  <button class="btn btn-soft" type="button" data-duplicate-index="${index}">${t('duplicate')}</button>
+                  <button class="btn btn-soft" type="button" data-remove-index="${index}">${t('remove')}</button>
+                </div>
+              </td>
             </tr>
           `).join('');
 
@@ -2133,6 +2163,18 @@
             window.requestAnimationFrame(() => updateSectionCounts(renderSections, -1));
           }
         }
+      }
+
+      function duplicateSelectedItem(index) {
+        const source = state.selectedItems[index];
+        if (!source) return;
+        const clone = {
+          ...source,
+          quantity: Number(source.quantity || 1),
+          details: source.details || ''
+        };
+        state.selectedItems.splice(index + 1, 0, clone);
+        renderSelectedItems();
       }
 
       function compareVersionSnapshots(nextOrders) {
@@ -2867,17 +2909,29 @@
 
         document.getElementById('selectedItemsBody').addEventListener('input', (event) => {
           const idx = event.target.dataset.qtyIndex;
-          if (idx === undefined) return;
-          const item = state.selectedItems[Number(idx)];
-          if (!item) return;
-          item.quantity = Math.max(1, Number(event.target.value || 1));
-          renderSelectedItems();
+          if (idx !== undefined) {
+            const item = state.selectedItems[Number(idx)];
+            if (!item) return;
+            item.quantity = Math.max(1, Number(event.target.value || 1));
+            renderSelectedItems();
+            return;
+          }
+          const detailIdx = event.target.dataset.detailsIndex;
+          if (detailIdx === undefined) return;
+          const detailItem = state.selectedItems[Number(detailIdx)];
+          if (!detailItem) return;
+          detailItem.details = String(event.target.value || '');
         });
 
         document.getElementById('selectedItemsBody').addEventListener('click', (event) => {
-          const idx = event.target.dataset.removeIndex;
-          if (idx === undefined) return;
-          state.selectedItems.splice(Number(idx), 1);
+          const duplicateBtn = event.target.closest('[data-duplicate-index]');
+          if (duplicateBtn) {
+            duplicateSelectedItem(Number(duplicateBtn.dataset.duplicateIndex));
+            return;
+          }
+          const removeBtn = event.target.closest('[data-remove-index]');
+          if (!removeBtn) return;
+          state.selectedItems.splice(Number(removeBtn.dataset.removeIndex), 1);
           renderSelectedItems();
         });
 
