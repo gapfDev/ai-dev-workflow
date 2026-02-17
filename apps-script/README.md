@@ -2,12 +2,15 @@
 
 ## Live Website
 - Open this URL in your browser:
-  - `https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec`
-- Latest deployed version: `@34` (2026-02-16)
+  - `https://script.google.com/macros/s/AKfycby1gYbejkRaxiSdL_BAhkVAZocdYHkxPs6-DuIgx9Ti_RJTJOwPnbBLEURB3FLrJVqu/exec`
+- Latest deployed version: `@39` (2026-02-17)
 
 ## What Is Included
 - Fast order capture (manual + JSON paste from Square/GPT agent).
+- Per-item comment input (`details`) in selected lines with duplicate-row action.
+- JSON alias mapping for item comments: `details` > `notes` > `comment`.
 - Production Kanban with drag and drop and FIFO priority by capture time.
+- One-line item comment preview on Kanban tickets with expand/collapse full text.
 - Friendly daily folio format: `ORD-14FEB-001`.
 - Product popup grouped and sorted by product family with color coding.
 - Product menu fallback to keep menu visible during temporary API delays.
@@ -71,6 +74,7 @@ Tip:
 - Statuses: `Pending`, `Working`, `Baked`, `Delivered`, `Cancelled`.
 - Strict FIFO by `captured_at`.
 - `Delivered` cannot be edited or moved.
+- `Delivered` lock also blocks item-comment updates.
 - Only `Baked -> Delivered` is allowed.
 - `Cancelled` can be reverted only with confirmation.
 - Visual age alert after 90+ minutes (red border).
@@ -131,6 +135,11 @@ Loading UX release gate (Milestone 4):
 - Decision: `NO-GO`
 - Blocking finding: `LUX-BLOCKER-001` (board interaction degradation under active polling)
 - Evidence report: `docs/qa/issue-57-loading-ux-qa-report.md`
+
+Item comments release gate:
+- Decision date: `2026-02-17`
+- Decision: `GO`
+- Evidence report: `docs/qa/issue-73-item-comments-qa-report.md`
 
 ## Product Catalog Sync
 - Source spreadsheet used: `18hvcTtVil8Yc9hO9NYanGo6-qJVJ1iPf9gFXGcyFoII` (`gid=0`)

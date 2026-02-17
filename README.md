@@ -3,9 +3,9 @@
 Internal bakery operations system built with Google Apps Script + Google Sheets.
 
 ## Live Project
-- Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec)
-- URL to open in browser: `https://script.google.com/macros/s/AKfycbwdrOEkjbmkNl0gcwEtmBZFb_9nSbklnLKiB_fm2uel_igkFitO3zu8hxL9a9HhNUub/exec`
-- Latest deployed version: `@34` (2026-02-16)
+- Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycby1gYbejkRaxiSdL_BAhkVAZocdYHkxPs6-DuIgx9Ti_RJTJOwPnbBLEURB3FLrJVqu/exec)
+- URL to open in browser: `https://script.google.com/macros/s/AKfycby1gYbejkRaxiSdL_BAhkVAZocdYHkxPs6-DuIgx9Ti_RJTJOwPnbBLEURB3FLrJVqu/exec`
+- Latest deployed version: `@39` (2026-02-17)
 
 MVP goals:
 - Fast order capture (phone, Facebook, manual, and gradual Square replacement).
@@ -22,8 +22,11 @@ MVP goals:
 ## Main Features
 - Fast order capture with minimum required validation.
 - Product selection popup grouped by family with visual color cues.
+- Per-line item comments (`details`) in capture with duplicate-row support.
+- JSON item comment aliases on import: `details` > `notes` > `comment`.
 - Product menu fallback for resiliency (menu remains visible if API products load slowly).
 - Product catalog imported from source sheet (`gid=0`) and merged into active menu.
+- Kanban ticket comment preview (one-line) with expand/collapse full text.
 - Kanban statuses:
   - `Pending`
   - `Working`
@@ -32,7 +35,7 @@ MVP goals:
   - `Cancelled`
 - Business rules:
   - `Delivered` is only allowed from `Baked`.
-  - `Delivered` cannot be edited.
+  - `Delivered` cannot be edited (including item comments/line details).
   - `Cancelled` can be reverted only with confirmation.
 - Periodic refresh and basic concurrency handling.
 
@@ -112,6 +115,11 @@ Loading UX release gate (Milestone 4):
 - Decision: `NO-GO`
 - Blocking finding: `LUX-BLOCKER-001` (board interaction degraded by near-continuous busy overlay under polling)
 - Evidence: `docs/qa/issue-57-loading-ux-qa-report.md`
+
+Item comments release validation:
+- Decision date: `2026-02-17`
+- Decision: `GO`
+- Evidence: `docs/qa/issue-73-item-comments-qa-report.md`
 
 Catalog sync status:
 - Source: `18hvcTtVil8Yc9hO9NYanGo6-qJVJ1iPf9gFXGcyFoII` (`gid=0`)
