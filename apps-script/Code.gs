@@ -432,14 +432,18 @@ function rowToOrder_(row, map, boardOnly) {
     sync_version: Number(row[map.sync_version] || 1)
   };
   if (!order.order_id) return null;
+  const rawItemsJson = cleanString_(row[map.items_json]);
 
   if (!boardOnly) {
     order.web_link = cleanString_(row[map.web_link]);
     order.source_notes = cleanString_(row[map.source_notes]);
-    order.items_json = cleanString_(row[map.items_json]);
+    order.items_json = rawItemsJson;
     order.payment_method = cleanString_(row[map.payment_method]);
     order.deposit_amount = normalizeNumber_(row[map.deposit_amount], '');
     order.is_legacy = boolValue_(row[map.is_legacy]);
+  } else {
+    // Keep items_json in board payload so UI can render item comment previews.
+    order.items_json = rawItemsJson;
   }
 
   return order;

@@ -1,0 +1,34 @@
+{
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0
+  },
+  "results": [
+    {
+      "name": "API order created for board comment test",
+      "ok": true,
+      "detail": "{'status': 'success', 'message': 'Order created', 'order_id': 'ORD-1771308022332', 'order_number': 'ORD-17FEB-019', 'captured_at': '2026-02-17T06:00:22.332Z', 'auto_unarchived_day': False, 'auto_unarchived_day_key': ''}"
+    },
+    {
+      "name": "Board shows created ticket",
+      "ok": true,
+      "detail": "day_chips=7"
+    },
+    {
+      "name": "Ticket comment preview visible",
+      "ok": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "Expand button visible",
+      "ok": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "Expanded comment contains both details",
+      "ok": true,
+      "detail": "sin cebolla | con extra azucar"
+    }
+  ]
+}

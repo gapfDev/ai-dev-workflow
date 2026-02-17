@@ -1,0 +1,24 @@
+{
+  "summary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0
+  },
+  "results": [
+    {
+      "name": "Capture has 1 selected row",
+      "ok": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "Duplicate adds second row",
+      "ok": true,
+      "detail": "rows=2"
+    },
+    {
+      "name": "Duplicated row comment independent",
+      "ok": true,
+      "detail": "d0=sin cebolla; d1=con extra azucar"
+    }
+  ]
+}
