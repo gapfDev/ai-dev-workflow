@@ -81,6 +81,19 @@ Tip:
 - `Delivery` + `Unpaid` is allowed with a warning.
 - Historical records without folio are marked as `LEGACY`.
 
+## Kanban DnD Target Highlight Behavior
+- During drag, only the currently hovered destination column is highlighted.
+- Hovered column uses visual preview states:
+  - `drop-target-valid` for allowed transitions.
+  - `drop-target-invalid` for disallowed transitions.
+- Dragged ticket uses `.ticket.dragging` visual state while the drag is active.
+- Highlight preview rules:
+  - Invalid if source and target statuses are the same.
+  - Invalid if source is `Delivered`.
+  - Invalid if target is `Delivered` and source is not `Baked`.
+- Cleanup is enforced on both `drop` and `dragend` to prevent sticky classes.
+- Existing transition execution path remains unchanged (`requestStatusTransition(...)` still enforces final business rules).
+
 ## Recommended Deployment Flow
 1. Create a full backup of the production spreadsheet.
 2. Publish a staging deployment in Apps Script.
