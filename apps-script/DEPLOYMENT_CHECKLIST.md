@@ -7,6 +7,10 @@
   - `Admin.gs`
   - `Index.html`
   - `appsscript.json`
+- Active Web App deployment configured as:
+  - `Execute as`: `Me` (deployment owner)
+  - `Who has access`: `Anyone` or `Anyone with Google account`
+- Target spreadsheet shared with deployment owner as `Editor`.
 
 ## 1) Mandatory backup
 In Apps Script, run:
@@ -20,10 +24,13 @@ Save `backup_url` in your deployment log.
 
 ## 2) Environment preparation
 Run:
-1. `adminPrepareEnvironment()`
+1. `adminSetSpreadsheetIdProperty({ spreadsheet_id: "YOUR_SHEET_ID" })`
+2. `adminPermissionReport({ spreadsheet_id: "YOUR_SHEET_ID" })` (or use `/exec?action=adminPermissionReport&spreadsheet_id=...`)
+3. `adminPrepareEnvironment()`
 
 Expected:
 - `status: success`
+- `checks[].can_write=true` for target spreadsheet.
 - `orders_headers` includes these columns:
   - `order_number`
   - `captured_at`

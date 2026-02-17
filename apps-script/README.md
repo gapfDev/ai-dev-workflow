@@ -3,7 +3,7 @@
 ## Live Website
 - Open this URL in your browser:
 - `https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec`
-- Latest deployed version: `@55` (2026-02-17)
+- Latest deployed version: `@59` (2026-02-17)
 
 ## What Is Included
 - Fast order capture (manual + JSON paste from Square/GPT agent).
@@ -62,6 +62,48 @@ To force the correct data source:
 
 Tip:
 - The ID is the part between `/d/` and `/edit` in the Sheet URL.
+
+## Team Access Setup (Critical)
+To avoid `permission` errors while saving orders, configure all three layers below.
+
+1. Web App deployment permissions
+- Apps Script -> Deploy -> Manage deployments -> edit active Web App.
+- `Execute as`: `Me` (deployment owner).
+- `Who has access`: `Anyone` or `Anyone with Google account` (based on your policy).
+- Save and redeploy.
+
+2. Spreadsheet permissions
+- Open the target Sheet (`SPREADSHEET_ID`).
+- Share it with the deployment owner account as `Editor`.
+- If using shared drives, ensure this owner can edit files inside that drive/folder.
+
+3. Script target configuration
+- Apps Script -> Project Settings -> Script properties.
+- Set `SPREADSHEET_ID=<target_sheet_id>`.
+- Run `adminSetSpreadsheetIdProperty({ spreadsheet_id: "<target_sheet_id>" })`.
+- Run `adminPrepareEnvironment()`.
+
+### Fast Diagnostics
+Use these URLs on your active `/exec` deployment:
+
+- Spreadsheet + permission report:
+  - `...?action=adminPermissionReport&spreadsheet_id=<target_sheet_id>`
+- Current spreadsheet binding:
+  - `...?action=getSpreadsheetInfo`
+
+Expected:
+- `adminPermissionReport` shows at least one `checks[].can_write=true`.
+- Core tabs (`Orders`, `Products`, `Expenses`) are present or can be created by owner.
+
+If report returns `SPREADSHEET_ACCESS_DENIED`:
+- Share the sheet with deployment owner.
+- Confirm deployment is `Execute as: Me`.
+- Confirm workspace policy allows users to open the Web App URL.
+
+If report returns `SPREADSHEET_WRITE_DENIED`:
+- Deployment owner can read the Sheet but cannot edit it.
+- Grant `Editor` permission to deployment owner (or Shared Drive `Content manager+`).
+- Re-run `adminPrepareEnvironment()` after permission update.
 
 ## Repository Security
 - Do not hardcode IDs/tokens in `Code.gs` or `Admin.gs`.

@@ -46,9 +46,12 @@ const CONFIG = {
 
 function doGet(e) {
   try {
-    ensureRuntimeReady_();
-    if (e && e.parameter && e.parameter.action) {
-      return jsonOutput_(handleGetAction_(e.parameter.action, e.parameter || {}));
+    const action = cleanString_(e && e.parameter && e.parameter.action);
+    if (!action || !shouldBypassRuntimeCheck_(action)) {
+      ensureRuntimeReady_();
+    }
+    if (action) {
+      return jsonOutput_(handleGetAction_(action, e.parameter || {}));
     }
     return HtmlService.createTemplateFromFile('Index')
       .evaluate()
@@ -67,11 +70,13 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    ensureRuntimeReady_();
     const payload = parsePostPayload_(e);
-    const action = payload.action || (e && e.parameter && e.parameter.action);
+    const action = cleanString_(payload.action || (e && e.parameter && e.parameter.action));
     if (!action) {
       return jsonOutput_(failWithCode_('Missing action', 'MISSING_ACTION', false));
+    }
+    if (!shouldBypassRuntimeCheck_(action)) {
+      ensureRuntimeReady_();
     }
     return jsonOutput_(handlePostAction_(action, payload));
   } catch (err) {
@@ -81,6 +86,18 @@ function doPost(e) {
       true
     ));
   }
+}
+
+function shouldBypassRuntimeCheck_(action) {
+  const normalized = cleanString_(action).toLowerCase();
+  if (!normalized) return false;
+  return [
+    'adminsetspreadsheetidproperty',
+    'adminprepareenvironment',
+    'adminpermissionreport',
+    'adminrunsmoketests',
+    'getspreadsheetinfo'
+  ].indexOf(normalized) !== -1;
 }
 
 function setup() {
@@ -237,6 +254,10 @@ function handleGetAction_(action, params) {
       return adminRunSmokeTests();
     case 'adminSetSpreadsheetIdProperty':
       return adminSetSpreadsheetIdProperty(params || {});
+    case 'adminPermissionReport':
+      return adminPermissionReport_(params || {});
+    case 'adminPrepareEnvironment':
+      return adminPrepareEnvironment();
     case 'adminMigrateLegacySheetById':
       return adminMigrateLegacySheetById({});
     case 'adminImportProductsFromSpreadsheet':
@@ -264,6 +285,8 @@ function handlePostAction_(action, payload) {
       return adminPrepareEnvironment();
     case 'adminSetSpreadsheetIdProperty':
       return adminSetSpreadsheetIdProperty(payload || {});
+    case 'adminPermissionReport':
+      return adminPermissionReport_(payload || {});
     case 'adminSeedDemoProductsIfEmpty':
       return adminSeedDemoProductsIfEmpty();
     case 'adminMigrateLegacySheetById':
@@ -1344,6 +1367,7 @@ function getSpreadsheet_() {
   const candidateIds = [];
   if (configuredId) candidateIds.push(configuredId);
   if (internalId && internalId !== configuredId) candidateIds.push(internalId);
+  const openErrors = [];
 
   for (let i = 0; i < candidateIds.length; i += 1) {
     const id = candidateIds[i];
@@ -1352,28 +1376,53 @@ function getSpreadsheet_() {
       props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', ss.getId());
       props.setProperty('SPREADSHEET_ID', ss.getId());
       return ss;
-    } catch (err) {}
-  }
-
-  // Container-bound fallback if the script is attached to a Sheet.
-  try {
-    const active = SpreadsheetApp.getActiveSpreadsheet();
-    if (active) {
-      props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', active.getId());
-      props.setProperty('SPREADSHEET_ID', active.getId());
-      return active;
+    } catch (err) {
+      openErrors.push({
+        spreadsheet_id: id,
+        message: err && err.message ? err.message : String(err)
+      });
     }
-  } catch (err) {}
-
-  // First-run bootstrap only when there is no explicit ID configured.
-  if (!configuredId && !internalId) {
-    const created = SpreadsheetApp.create('Bakery Ops MVP Data');
-    props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', created.getId());
-    props.setProperty('SPREADSHEET_ID', created.getId());
-    return created;
   }
 
-  throw new Error('Unable to open configured spreadsheet. Check Script Property SPREADSHEET_ID and sharing permissions.');
+  // Container-bound fallback only when no explicit spreadsheet is configured.
+  if (!candidateIds.length) {
+    try {
+      const active = SpreadsheetApp.getActiveSpreadsheet();
+      if (active) {
+        props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', active.getId());
+        props.setProperty('SPREADSHEET_ID', active.getId());
+        return active;
+      }
+    } catch (err) {}
+
+    // First-run bootstrap only when there is no explicit ID configured.
+    if (!configuredId && !internalId) {
+      const created = SpreadsheetApp.create('Bakery Ops MVP Data');
+      props.setProperty('BAKERY_INTERNAL_SPREADSHEET_ID', created.getId());
+      props.setProperty('SPREADSHEET_ID', created.getId());
+      return created;
+    }
+  }
+
+  const openErrorSummary = openErrors.map(function (item) {
+    return item.spreadsheet_id + ': ' + item.message;
+  }).join(' | ');
+
+  if (openErrors.some(function (item) { return isPermissionDeniedMessage_(item.message); })) {
+    throw new Error(
+      'Permission denied while opening configured spreadsheet(s). '
+      + 'Share Sheet with deployment owner account and verify Execute as: Me. '
+      + 'configured=' + configuredId + ', internal=' + internalId
+      + (openErrorSummary ? ', errors=' + openErrorSummary : '')
+    );
+  }
+
+  throw new Error(
+    'Unable to open configured spreadsheet. '
+    + 'Check Script Property SPREADSHEET_ID and sharing permissions. '
+    + 'configured=' + configuredId + ', internal=' + internalId
+    + (openErrorSummary ? ', errors=' + openErrorSummary : '')
+  );
 }
 
 function getSpreadsheetInfo_() {
@@ -1383,6 +1432,177 @@ function getSpreadsheetInfo_() {
     spreadsheet_url: ss.getUrl(),
     spreadsheet_name: ss.getName()
   });
+}
+
+function adminPermissionReport(payload) {
+  return adminPermissionReport_(payload || {});
+}
+
+function adminPermissionReport_(payload) {
+  const params = payload || {};
+  const props = PropertiesService.getScriptProperties();
+  const configuredId = cleanString_(CONFIG.SPREADSHEET_ID) || cleanString_(props.getProperty('SPREADSHEET_ID'));
+  const internalId = cleanString_(props.getProperty('BAKERY_INTERNAL_SPREADSHEET_ID'));
+  const requestedId = cleanString_(params.spreadsheet_id);
+
+  const candidates = [];
+  [requestedId, configuredId, internalId].forEach(function (id) {
+    if (!id) return;
+    if (candidates.indexOf(id) !== -1) return;
+    candidates.push(id);
+  });
+
+  const report = {
+    script_id: ScriptApp.getScriptId(),
+    effective_user: safeSessionUserEmail_('effective'),
+    active_user: safeSessionUserEmail_('active'),
+    configured_spreadsheet_id: configuredId,
+    internal_spreadsheet_id: internalId,
+    requested_spreadsheet_id: requestedId,
+    checks: [],
+    recommendations: []
+  };
+
+  if (!candidates.length) {
+    report.recommendations.push('Set Script Property SPREADSHEET_ID to the target spreadsheet ID.');
+    return failWithCode_('No spreadsheet_id configured', 'SPREADSHEET_ID_MISSING', false, report);
+  }
+
+  const coreSheets = [CONFIG.SHEETS.ORDERS, CONFIG.SHEETS.PRODUCTS, CONFIG.SHEETS.EXPENSES];
+  let atLeastOneAccessible = false;
+  let atLeastOneWritable = false;
+
+  candidates.forEach(function (id) {
+    const item = {
+      spreadsheet_id: id,
+      can_open: false,
+      can_read_core: false,
+      can_write: false,
+      can_use_core: false,
+      missing_core_sheets: [],
+      missing_headers: {},
+      board_days_present: false,
+      error: ''
+    };
+    try {
+      const ss = SpreadsheetApp.openById(id);
+      atLeastOneAccessible = true;
+      item.can_open = true;
+      item.spreadsheet_name = ss.getName();
+      item.spreadsheet_url = ss.getUrl();
+      coreSheets.forEach(function (name) {
+        if (!ss.getSheetByName(name)) item.missing_core_sheets.push(name);
+      });
+      item.board_days_present = !!ss.getSheetByName(CONFIG.SHEETS.BOARD_DAYS);
+      item.can_read_core = item.missing_core_sheets.length === 0;
+      item.missing_headers = collectMissingCoreHeaders_(ss);
+      const writeCheck = probeSpreadsheetWriteAccess_(ss);
+      item.can_write = writeCheck.can_write;
+      item.write_error = writeCheck.error;
+      if (item.can_write) atLeastOneWritable = true;
+      item.can_use_core = item.can_read_core
+        && Object.keys(item.missing_headers).length === 0
+        && item.can_write;
+    } catch (err) {
+      item.error = err && err.message ? err.message : String(err);
+    }
+    report.checks.push(item);
+  });
+
+  if (!atLeastOneAccessible) {
+    report.recommendations.push('Share the target Spreadsheet with deployment owner account as Editor.');
+    report.recommendations.push('Confirm Web App runs as deployment owner (Execute as: Me).');
+    return failWithCode_(
+      'No accessible spreadsheet for current execution user',
+      'SPREADSHEET_ACCESS_DENIED',
+      false,
+      report
+    );
+  }
+
+  if (!atLeastOneWritable) {
+    report.recommendations.push('Grant Editor access on Spreadsheet to deployment owner account.');
+    report.recommendations.push('If file is in a Shared Drive, verify deployment owner is Content manager or above.');
+    return failWithCode_(
+      'Spreadsheet is readable but not writable for current execution user',
+      'SPREADSHEET_WRITE_DENIED',
+      false,
+      report
+    );
+  }
+
+  const hasSchemaIssues = report.checks.some(function (item) {
+    return item.can_open
+      && (
+        item.missing_core_sheets.length > 0
+        || Object.keys(item.missing_headers || {}).length > 0
+        || !item.board_days_present
+      );
+  });
+  if (hasSchemaIssues) {
+    report.recommendations.push('Run adminPrepareEnvironment() with deployment owner account.');
+  }
+
+  report.recommendations.push('For external users, verify Workspace policy allows Apps Script Web App access.');
+  return ok_(report);
+}
+
+function collectMissingCoreHeaders_(ss) {
+  const requiredHeaders = {};
+  requiredHeaders[CONFIG.SHEETS.ORDERS] = CONFIG.ORDER_HEADERS;
+  requiredHeaders[CONFIG.SHEETS.PRODUCTS] = CONFIG.PRODUCT_HEADERS;
+  requiredHeaders[CONFIG.SHEETS.EXPENSES] = CONFIG.EXPENSE_HEADERS;
+
+  const missingBySheet = {};
+  Object.keys(requiredHeaders).forEach(function (sheetName) {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return;
+    const lastCol = Math.max(1, sheet.getLastColumn());
+    const current = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(cleanString_);
+    const missing = requiredHeaders[sheetName].filter(function (header) {
+      return current.indexOf(header) === -1;
+    });
+    if (missing.length > 0) {
+      missingBySheet[sheetName] = missing;
+    }
+  });
+  return missingBySheet;
+}
+
+function probeSpreadsheetWriteAccess_(ss) {
+  const target = pickWriteProbeSheet_(ss);
+  if (!target) {
+    return { can_write: false, error: 'No sheet available for write probe' };
+  }
+  const range = target.getRange(1, 1);
+  const formula = cleanString_(range.getFormula());
+  const value = range.getValue();
+  try {
+    if (formula) {
+      range.setFormula(formula);
+    } else {
+      range.setValue(value);
+    }
+    SpreadsheetApp.flush();
+    return { can_write: true, error: '' };
+  } catch (err) {
+    return { can_write: false, error: err && err.message ? err.message : String(err) };
+  }
+}
+
+function pickWriteProbeSheet_(ss) {
+  const preferred = [
+    CONFIG.SHEETS.ORDERS,
+    CONFIG.SHEETS.PRODUCTS,
+    CONFIG.SHEETS.EXPENSES,
+    CONFIG.SHEETS.BOARD_DAYS
+  ];
+  for (let i = 0; i < preferred.length; i += 1) {
+    const sheet = ss.getSheetByName(preferred[i]);
+    if (sheet) return sheet;
+  }
+  const all = ss.getSheets();
+  return all && all.length ? all[0] : null;
 }
 
 function headerMap_(sheet) {
@@ -1683,6 +1903,27 @@ function failWithCode_(message, code, retryable, details) {
 
 function fail_(message) {
   return failWithCode_(message, 'ERROR', false);
+}
+
+function safeSessionUserEmail_(mode) {
+  try {
+    const normalized = cleanString_(mode).toLowerCase();
+    if (normalized === 'active') {
+      return cleanString_(Session.getActiveUser().getEmail());
+    }
+    return cleanString_(Session.getEffectiveUser().getEmail());
+  } catch (err) {
+    return '';
+  }
+}
+
+function isPermissionDeniedMessage_(message) {
+  const lowered = cleanString_(message).toLowerCase();
+  if (!lowered) return false;
+  return lowered.indexOf('permission') !== -1
+    || lowered.indexOf('access denied') !== -1
+    || lowered.indexOf('not have access') !== -1
+    || lowered.indexOf('not have permission') !== -1;
 }
 
 function jsonOutput_(obj) {

@@ -5,7 +5,7 @@ Internal bakery operations system built with Google Apps Script + Google Sheets.
 ## Live Project
 - Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec)
 - URL to open in browser: `https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec`
-- Latest deployed version: `@55` (2026-02-17)
+- Latest deployed version: `@59` (2026-02-17)
 
 MVP goals:
 - Fast order capture (phone, Facebook, manual, and gradual Square replacement).
@@ -76,10 +76,11 @@ bash .agent/scripts/sync-skills-bridge.sh --mode copy --prune --dest "<llm_skill
 ## Quick Start
 1. Open your Apps Script project and load files from `apps-script/`.
 2. Set `SPREADSHEET_ID` in Script Properties.
-3. Run `adminPrepareEnvironment()`.
-4. Run `adminSeedDemoProductsIfEmpty()`.
-5. Run `adminRunSmokeTests()`.
-6. Publish the Web App (`/exec`) with access set to `Anyone with the link`.
+3. Run `adminSetSpreadsheetIdProperty({ spreadsheet_id: "<sheet_id>" })`.
+4. Run `adminPrepareEnvironment()`.
+5. Run `adminSeedDemoProductsIfEmpty()`.
+6. Run `adminRunSmokeTests()`.
+7. Publish the Web App (`/exec`) with access set to `Anyone with the link`.
 
 Detailed docs:
 - `apps-script/README.md`
