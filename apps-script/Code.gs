@@ -45,27 +45,29 @@ const CONFIG = {
 };
 
 function doGet(e) {
-  ensureRuntimeReady_();
-  if (e && e.parameter && e.parameter.action) {
-    try {
+  try {
+    ensureRuntimeReady_();
+    if (e && e.parameter && e.parameter.action) {
       return jsonOutput_(handleGetAction_(e.parameter.action, e.parameter || {}));
-    } catch (err) {
-      return jsonOutput_(failWithCode_(
-        err && err.message ? err.message : String(err),
-        'UNEXPECTED_GET_ERROR',
-        true
-      ));
     }
+    return HtmlService.createTemplateFromFile('Index')
+      .evaluate()
+      .setTitle('Bakery Ops Board v1')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    if (e && e.parameter && e.parameter.action) {
+      return jsonOutput_(failWithCode_(message, 'RUNTIME_ENV_ERROR', true));
+    }
+    return HtmlService.createHtmlOutput(
+      '<pre>Error: ' + escapeHtml_(message) + '\nRun adminPrepareEnvironment() with deployment owner account.</pre>'
+    ).setTitle('Bakery Ops Board v1 - Runtime Error');
   }
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('Bakery Ops Board v1')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 function doPost(e) {
-  ensureRuntimeReady_();
   try {
+    ensureRuntimeReady_();
     const payload = parsePostPayload_(e);
     const action = payload.action || (e && e.parameter && e.parameter.action);
     if (!action) {
@@ -123,40 +125,50 @@ function ensureRuntimeReady_() {
 
 function validateRuntimeEnvironment_() {
   const ss = getSpreadsheet_();
-  const requiredSheets = [
+  const coreRequiredSheets = [
     CONFIG.SHEETS.ORDERS,
     CONFIG.SHEETS.PRODUCTS,
-    CONFIG.SHEETS.EXPENSES,
-    CONFIG.SHEETS.BOARD_DAYS
+    CONFIG.SHEETS.EXPENSES
   ];
 
-  let missing = requiredSheets.filter(function (name) {
+  let missingCore = coreRequiredSheets.filter(function (name) {
     return !ss.getSheetByName(name);
   });
-  if (!missing.length) return;
-
-  // Self-heal missing sheets (most commonly BoardDays) when runtime has edit permissions.
-  try {
-    missing.forEach(function (name) {
-      ensureSheetHeaders_(ss, name, headersForSheetName_(name));
-    });
-    if (missing.indexOf(CONFIG.SHEETS.BOARD_DAYS) !== -1) {
-      syncBoardDaysFromOrders_();
+  if (missingCore.length) {
+    try {
+      missingCore.forEach(function (name) {
+        ensureSheetHeaders_(ss, name, headersForSheetName_(name));
+      });
+    } catch (err) {
+      throw new Error(
+        'Missing required sheets: ' + missingCore.join(', ')
+        + '. Auto-create failed: '
+        + (err && err.message ? err.message : String(err))
+        + '. Run adminPrepareEnvironment().'
+      );
     }
-  } catch (err) {
-    throw new Error(
-      'Missing required sheets: ' + missing.join(', ')
-      + '. Auto-create failed: '
-      + (err && err.message ? err.message : String(err))
-      + '. Run adminPrepareEnvironment().'
-    );
   }
 
-  missing = requiredSheets.filter(function (name) {
+  missingCore = coreRequiredSheets.filter(function (name) {
     return !ss.getSheetByName(name);
   });
-  if (missing.length) {
-    throw new Error('Missing required sheets: ' + missing.join(', ') + '. Run adminPrepareEnvironment().');
+  if (missingCore.length) {
+    throw new Error('Missing required sheets: ' + missingCore.join(', ') + '. Run adminPrepareEnvironment().');
+  }
+
+  // BoardDays should not block core capture/kanban reads.
+  ensureOptionalBoardDaysSheet_(ss);
+}
+
+function ensureOptionalBoardDaysSheet_(ss) {
+  const boardSheet = ss.getSheetByName(CONFIG.SHEETS.BOARD_DAYS);
+  if (boardSheet) return true;
+  try {
+    ensureSheetHeaders_(ss, CONFIG.SHEETS.BOARD_DAYS, CONFIG.BOARD_DAY_HEADERS);
+    syncBoardDaysFromOrders_();
+    return true;
+  } catch (err) {
+    return false;
   }
 }
 
@@ -850,16 +862,17 @@ function getBoardDays_() {
     }
   });
 
-  const boardDaysSheet = getSheet_(CONFIG.SHEETS.BOARD_DAYS);
-  const boardDaysMap = headerMap_(boardDaysSheet);
-  const boardDaysRows = dataRows_(boardDaysSheet);
   const boardDaysByKey = {};
-
-  boardDaysRows.forEach(function (row) {
-    const boardDay = rowToBoardDay_(row, boardDaysMap);
-    if (!boardDay) return;
-    boardDaysByKey[boardDay.day_key] = boardDay;
-  });
+  const boardDaysSheet = getOptionalSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  if (boardDaysSheet) {
+    const boardDaysMap = headerMap_(boardDaysSheet);
+    const boardDaysRows = dataRows_(boardDaysSheet);
+    boardDaysRows.forEach(function (row) {
+      const boardDay = rowToBoardDay_(row, boardDaysMap);
+      if (!boardDay) return;
+      boardDaysByKey[boardDay.day_key] = boardDay;
+    });
+  }
 
   return Object.keys(aggregatesByDay).sort().map(function (dayKey) {
     const aggregate = aggregatesByDay[dayKey];
@@ -885,6 +898,7 @@ function archiveBoardDay_(payload) {
   if (!confirmStep1 || !confirmStep2) return failWithCode_('confirm_step_1 and confirm_step_2 must be true', 'VALIDATION_ARCHIVE_CONFIRM_REQUIRED', false);
 
   const boardDayState = getOrCreateBoardDayState_(dayKey);
+  if (!boardDayState) return failWithCode_('BoardDays sheet unavailable', 'BOARD_DAYS_UNAVAILABLE', false);
   const nowIso = new Date().toISOString();
   boardDayState.row[boardDayState.map.is_archived] = true;
   boardDayState.row[boardDayState.map.archived_at] = nowIso;
@@ -910,6 +924,7 @@ function unarchiveBoardDay_(payload) {
   if (!reason) return failWithCode_('reason is required', 'VALIDATION_REASON_REQUIRED', false);
 
   const boardDayState = getOrCreateBoardDayState_(dayKey);
+  if (!boardDayState) return failWithCode_('BoardDays sheet unavailable', 'BOARD_DAYS_UNAVAILABLE', false);
   const nowIso = new Date().toISOString();
   boardDayState.row[boardDayState.map.is_archived] = false;
   boardDayState.row[boardDayState.map.unarchived_at] = nowIso;
@@ -929,7 +944,8 @@ function unarchiveBoardDay_(payload) {
 }
 
 function getOrCreateBoardDayState_(dayKey) {
-  const sheet = getSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  const sheet = getOptionalSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  if (!sheet) return null;
   const map = headerMap_(sheet);
   const rows = dataRows_(sheet);
   const lastCol = sheet.getLastColumn();
@@ -972,6 +988,9 @@ function autoUnarchiveBoardDayIfNeeded_(dayKey, reason) {
   }
 
   const boardDayState = getOrCreateBoardDayState_(normalizedDay);
+  if (!boardDayState) {
+    return { day_key: normalizedDay, unarchived: false };
+  }
   const isArchived = boolValue_(boardDayState.row[boardDayState.map.is_archived], false);
   if (!isArchived) {
     return { day_key: normalizedDay, unarchived: false };
@@ -997,7 +1016,10 @@ function syncBoardDaysFromOrders_() {
   const ordersSheet = getSheet_(CONFIG.SHEETS.ORDERS);
   const ordersMap = headerMap_(ordersSheet);
   const ordersRows = dataRows_(ordersSheet);
-  const boardDaysSheet = getSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  const boardDaysSheet = getOptionalSheet_(CONFIG.SHEETS.BOARD_DAYS);
+  if (!boardDaysSheet) {
+    return { inserted: 0, total: 0, skipped: true };
+  }
   const boardDaysMap = headerMap_(boardDaysSheet);
   const boardDaysRows = dataRows_(boardDaysSheet);
   const nowIso = new Date().toISOString();
@@ -1306,6 +1328,14 @@ function getSheet_(name) {
   return sheet;
 }
 
+function getOptionalSheet_(name) {
+  try {
+    return getSpreadsheet_().getSheetByName(name);
+  } catch (err) {
+    return null;
+  }
+}
+
 function getSpreadsheet_() {
   const props = PropertiesService.getScriptProperties();
   const configuredId = cleanString_(CONFIG.SPREADSHEET_ID) || cleanString_(props.getProperty('SPREADSHEET_ID'));
@@ -1581,6 +1611,15 @@ function parseFlag_(value, fallback) {
   if (lowered === 'true' || lowered === '1' || lowered === 'yes' || lowered === 'on') return true;
   if (lowered === 'false' || lowered === '0' || lowered === 'no' || lowered === 'off') return false;
   return fallback || false;
+}
+
+function escapeHtml_(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function cleanString_(value) {
