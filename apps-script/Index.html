@@ -1234,6 +1234,11 @@
       const I18N = { en: I18N_EN, es: I18N_EN };
       const LOADING_THRESHOLD_MS = 25;
       const LOADING_MIN_VISIBLE_MS = 180;
+      const RENDER_HEAVY_LIMITS = {
+        menuProducts: 24,
+        selectedItems: 10,
+        boardOrders: 16
+      };
       const LOADING_OPS = {
         loadClientConfig: { scope: 'global' },
         refreshAll: { scope: 'global' },
@@ -1995,70 +2000,80 @@
       function renderMenuFamilies() {
         const mount = document.getElementById('menuFamilies');
         if (!mount) return;
+        const renderSections = state.products.length >= RENDER_HEAVY_LIMITS.menuProducts
+          ? resolveElements('screen-capture')
+          : [];
+        if (renderSections.length) updateSectionCounts(renderSections, 1);
 
-        const term = (document.getElementById('menuSearch').value || '').trim().toLowerCase();
-        const filtered = state.products.filter((p) => {
-          const name = (p.name || '').toLowerCase();
-          const family = (p.family_label || p.category || t('familyDefault')).toLowerCase();
-          return !term || name.includes(term) || family.includes(term);
-        });
-
-        if (!filtered.length) {
-          mount.innerHTML = `<div class="helper">${t('noData')}</div>`;
-          return;
-        }
-
-        const grouped = {};
-        filtered.forEach((product) => {
-          const familyKey = product.family_key || 'general';
-          if (!grouped[familyKey]) {
-            grouped[familyKey] = {
-              key: familyKey,
-              label: product.family_label || product.category || t('familyDefault'),
-              color: product.family_color || '#A0AEC0',
-              order: Number(product.family_order || 99),
-              items: []
-            };
-          }
-          grouped[familyKey].items.push(product);
-        });
-
-        const familyGroups = Object.keys(grouped).map((k) => grouped[k]).sort((a, b) => {
-          const orderDiff = Number(a.order || 99) - Number(b.order || 99);
-          if (orderDiff !== 0) return orderDiff;
-          return String(a.label || '').localeCompare(String(b.label || ''));
-        });
-
-        mount.innerHTML = familyGroups.map((group) => {
-          const items = group.items.sort((a, b) => {
-            const variantDiff = Number(a.variant_order || 999) - Number(b.variant_order || 999);
-            if (variantDiff !== 0) return variantDiff;
-            return String(a.name || '').localeCompare(String(b.name || ''));
+        try {
+          const term = (document.getElementById('menuSearch').value || '').trim().toLowerCase();
+          const filtered = state.products.filter((p) => {
+            const name = (p.name || '').toLowerCase();
+            const family = (p.family_label || p.category || t('familyDefault')).toLowerCase();
+            return !term || name.includes(term) || family.includes(term);
           });
-          const accent = group.color || '#A0AEC0';
-          const blockBg = `linear-gradient(135deg, ${colorWithAlpha(accent, 0.14)} 0%, #fffdf7 72%)`;
-          const productBg = colorWithAlpha(accent, 0.09);
-          const productBorder = colorWithAlpha(accent, 0.36);
-          return `
-            <section class="family-block" style="border-left-color:${accent}; background:${blockBg};">
-              <div class="family-head">
-                <div class="family-title-row">
-                  <span class="family-dot" style="background:${accent};"></span>
-                  <h3 class="family-title">${group.label}</h3>
+
+          if (!filtered.length) {
+            mount.innerHTML = `<div class="helper">${t('noData')}</div>`;
+            return;
+          }
+
+          const grouped = {};
+          filtered.forEach((product) => {
+            const familyKey = product.family_key || 'general';
+            if (!grouped[familyKey]) {
+              grouped[familyKey] = {
+                key: familyKey,
+                label: product.family_label || product.category || t('familyDefault'),
+                color: product.family_color || '#A0AEC0',
+                order: Number(product.family_order || 99),
+                items: []
+              };
+            }
+            grouped[familyKey].items.push(product);
+          });
+
+          const familyGroups = Object.keys(grouped).map((k) => grouped[k]).sort((a, b) => {
+            const orderDiff = Number(a.order || 99) - Number(b.order || 99);
+            if (orderDiff !== 0) return orderDiff;
+            return String(a.label || '').localeCompare(String(b.label || ''));
+          });
+
+          mount.innerHTML = familyGroups.map((group) => {
+            const items = group.items.sort((a, b) => {
+              const variantDiff = Number(a.variant_order || 999) - Number(b.variant_order || 999);
+              if (variantDiff !== 0) return variantDiff;
+              return String(a.name || '').localeCompare(String(b.name || ''));
+            });
+            const accent = group.color || '#A0AEC0';
+            const blockBg = `linear-gradient(135deg, ${colorWithAlpha(accent, 0.14)} 0%, #fffdf7 72%)`;
+            const productBg = colorWithAlpha(accent, 0.09);
+            const productBorder = colorWithAlpha(accent, 0.36);
+            return `
+              <section class="family-block" style="border-left-color:${accent}; background:${blockBg};">
+                <div class="family-head">
+                  <div class="family-title-row">
+                    <span class="family-dot" style="background:${accent};"></span>
+                    <h3 class="family-title">${group.label}</h3>
+                  </div>
+                  <span class="family-count">${items.length}</span>
                 </div>
-                <span class="family-count">${items.length}</span>
-              </div>
-              <div class="product-grid">
-                ${items.map((p) => `
-                  <button class="product-btn" data-product-id="${p.id}" style="border-left-color:${accent}; border-color:${productBorder}; background:${productBg};">
-                    <strong>${p.name}</strong>
-                    <span style="color:${accent};">${group.label} · ${formatMoney(p.price)}</span>
-                  </button>
-                `).join('')}
-              </div>
-            </section>
-          `;
-        }).join('');
+                <div class="product-grid">
+                  ${items.map((p) => `
+                    <button class="product-btn" data-product-id="${p.id}" style="border-left-color:${accent}; border-color:${productBorder}; background:${productBg};">
+                      <strong>${p.name}</strong>
+                      <span style="color:${accent};">${group.label} · ${formatMoney(p.price)}</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </section>
+            `;
+          }).join('');
+        } finally {
+          if (renderSections.length) {
+            window.requestAnimationFrame(() => updateSectionCounts(renderSections, -1));
+          }
+        }
       }
 
       function addItem(productId) {
@@ -2088,26 +2103,36 @@
 
       function renderSelectedItems() {
         const body = document.getElementById('selectedItemsBody');
-        if (!state.selectedItems.length) {
-          body.innerHTML = `<tr><td colspan="4" class="helper">${t('noData')}</td></tr>`;
-          document.getElementById('orderTotal').textContent = formatMoney(0);
-          return;
+        const renderSections = state.selectedItems.length >= RENDER_HEAVY_LIMITS.selectedItems
+          ? resolveElements('screen-capture')
+          : [];
+        if (renderSections.length) updateSectionCounts(renderSections, 1);
+        try {
+          if (!state.selectedItems.length) {
+            body.innerHTML = `<tr><td colspan="4" class="helper">${t('noData')}</td></tr>`;
+            document.getElementById('orderTotal').textContent = formatMoney(0);
+            return;
+          }
+
+          body.innerHTML = state.selectedItems.map((item, index) => `
+            <tr>
+              <td>
+                <span class="family-chip" style="background:${colorWithAlpha(item.family_color || '#A0AEC0', 0.16)}; border-color:${colorWithAlpha(item.family_color || '#A0AEC0', 0.36)};">${item.family_label || t('familyDefault')}</span>
+                <div>${item.name}</div>
+              </td>
+              <td><input class="qty-input" type="number" min="1" value="${item.quantity}" data-qty-index="${index}" /></td>
+              <td>${formatMoney(item.price * item.quantity)}</td>
+              <td><button class="btn btn-soft" data-remove-index="${index}">×</button></td>
+            </tr>
+          `).join('');
+
+          const total = state.selectedItems.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+          document.getElementById('orderTotal').textContent = formatMoney(total);
+        } finally {
+          if (renderSections.length) {
+            window.requestAnimationFrame(() => updateSectionCounts(renderSections, -1));
+          }
         }
-
-        body.innerHTML = state.selectedItems.map((item, index) => `
-          <tr>
-            <td>
-              <span class="family-chip" style="background:${colorWithAlpha(item.family_color || '#A0AEC0', 0.16)}; border-color:${colorWithAlpha(item.family_color || '#A0AEC0', 0.36)};">${item.family_label || t('familyDefault')}</span>
-              <div>${item.name}</div>
-            </td>
-            <td><input class="qty-input" type="number" min="1" value="${item.quantity}" data-qty-index="${index}" /></td>
-            <td>${formatMoney(item.price * item.quantity)}</td>
-            <td><button class="btn btn-soft" data-remove-index="${index}">×</button></td>
-          </tr>
-        `).join('');
-
-        const total = state.selectedItems.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
-        document.getElementById('orderTotal').textContent = formatMoney(total);
       }
 
       function compareVersionSnapshots(nextOrders) {
@@ -2267,28 +2292,38 @@
 
       function renderKanban() {
         const board = document.getElementById('kanbanBoard');
-        applyDensityClass();
-        ensureKanbanSkeleton();
-        if (!state.incrementalRenderEnabled) {
-          state.columnSignatures = {};
+        const renderSections = state.orders.length >= RENDER_HEAVY_LIMITS.boardOrders
+          ? resolveElements('screen-board')
+          : [];
+        if (renderSections.length) updateSectionCounts(renderSections, 1);
+        try {
+          applyDensityClass();
+          ensureKanbanSkeleton();
+          if (!state.incrementalRenderEnabled) {
+            state.columnSignatures = {};
+          }
+
+          STATUS_META.forEach((meta) => {
+            const list = state.orders
+              .filter((o) => o.status === meta.status)
+              .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+
+            const signature = list.map((o) => `${o.order_id}:${o.status}:${o.sync_version}`).join('|');
+            const countNode = board.querySelector(`[data-count="${meta.status}"]`);
+            if (countNode) countNode.textContent = String(list.length);
+
+            if (state.incrementalRenderEnabled && state.columnSignatures[meta.status] === signature) return;
+            state.columnSignatures[meta.status] = signature;
+
+            const bodyNode = board.querySelector(`[data-body="${meta.status}"]`);
+            if (!bodyNode) return;
+            bodyNode.innerHTML = list.map((order) => buildTicketHtml(order)).join('') || `<div class="helper">${t('noData')}</div>`;
+          });
+        } finally {
+          if (renderSections.length) {
+            window.requestAnimationFrame(() => updateSectionCounts(renderSections, -1));
+          }
         }
-
-        STATUS_META.forEach((meta) => {
-          const list = state.orders
-            .filter((o) => o.status === meta.status)
-            .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
-
-          const signature = list.map((o) => `${o.order_id}:${o.status}:${o.sync_version}`).join('|');
-          const countNode = board.querySelector(`[data-count="${meta.status}"]`);
-          if (countNode) countNode.textContent = String(list.length);
-
-          if (state.incrementalRenderEnabled && state.columnSignatures[meta.status] === signature) return;
-          state.columnSignatures[meta.status] = signature;
-
-          const bodyNode = board.querySelector(`[data-body="${meta.status}"]`);
-          if (!bodyNode) return;
-          bodyNode.innerHTML = list.map((order) => buildTicketHtml(order)).join('') || `<div class="helper">${t('noData')}</div>`;
-        });
       }
 
       async function requestStatusTransition(order, targetStatus) {
