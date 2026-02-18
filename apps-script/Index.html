@@ -793,8 +793,28 @@
         margin-top: 8px;
       }
 
-      .ticket-order-toggle {
+      .ticket .ticket-order-view .ticket-order-toggle {
         width: 100%;
+        border: 1px solid #8c3710;
+        background: linear-gradient(135deg, #e07b23 0%, #b45728 100%);
+        color: #ffffff;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: 0 4px 10px rgba(180, 87, 40, 0.3);
+      }
+
+      .ticket .ticket-order-view .ticket-order-toggle:hover {
+        background: linear-gradient(135deg, #c8681d 0%, #8c3710 100%);
+      }
+
+      .ticket .ticket-order-view .ticket-order-toggle:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 6px rgba(140, 55, 16, 0.35);
+      }
+
+      .ticket .ticket-order-view .ticket-order-toggle:focus-visible {
+        outline: 2px solid #ffb347;
+        outline-offset: 1px;
       }
 
       .ticket-order-panel {
@@ -1734,8 +1754,8 @@
 
       function buildTicketOrderViewHtml(order) {
         const isExpanded = state.openOrderViewId === order.order_id;
-        const detailLabel = isExpanded ? t('hideOrder') : t('viewOrder');
         const items = extractTicketItemsForView(order);
+        const detailLabel = `${isExpanded ? t('hideOrder') : t('viewOrder')} (${items.length})`;
         const itemsRows = items.map((item) => `
           <tr>
             <td>${escapeHtml(item.itemName)}</td>
