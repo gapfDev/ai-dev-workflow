@@ -5,7 +5,7 @@ Internal bakery operations system built with Google Apps Script + Google Sheets.
 ## Live Project
 - Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec)
 - URL to open in browser: `https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec`
-- Latest deployed version: `@68` (2026-02-18)
+- Latest deployed version: `@69` (2026-02-18)
 
 MVP goals:
 - Fast order capture (phone, Facebook, manual, and gradual Square replacement).
