@@ -2639,8 +2639,9 @@
         });
       }
 
-      async function refreshBoardDays(force = false) {
+      async function refreshBoardDays(force = false, options = {}) {
         if (operationInFlight('refreshBoardDays')) return;
+        const loadingOverrides = options && options.loading ? options.loading : null;
         return withLoading('refreshBoardDays', async () => {
           const now = Date.now();
           if (!force && state.boardDaysLastFetchMs && (now - state.boardDaysLastFetchMs) < 10000) {
@@ -2682,7 +2683,7 @@
           state.selectedDayArchived = !!(selected && selected.is_archived);
           state.boardDaysLastFetchMs = now;
           renderDayRibbon();
-        });
+        }, loadingOverrides);
       }
 
       async function archiveSelectedBoardDay() {
@@ -3606,11 +3607,17 @@
         });
       }
 
-      async function refreshOrders() {
+      async function refreshOrders(options = {}) {
+        const background = options && options.background === true;
+        const loadingOverrides = background ? { scope: 'none', minVisibleMs: 0 } : null;
         return withLoading('refreshOrders', async () => {
           const shouldRefreshDays = !state.selectedBoardDay || !state.boardDays.length || (Date.now() - state.boardDaysLastFetchMs) > 20000;
           if (shouldRefreshDays) {
-            await refreshBoardDays(!state.boardDays.length || !state.selectedBoardDay);
+            if (background) {
+              await refreshBoardDays(!state.boardDays.length || !state.selectedBoardDay, { loading: { scope: 'none', minVisibleMs: 0 } });
+            } else {
+              await refreshBoardDays(!state.boardDays.length || !state.selectedBoardDay);
+            }
           }
 
           const scopedDay = state.selectedBoardDay || '';
@@ -3685,7 +3692,7 @@
           if (unchanged) {
             renderPhaseView();
             renderBakerSummary();
-            setSyncStatus('OK', 450);
+            if (!background) setSyncStatus('OK', 450);
             return;
           }
 
@@ -3694,7 +3701,7 @@
           renderKanban();
           renderPhaseView();
           renderBakerSummary();
-        });
+        }, loadingOverrides);
       }
 
       async function refreshAll() {
@@ -3718,14 +3725,14 @@
       }
 
       function desiredPollIntervalMs() {
-        if (document.visibilityState === 'hidden') return 20000;
-        if (state.screen === 'board') return 3000;
+        if (document.visibilityState === 'hidden') return 120000;
+        if (state.screen === 'board') return 120000;
         return 8000;
       }
 
       async function pollOnceAndSchedule() {
         try {
-          await refreshOrders();
+          await refreshOrders({ background: true });
           state.pollFailures = 0;
         } catch (err) {
           state.pollFailures += 1;
