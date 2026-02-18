@@ -507,6 +507,43 @@
         font-size: 0.78rem;
       }
 
+      .summary-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1350;
+        display: none;
+      }
+
+      .summary-modal.active {
+        display: block;
+      }
+
+      .summary-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(22, 16, 10, 0.55);
+      }
+
+      .summary-dialog {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(980px, calc(100vw - 24px));
+        max-height: calc(100vh - 24px);
+        overflow: auto;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+        padding: 14px;
+      }
+
+      .summary-sections {
+        display: grid;
+        gap: 10px;
+      }
+
       .items-table {
         width: 100%;
         border-collapse: collapse;
@@ -1216,10 +1253,11 @@
                 <h2 style="margin:0;" data-i18n="boardTitle">Production Kanban</h2>
                 <div class="helper" data-i18n="boardSubtitle">FIFO by capture age · red border > 90 min</div>
               </div>
-              <div class="action-row" style="margin-top:0; width: 430px;">
+              <div class="action-row" style="margin-top:0; width: 580px;">
                 <button id="btnRefreshBoard" class="btn btn-soft" data-i18n="refresh">Refresh</button>
                 <button id="btnJumpCapture" class="btn btn-soft" data-i18n="newOrder">New order</button>
                 <button id="btnPhaseView" class="btn btn-soft" data-i18n="phaseView">Phase View</button>
+                <button id="btnBakerSummary" class="btn btn-soft" data-i18n="bakerSummary">Baker Summary</button>
               </div>
             </div>
             <div class="board-day-controls">
@@ -1279,6 +1317,22 @@
           <input id="phaseViewSearch" type="text" data-i18n-placeholder="phaseSearchPlaceholder" />
         </div>
         <div id="phaseViewList" class="phase-view-list"></div>
+      </div>
+    </div>
+
+    <div id="bakerSummaryModal" class="summary-modal" aria-hidden="true">
+      <div class="summary-overlay" data-close-baker-summary="true"></div>
+      <div class="summary-dialog" role="dialog" aria-modal="true" aria-labelledby="bakerSummaryTitle">
+        <div class="menu-toolbar">
+          <div>
+            <h2 id="bakerSummaryTitle" style="margin:0;" data-i18n="bakerSummaryTitle">Baker Summary</h2>
+            <div id="bakerSummarySubtitle" class="helper"></div>
+          </div>
+          <div class="action-row" style="margin-top:0; width: 220px;">
+            <button id="btnCloseBakerSummary" class="btn btn-soft" data-i18n="closeMenu">Close</button>
+          </div>
+        </div>
+        <div class="summary-sections" id="bakerSummarySections"></div>
       </div>
     </div>
 
@@ -1405,6 +1459,13 @@
         phaseSearchLabel: 'Search by folio, customer, phone',
         phaseSearchPlaceholder: 'Search folio, customer or phone',
         phaseOrdersCount: 'orders',
+        bakerSummary: 'Baker Summary',
+        bakerSummaryTitle: 'Baker Summary',
+        bakerSummaryDayScope: 'Selected day',
+        stockToPrepare: 'Stock / To Prepare',
+        deliveredSection: 'Delivered',
+        deliveredOrdersCount: 'Delivered orders',
+        productLine: 'Product',
         category: 'Category',
         amount: 'Amount',
         description: 'Description',
@@ -1499,6 +1560,7 @@
         backendOutdated: false,
         phaseViewOpen: false,
         phaseViewQuery: '',
+        bakerSummaryOpen: false,
         bakerSummary: {
           dayKey: '',
           boardRev: '',
@@ -2086,6 +2148,7 @@
         document.getElementById('btnUnarchiveDay').textContent = t('unarchiveDay');
         renderBoardDayState();
         renderPhaseView();
+        renderBakerSummary();
       }
 
       function todayStr() {
@@ -2190,6 +2253,71 @@
         modal.setAttribute('aria-hidden', 'true');
       }
 
+      function renderSummarySectionHtml(title, rows) {
+        const safeRows = Array.isArray(rows) ? rows : [];
+        const bodyRows = safeRows.map((row) => `
+          <tr>
+            <td>${escapeHtml(row.label || '-')}</td>
+            <td>${Number(row.quantity || 0)}</td>
+          </tr>
+        `).join('');
+        return `
+          <section class="phase-status-block">
+            <div class="phase-status-head">
+              <h3>${escapeHtml(title)}</h3>
+              <span class="helper">${safeRows.length} ${t('phaseOrdersCount')}</span>
+            </div>
+            ${safeRows.length ? `
+              <table class="phase-table">
+                <thead>
+                  <tr>
+                    <th>${t('productLine')}</th>
+                    <th>${t('qty')}</th>
+                  </tr>
+                </thead>
+                <tbody>${bodyRows}</tbody>
+              </table>
+            ` : `<div class="helper">${t('noData')}</div>`}
+          </section>
+        `;
+      }
+
+      function renderBakerSummary() {
+        const modal = document.getElementById('bakerSummaryModal');
+        const subtitle = document.getElementById('bakerSummarySubtitle');
+        const sections = document.getElementById('bakerSummarySections');
+        if (!modal || !subtitle || !sections) return;
+
+        const dayLabel = state.selectedBoardDay ? formatDayLabel(state.selectedBoardDay) : '--';
+        const deliveredOrders = Number((state.bakerSummary && state.bakerSummary.deliveredOrderCount) || 0);
+        subtitle.textContent = `${t('bakerSummaryDayScope')}: ${dayLabel} · ${t('deliveredOrdersCount')}: ${deliveredOrders}`;
+
+        if (!state.bakerSummaryOpen) return;
+        const toPrepareRows = (state.bakerSummary && state.bakerSummary.toPrepare) || [];
+        const deliveredRows = (state.bakerSummary && state.bakerSummary.delivered) || [];
+        sections.innerHTML = [
+          renderSummarySectionHtml(t('stockToPrepare'), toPrepareRows),
+          renderSummarySectionHtml(`${t('deliveredSection')} (${t('deliveredOrdersCount')}: ${deliveredOrders})`, deliveredRows)
+        ].join('');
+      }
+
+      function openBakerSummary() {
+        const modal = document.getElementById('bakerSummaryModal');
+        if (!modal) return;
+        state.bakerSummaryOpen = true;
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+        renderBakerSummary();
+      }
+
+      function closeBakerSummary() {
+        const modal = document.getElementById('bakerSummaryModal');
+        if (!modal) return;
+        state.bakerSummaryOpen = false;
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
       function pickInitialBoardDay(dayKeys) {
         if (!Array.isArray(dayKeys) || !dayKeys.length) return '';
         const today = todayStr();
@@ -2216,6 +2344,8 @@
         if (!state.selectedBoardDay) {
           labelNode.textContent = `${t('dayPrefix')}: --`;
           archivedFlag.style.display = 'none';
+          renderPhaseView();
+          renderBakerSummary();
           return;
         }
 
@@ -2230,6 +2360,7 @@
         if (archiveBtn) archiveBtn.disabled = !state.selectedBoardDay || state.selectedDayArchived;
         if (unarchiveBtn) unarchiveBtn.disabled = !state.selectedBoardDay || !state.selectedDayArchived;
         renderPhaseView();
+        renderBakerSummary();
       }
 
       function renderDayRibbon() {
@@ -3319,6 +3450,8 @@
           }
 
           if (unchanged) {
+            renderPhaseView();
+            renderBakerSummary();
             setSyncStatus('OK', 450);
             return;
           }
@@ -3327,6 +3460,7 @@
           buildPhoneHints();
           renderKanban();
           renderPhaseView();
+          renderBakerSummary();
         });
       }
 
@@ -3409,6 +3543,11 @@
         document.querySelectorAll('[data-close-phase-view=\"true\"]').forEach((el) => {
           el.addEventListener('click', closePhaseView);
         });
+        document.getElementById('btnBakerSummary').addEventListener('click', openBakerSummary);
+        document.getElementById('btnCloseBakerSummary').addEventListener('click', closeBakerSummary);
+        document.querySelectorAll('[data-close-baker-summary=\"true\"]').forEach((el) => {
+          el.addEventListener('click', closeBakerSummary);
+        });
         document.getElementById('phaseViewSearch').addEventListener('input', (event) => {
           state.phaseViewQuery = String(event.target.value || '');
           renderPhaseView();
@@ -3417,6 +3556,7 @@
           if (event.key === 'Escape') {
             closeMenuModal();
             closePhaseView();
+            closeBakerSummary();
           }
         });
 
