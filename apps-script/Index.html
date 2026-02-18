@@ -428,6 +428,85 @@
         padding: 14px;
       }
 
+      .phase-view-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1300;
+        display: none;
+      }
+
+      .phase-view-modal.active {
+        display: block;
+      }
+
+      .phase-view-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(22, 16, 10, 0.55);
+      }
+
+      .phase-view-dialog {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(1180px, calc(100vw - 24px));
+        max-height: calc(100vh - 24px);
+        overflow: auto;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+        padding: 14px;
+      }
+
+      .phase-view-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .phase-status-block {
+        border: 1px solid #e1cfb3;
+        border-radius: 12px;
+        background: #fffdf7;
+        padding: 10px;
+        overflow-x: auto;
+      }
+
+      .phase-status-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+      }
+
+      .phase-status-head h3 {
+        margin: 0;
+      }
+
+      .phase-status-head .helper {
+        font-size: 0.75rem;
+      }
+
+      .phase-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+      }
+
+      .phase-table th,
+      .phase-table td {
+        border-bottom: 1px dashed #e1cfb3;
+        padding: 6px 5px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .phase-table .phase-folio {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.78rem;
+      }
+
       .items-table {
         width: 100%;
         border-collapse: collapse;
@@ -1137,9 +1216,10 @@
                 <h2 style="margin:0;" data-i18n="boardTitle">Production Kanban</h2>
                 <div class="helper" data-i18n="boardSubtitle">FIFO by capture age · red border > 90 min</div>
               </div>
-              <div class="action-row" style="margin-top:0; width: 290px;">
+              <div class="action-row" style="margin-top:0; width: 430px;">
                 <button id="btnRefreshBoard" class="btn btn-soft" data-i18n="refresh">Refresh</button>
                 <button id="btnJumpCapture" class="btn btn-soft" data-i18n="newOrder">New order</button>
+                <button id="btnPhaseView" class="btn btn-soft" data-i18n="phaseView">Phase View</button>
               </div>
             </div>
             <div class="board-day-controls">
@@ -1179,6 +1259,26 @@
           <input id="menuSearch" type="text" />
         </div>
         <div id="menuFamilies" class="menu-families"></div>
+      </div>
+    </div>
+
+    <div id="phaseViewModal" class="phase-view-modal" aria-hidden="true">
+      <div class="phase-view-overlay" data-close-phase-view="true"></div>
+      <div class="phase-view-dialog" role="dialog" aria-modal="true" aria-labelledby="phaseViewTitle">
+        <div class="menu-toolbar">
+          <div>
+            <h2 id="phaseViewTitle" style="margin:0;" data-i18n="phaseViewTitle">Phase View</h2>
+            <div id="phaseViewSubtitle" class="helper"></div>
+          </div>
+          <div class="action-row" style="margin-top:0; width: 220px;">
+            <button id="btnClosePhaseView" class="btn btn-soft" data-i18n="closeMenu">Close</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="phaseViewSearch" data-i18n="phaseSearchLabel">Search by folio, customer, phone</label>
+          <input id="phaseViewSearch" type="text" data-i18n-placeholder="phaseSearchPlaceholder" />
+        </div>
+        <div id="phaseViewList" class="phase-view-list"></div>
       </div>
     </div>
 
@@ -1299,6 +1399,12 @@
         boardSubtitle: 'FIFO by capture age · red border > 90 min',
         refresh: 'Refresh',
         newOrder: 'New order',
+        phaseView: 'Phase View',
+        phaseViewTitle: 'Phase View',
+        phaseViewDayScope: 'Selected day',
+        phaseSearchLabel: 'Search by folio, customer, phone',
+        phaseSearchPlaceholder: 'Search folio, customer or phone',
+        phaseOrdersCount: 'orders',
         category: 'Category',
         amount: 'Amount',
         description: 'Description',
@@ -1319,6 +1425,9 @@
         expand: 'Expand',
         collapse: 'Collapse',
         state: 'State',
+        status: 'Status',
+        folio: 'Folio',
+        deliveryDateTime: 'Delivery date/time',
         captured: 'Captured',
         noData: 'No data',
         remoteChanges: 'Remote changes detected. Data refreshed.',
@@ -1388,6 +1497,8 @@
         knownVersions: {},
         pendingWrites: new Set(),
         backendOutdated: false,
+        phaseViewOpen: false,
+        phaseViewQuery: '',
         pollId: null,
         pollFailures: 0,
         kanbanInitialized: false,
@@ -1864,6 +1975,10 @@
           const key = node.dataset.i18n;
           node.textContent = t(key);
         });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+          const key = node.dataset.i18nPlaceholder;
+          node.setAttribute('placeholder', t(key));
+        });
         document.getElementById('langToggle').textContent = 'EN';
         document.getElementById('syncStatus').textContent = state.loading.globalCount > 0 ? t('syncBusy') : t('syncReady');
         document.getElementById('captureModeLabel').textContent = state.editingOrderId ? t('modeEdit') : t('modeCreate');
@@ -1871,6 +1986,7 @@
         document.getElementById('btnArchiveDay').textContent = t('archiveDay');
         document.getElementById('btnUnarchiveDay').textContent = t('unarchiveDay');
         renderBoardDayState();
+        renderPhaseView();
       }
 
       function todayStr() {
@@ -1895,6 +2011,84 @@
         const parsed = new Date(`${dayKey}T00:00:00`);
         if (Number.isNaN(parsed.getTime())) return dayKey;
         return parsed.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+      }
+
+      function phaseSearchMatches(order, query) {
+        if (!query) return true;
+        const haystack = [
+          String(order.order_number || ''),
+          String(order.customer_name || ''),
+          String(order.phone || '')
+        ].join(' ').toLowerCase();
+        return haystack.includes(query.toLowerCase());
+      }
+
+      function renderPhaseView() {
+        const list = document.getElementById('phaseViewList');
+        const subtitle = document.getElementById('phaseViewSubtitle');
+        const modal = document.getElementById('phaseViewModal');
+        if (!list || !subtitle || !modal) return;
+
+        const dayLabel = state.selectedBoardDay ? formatDayLabel(state.selectedBoardDay) : '--';
+        subtitle.textContent = `${t('phaseViewDayScope')}: ${dayLabel}`;
+
+        if (!state.phaseViewOpen) return;
+        const query = String(state.phaseViewQuery || '').trim().toLowerCase();
+        const filtered = state.orders.filter((order) => phaseSearchMatches(order, query));
+
+        list.innerHTML = STATUS_META.map((meta) => {
+          const orders = filtered
+            .filter((order) => order.status === meta.status)
+            .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+          const rows = orders.map((order) => `
+            <tr>
+              <td class="phase-folio">${escapeHtml(order.order_number || 'LEGACY')}</td>
+              <td>${escapeHtml(order.customer_name || '-')}</td>
+              <td>${escapeHtml(formatDateTime(order.delivery_at || order.delivery_date))}</td>
+              <td>${minutesElapsed(order.captured_at)} ${t('minutes')}</td>
+              <td>${escapeHtml(statusLabel(order.status))}</td>
+            </tr>
+          `).join('');
+          return `
+            <section class="phase-status-block">
+              <div class="phase-status-head">
+                <h3>${escapeHtml(statusLabel(meta.status))}</h3>
+                <span class="helper">${orders.length} ${t('phaseOrdersCount')}</span>
+              </div>
+              ${orders.length ? `
+                <table class="phase-table">
+                  <thead>
+                    <tr>
+                      <th>${t('folio')}</th>
+                      <th>${t('customer')}</th>
+                      <th>${t('deliveryDateTime')}</th>
+                      <th>${t('elapsed')}</th>
+                      <th>${t('status')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              ` : `<div class="helper">${t('noData')}</div>`}
+            </section>
+          `;
+        }).join('');
+      }
+
+      function openPhaseView() {
+        const modal = document.getElementById('phaseViewModal');
+        if (!modal) return;
+        state.phaseViewOpen = true;
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+        renderPhaseView();
+      }
+
+      function closePhaseView() {
+        const modal = document.getElementById('phaseViewModal');
+        if (!modal) return;
+        state.phaseViewOpen = false;
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
       }
 
       function pickInitialBoardDay(dayKeys) {
@@ -1936,6 +2130,7 @@
         const unarchiveBtn = document.getElementById('btnUnarchiveDay');
         if (archiveBtn) archiveBtn.disabled = !state.selectedBoardDay || state.selectedDayArchived;
         if (unarchiveBtn) unarchiveBtn.disabled = !state.selectedBoardDay || !state.selectedDayArchived;
+        renderPhaseView();
       }
 
       function renderDayRibbon() {
@@ -3031,6 +3226,7 @@
           compareVersionSnapshots(state.orders);
           buildPhoneHints();
           renderKanban();
+          renderPhaseView();
         });
       }
 
@@ -3108,8 +3304,20 @@
         document.querySelectorAll('[data-close-menu=\"true\"]').forEach((el) => {
           el.addEventListener('click', closeMenuModal);
         });
+        document.getElementById('btnPhaseView').addEventListener('click', openPhaseView);
+        document.getElementById('btnClosePhaseView').addEventListener('click', closePhaseView);
+        document.querySelectorAll('[data-close-phase-view=\"true\"]').forEach((el) => {
+          el.addEventListener('click', closePhaseView);
+        });
+        document.getElementById('phaseViewSearch').addEventListener('input', (event) => {
+          state.phaseViewQuery = String(event.target.value || '');
+          renderPhaseView();
+        });
         document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') closeMenuModal();
+          if (event.key === 'Escape') {
+            closeMenuModal();
+            closePhaseView();
+          }
         });
 
         const board = document.getElementById('kanbanBoard');
