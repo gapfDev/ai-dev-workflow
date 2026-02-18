@@ -1499,6 +1499,14 @@
         backendOutdated: false,
         phaseViewOpen: false,
         phaseViewQuery: '',
+        bakerSummary: {
+          dayKey: '',
+          boardRev: '',
+          toPrepare: [],
+          delivered: [],
+          deliveredOrderCount: 0,
+          invalidItemsSkipped: 0
+        },
         pollId: null,
         pollFailures: 0,
         kanbanInitialized: false,
@@ -1606,6 +1614,97 @@
         return parsed
           .map((item) => String((item && item.details) || '').trim())
           .filter(Boolean);
+      }
+
+      function parseOrderItemsSafe(order) {
+        const payload = order && order.items_json;
+        if (!payload) return { items: [], invalidCount: 0 };
+
+        let parsed = [];
+        try {
+          parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
+        } catch (err) {
+          return { items: [], invalidCount: 1 };
+        }
+
+        if (!Array.isArray(parsed)) return { items: [], invalidCount: 1 };
+        const result = [];
+        let invalidCount = 0;
+        parsed.forEach((entry) => {
+          if (!entry || typeof entry !== 'object') {
+            invalidCount += 1;
+            return;
+          }
+          const quantity = Number(entry.quantity);
+          if (!Number.isFinite(quantity) || quantity <= 0) {
+            invalidCount += 1;
+            return;
+          }
+          const productId = String(entry.product_id || entry.id || entry.sku || '').trim();
+          const productName = String(entry.product_name || entry.name || entry.item || '').trim();
+          if (!productId && !productName) {
+            invalidCount += 1;
+            return;
+          }
+          const key = productId ? `${productId}::${productName}` : productName.toLowerCase();
+          const label = productName || productId;
+          result.push({ key, label, quantity });
+        });
+        return { items: result, invalidCount };
+      }
+
+      function mapToSortedSummaryRows(bucketMap) {
+        return Object.keys(bucketMap)
+          .sort((a, b) => String(bucketMap[a].label).localeCompare(String(bucketMap[b].label), 'en', { sensitivity: 'base' }))
+          .map((key) => ({
+            key,
+            label: bucketMap[key].label,
+            quantity: bucketMap[key].quantity
+          }));
+      }
+
+      function computeBakerSummary(orders) {
+        const toPrepareStatuses = new Set(['Pending', 'Working', 'Baked']);
+        const deliveredStatus = 'Delivered';
+        const toPrepareMap = {};
+        const deliveredMap = {};
+        let deliveredOrderCount = 0;
+        let invalidItemsSkipped = 0;
+
+        (orders || []).forEach((order) => {
+          const status = String(order && order.status ? order.status : '');
+          if (!toPrepareStatuses.has(status) && status !== deliveredStatus) return;
+          if (status === deliveredStatus) deliveredOrderCount += 1;
+
+          const parsed = parseOrderItemsSafe(order);
+          invalidItemsSkipped += parsed.invalidCount;
+          const bucketMap = status === deliveredStatus ? deliveredMap : toPrepareMap;
+          parsed.items.forEach((item) => {
+            if (!bucketMap[item.key]) {
+              bucketMap[item.key] = { label: item.label, quantity: 0 };
+            }
+            bucketMap[item.key].quantity += Number(item.quantity || 0);
+          });
+        });
+
+        return {
+          toPrepare: mapToSortedSummaryRows(toPrepareMap),
+          delivered: mapToSortedSummaryRows(deliveredMap),
+          deliveredOrderCount,
+          invalidItemsSkipped
+        };
+      }
+
+      function recomputeBakerSummary() {
+        const computed = computeBakerSummary(state.orders);
+        state.bakerSummary = {
+          dayKey: state.selectedBoardDay || '',
+          boardRev: state.boardRev || '',
+          toPrepare: computed.toPrepare,
+          delivered: computed.delivered,
+          deliveredOrderCount: computed.deliveredOrderCount,
+          invalidItemsSkipped: computed.invalidItemsSkipped
+        };
       }
 
       function normalizeTextForMatch(text) {
@@ -3214,6 +3313,7 @@
           state.orders = nextOrders;
           state.boardRev = nextBoardRev;
           state.boardLastUpdatedAt = latestOrderStamp(nextOrders) || new Date().toISOString();
+          recomputeBakerSummary();
           if (state.backendOutdated) {
             setBanner(t('backendOutdated'), 'warn');
           }
