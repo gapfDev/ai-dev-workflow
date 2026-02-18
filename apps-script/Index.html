@@ -854,14 +854,15 @@
       }
 
       .ticket-order-items {
-        max-height: 130px;
-        overflow: auto;
+        max-height: none;
+        overflow: visible;
         border: 1px dashed #dfceaf;
         border-radius: 7px;
       }
 
       .ticket-order-items table {
         width: 100%;
+        table-layout: fixed;
         border-collapse: collapse;
         font-size: 0.72rem;
       }
@@ -872,6 +873,23 @@
         padding: 4px 5px;
         text-align: left;
         vertical-align: top;
+      }
+
+      .ticket-order-items th:nth-child(1),
+      .ticket-order-items td:nth-child(1) {
+        width: 44%;
+      }
+
+      .ticket-order-items th:nth-child(2),
+      .ticket-order-items td:nth-child(2) {
+        width: 14%;
+      }
+
+      .ticket-order-items th:nth-child(3),
+      .ticket-order-items td:nth-child(3) {
+        width: 42%;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
       }
 
       .ticket .chip-row {
