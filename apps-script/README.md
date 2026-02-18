@@ -3,14 +3,14 @@
 ## Live Website
 - Open this URL in your browser:
 - `https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec`
-- Latest deployed version: `@65` (2026-02-18)
+- Latest deployed version: `@66` (2026-02-18)
 
 ## What Is Included
 - Fast order capture (manual + JSON paste from Square/GPT agent).
 - Per-item comment input (`details`) in selected lines with duplicate-row action.
 - JSON alias mapping for item comments: `details` > `notes` > `comment`.
 - Production Kanban with drag-and-drop plus tap-first movement controls (Previous/Next) and FIFO priority by capture time.
-- One-line item comment preview on Kanban tickets with expand/collapse full text.
+- Per-ticket quick order view (`Ver orden`) with summary and all items (qty + comment).
 - Phase View panel to scan all statuses with FIFO rows and search (folio/customer/phone).
 - Baker Summary panel with exact-product aggregates for `Stock / To Prepare` and `Delivered`.
 - Friendly daily folio format: `ORD-14FEB-001`.

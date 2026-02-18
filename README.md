@@ -5,7 +5,7 @@ Internal bakery operations system built with Google Apps Script + Google Sheets.
 ## Live Project
 - Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec)
 - URL to open in browser: `https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec`
-- Latest deployed version: `@65` (2026-02-18)
+- Latest deployed version: `@66` (2026-02-18)
 
 MVP goals:
 - Fast order capture (phone, Facebook, manual, and gradual Square replacement).
@@ -26,7 +26,7 @@ MVP goals:
 - JSON item comment aliases on import: `details` > `notes` > `comment`.
 - Product menu fallback for resiliency (menu remains visible if API products load slowly).
 - Product catalog imported from source sheet (`gid=0`) and merged into active menu.
-- Kanban ticket comment preview (one-line) with expand/collapse full text.
+- Kanban ticket quick order view (`Ver orden`) with summary and full item comments.
 - Kanban statuses:
   - `Pending`
   - `Working`
