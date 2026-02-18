@@ -1165,6 +1165,8 @@
         const params = new URLSearchParams(window.location.search || '');
         const fromQuery = params.get('apiBase') || params.get('api_base');
         if (fromQuery && /^https?:\/\//i.test(fromQuery)) return fromQuery;
+        const currentUrl = `${window.location.origin}${window.location.pathname}`;
+        if (/^https?:\/\/script\.google\.com\/macros\/s\//i.test(currentUrl)) return currentUrl;
         const webAppUrl = '<?= ScriptApp.getService().getUrl() ?>';
         if (webAppUrl && webAppUrl.indexOf('http') === 0) return webAppUrl;
         return '';
@@ -1752,7 +1754,13 @@
           options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
           options.body = JSON.stringify(payload || {});
         }
-        const response = await fetch(url, options);
+        let response;
+        try {
+          response = await fetch(url, options);
+        } catch (err) {
+          const msg = err && err.message ? err.message : 'Failed to fetch';
+          throw new Error(`${msg} (api: ${API_BASE})`);
+        }
         const raw = await response.text();
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const lowered = String(raw || '').slice(0, 1600).toLowerCase();
