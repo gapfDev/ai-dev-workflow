@@ -688,12 +688,47 @@
       }
 
       .kanban-column {
-        background: #fff7e8;
-        border: 1px solid var(--line);
+        background: var(--column-bg, #fff7e8);
+        border: 1px solid var(--column-border, var(--line));
         border-radius: 14px;
         min-height: 60vh;
         padding: 8px;
         transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+      }
+
+      .kanban-column[data-drop-status='Pending'] {
+        --column-bg: #fff7e8;
+        --column-border: #e3cfae;
+        --column-accent: #c09347;
+        --column-header-bg: #fff2de;
+      }
+
+      .kanban-column[data-drop-status='Working'] {
+        --column-bg: #fff2e3;
+        --column-border: #e9c39a;
+        --column-accent: #ce7d14;
+        --column-header-bg: #ffe7cd;
+      }
+
+      .kanban-column[data-drop-status='Baked'] {
+        --column-bg: #edf8ef;
+        --column-border: #bcdcbc;
+        --column-accent: #327a48;
+        --column-header-bg: #dcf0df;
+      }
+
+      .kanban-column[data-drop-status='Delivered'] {
+        --column-bg: #edf7fb;
+        --column-border: #bfd8e4;
+        --column-accent: #2d8aa7;
+        --column-header-bg: #deeff7;
+      }
+
+      .kanban-column[data-drop-status='Cancelled'] {
+        --column-bg: #f3f3f3;
+        --column-border: #d7d7d7;
+        --column-accent: #8c8c8c;
+        --column-header-bg: #eaeaea;
       }
 
       .kanban-column.drop-target-valid {
@@ -724,8 +759,11 @@
         justify-content: space-between;
         align-items: baseline;
         margin-bottom: 8px;
-        border-bottom: 1px dashed #dbc7aa;
-        padding-bottom: 8px;
+        border: 1px solid var(--column-border, #dbc7aa);
+        border-left: 4px solid var(--column-accent, #ba8d4f);
+        border-radius: 10px;
+        background: var(--column-header-bg, #fff);
+        padding: 8px 10px;
       }
 
       .ticket {
