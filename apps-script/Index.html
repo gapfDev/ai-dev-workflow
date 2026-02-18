@@ -1430,6 +1430,12 @@
         return MOVE_TARGETS[status] || {};
       }
 
+      function isMoveTargetAllowed(status, targetStatus) {
+        if (!status || !targetStatus) return false;
+        const targets = moveTargetsForStatus(status);
+        return targets.prev === targetStatus || targets.next === targetStatus;
+      }
+
       function statusColor(status) {
         const meta = STATUS_META.find((entry) => entry.status === status);
         return (meta && meta.color) || '#d7c29f';
@@ -2599,6 +2605,7 @@
         if (operationInFlight('statusTransition')) return;
         return withLoading('statusTransition', async () => {
           try {
+            if (!order || !targetStatus || order.status === targetStatus) return;
             if (order.status === 'Delivered') {
               showToast(t('deliveredLocked'));
               return;
@@ -3179,6 +3186,23 @@
             if (!box) return;
             const expanded = box.classList.toggle('expanded');
             toggleBtn.textContent = expanded ? t('collapse') : t('expand');
+            return;
+          }
+          const moveBtn = event.target.closest('[data-move-order][data-move-target]');
+          if (moveBtn) {
+            if (moveBtn.dataset.movePending === '1') return;
+            const order = state.orders.find((o) => o.order_id === moveBtn.dataset.moveOrder);
+            if (!order) return;
+            const targetStatus = moveBtn.dataset.moveTarget || '';
+            if (!isMoveTargetAllowed(order.status, targetStatus)) return;
+            moveBtn.dataset.movePending = '1';
+            moveBtn.disabled = true;
+            try {
+              await requestStatusTransition(order, targetStatus);
+            } finally {
+              delete moveBtn.dataset.movePending;
+              moveBtn.disabled = false;
+            }
             return;
           }
           const editBtn = event.target.closest('[data-edit-order]');
