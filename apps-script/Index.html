@@ -789,39 +789,69 @@
         color: var(--ink-soft);
       }
 
-      .ticket-comment {
-        margin-top: 6px;
-        border-top: 1px dashed #e1cfb3;
-        padding-top: 6px;
+      .ticket-order-view {
+        margin-top: 8px;
       }
 
-      .ticket-comment-preview {
-        font-size: 0.76rem;
-        color: var(--ink-soft);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .ticket-order-toggle {
+        width: 100%;
       }
 
-      .ticket-comment-full {
+      .ticket-order-panel {
         display: none;
-        margin-top: 5px;
-        padding: 6px;
+        margin-top: 6px;
         border: 1px solid #e6d5b9;
         border-radius: 8px;
         background: #fffaf1;
-        font-size: 0.76rem;
-        color: var(--ink);
-        white-space: pre-wrap;
+        padding: 6px;
       }
 
-      .ticket-comment.expanded .ticket-comment-full {
+      .ticket-order-view.expanded .ticket-order-panel {
         display: block;
       }
 
-      .ticket-comment-toggle {
-        margin-top: 5px;
-        width: auto;
+      .ticket-order-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px 8px;
+        margin-bottom: 6px;
+      }
+
+      .ticket-order-summary .label {
+        color: var(--ink-soft);
+        font-size: 0.72rem;
+      }
+
+      .ticket-order-summary .value {
+        font-size: 0.74rem;
+        font-weight: 700;
+      }
+
+      .ticket-order-items-title {
+        font-size: 0.73rem;
+        font-weight: 700;
+        margin: 2px 0 4px;
+      }
+
+      .ticket-order-items {
+        max-height: 130px;
+        overflow: auto;
+        border: 1px dashed #dfceaf;
+        border-radius: 7px;
+      }
+
+      .ticket-order-items table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.72rem;
+      }
+
+      .ticket-order-items th,
+      .ticket-order-items td {
+        border-bottom: 1px solid #efe2cc;
+        padding: 4px 5px;
+        text-align: left;
+        vertical-align: top;
       }
 
       .ticket .chip-row {
@@ -900,6 +930,12 @@
         padding: 5px 6px;
       }
 
+      .density-compact .ticket-order-items table,
+      .density-compact .ticket-order-summary .label,
+      .density-compact .ticket-order-summary .value {
+        font-size: 0.68rem;
+      }
+
       .density-ultra .ticket {
         padding: 6px;
       }
@@ -918,6 +954,12 @@
       .density-ultra .ticket .move-btn {
         font-size: 0.68rem;
         padding: 4px 5px;
+      }
+
+      .density-ultra .ticket-order-items table,
+      .density-ultra .ticket-order-summary .label,
+      .density-ultra .ticket-order-summary .value {
+        font-size: 0.66rem;
       }
 
       .metrics {
@@ -1483,6 +1525,11 @@
         moveToCancelled: 'Cancel',
         previous: 'Previous',
         next: 'Next',
+        viewOrder: 'Ver orden',
+        hideOrder: 'Ocultar orden',
+        orderSummary: 'Resumen de orden',
+        orderItems: 'Items de la orden',
+        itemName: 'Item',
         expand: 'Expand',
         collapse: 'Collapse',
         state: 'State',
@@ -1560,6 +1607,7 @@
         backendOutdated: false,
         phaseViewOpen: false,
         phaseViewQuery: '',
+        openOrderViewId: '',
         bakerSummaryOpen: false,
         bakerSummary: {
           dayKey: '',
@@ -1664,7 +1712,7 @@
           .replace(/'/g, '&#39;');
       }
 
-      function extractTicketItemComments(order) {
+      function extractTicketItemsForView(order) {
         if (!order || !order.items_json) return [];
         let parsed = [];
         try {
@@ -1673,9 +1721,69 @@
           return [];
         }
         if (!Array.isArray(parsed)) return [];
-        return parsed
-          .map((item) => String((item && item.details) || '').trim())
-          .filter(Boolean);
+        return parsed.reduce((acc, entry) => {
+          if (!entry || typeof entry !== 'object') return acc;
+          const itemName = String(entry.name || entry.product_name || entry.id || '').trim() || t('item');
+          const qty = Number(entry.quantity);
+          const quantity = Number.isFinite(qty) && qty > 0 ? qty : 1;
+          const comment = String(entry.details || '').trim() || '-';
+          acc.push({ itemName, quantity, comment });
+          return acc;
+        }, []);
+      }
+
+      function buildTicketOrderViewHtml(order) {
+        const isExpanded = state.openOrderViewId === order.order_id;
+        const detailLabel = isExpanded ? t('hideOrder') : t('viewOrder');
+        const items = extractTicketItemsForView(order);
+        const itemsRows = items.map((item) => `
+          <tr>
+            <td>${escapeHtml(item.itemName)}</td>
+            <td>${escapeHtml(item.quantity)}</td>
+            <td>${escapeHtml(item.comment)}</td>
+          </tr>
+        `).join('');
+        return `
+          <div class="ticket-order-view ${isExpanded ? 'expanded' : ''}">
+            <button class="ghost-btn ticket-order-toggle" type="button" data-toggle-order-view="${order.order_id}">${detailLabel}</button>
+            <div class="ticket-order-panel">
+              <div class="ticket-order-items-title">${t('orderSummary')}</div>
+              <div class="ticket-order-summary">
+                <div>
+                  <div class="label">${t('folio')}</div>
+                  <div class="value">${escapeHtml(order.order_number || 'LEGACY')}</div>
+                </div>
+                <div>
+                  <div class="label">${t('customer')}</div>
+                  <div class="value">${escapeHtml(order.customer_name || '-')}</div>
+                </div>
+                <div>
+                  <div class="label">${t('deliveryDateTime')}</div>
+                  <div class="value">${escapeHtml(formatDateTime(order.delivery_at || order.delivery_date))}</div>
+                </div>
+                <div>
+                  <div class="label">${t('total')}</div>
+                  <div class="value">${escapeHtml(formatMoney(order.total_amount))}</div>
+                </div>
+              </div>
+              <div class="ticket-order-items-title">${t('orderItems')}</div>
+              <div class="ticket-order-items">
+                ${items.length ? `
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>${t('itemName')}</th>
+                        <th>${t('qty')}</th>
+                        <th>${t('itemComment')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>${itemsRows}</tbody>
+                  </table>
+                ` : `<div class="helper" style="padding:6px;">${t('noData')}</div>`}
+              </div>
+            </div>
+          </div>
+        `;
       }
 
       function parseOrderItemsSafe(order) {
@@ -2396,6 +2504,7 @@
           state.selectedBoardDay = next;
           const selected = selectedDayMeta();
           state.selectedDayArchived = !!(selected && selected.is_archived);
+          state.openOrderViewId = '';
           state.boardRev = '';
           state.boardLastUpdatedAt = '';
           renderDayRibbon();
@@ -2913,9 +3022,7 @@
             </div>
           `
           : '';
-        const comments = extractTicketItemComments(order);
-        const hasComments = comments.length > 0;
-        const escapedComments = hasComments ? escapeHtml(comments.join(' | ')) : '';
+        const orderView = buildTicketOrderViewHtml(order);
         return `
           <div class="ticket ${isLate ? 'late' : ''}" draggable="true" data-order-id="${order.order_id}" data-status="${order.status}">
             <div class="folio">${order.order_number || 'LEGACY'}</div>
@@ -2927,13 +3034,7 @@
               <span class="chip ${order.payment_status === 'Paid' ? 'paid' : 'unpaid'}">${order.payment_status}</span>
               <span class="chip">${formatMoney(order.total_amount)}</span>
             </div>
-            ${hasComments ? `
-            <div class="ticket-comment">
-              <div class="ticket-comment-preview">${escapedComments}</div>
-              <div class="ticket-comment-full">${escapedComments}</div>
-              <button class="ghost-btn ticket-comment-toggle" type="button" data-toggle-comment="${order.order_id}">${t('expand')}</button>
-            </div>
-            ` : ''}
+            ${orderView}
             <div class="meta">${statusLabel(order.status)}</div>
             ${moveRow}
             <div class="row">
@@ -3442,6 +3543,7 @@
           const unchanged = state.skipNoChangeRenderEnabled && state.kanbanInitialized && !!state.boardRev && state.boardRev === nextBoardRev;
 
           state.orders = nextOrders;
+          state.openOrderViewId = '';
           state.boardRev = nextBoardRev;
           state.boardLastUpdatedAt = latestOrderStamp(nextOrders) || new Date().toISOString();
           recomputeBakerSummary();
@@ -3628,12 +3730,13 @@
           cleanupDragRuntime(board);
         });
         board.addEventListener('click', async (event) => {
-          const toggleBtn = event.target.closest('[data-toggle-comment]');
-          if (toggleBtn) {
-            const box = toggleBtn.closest('.ticket-comment');
-            if (!box) return;
-            const expanded = box.classList.toggle('expanded');
-            toggleBtn.textContent = expanded ? t('collapse') : t('expand');
+          const toggleOrderViewBtn = event.target.closest('[data-toggle-order-view]');
+          if (toggleOrderViewBtn) {
+            const orderId = String(toggleOrderViewBtn.dataset.toggleOrderView || '').trim();
+            if (!orderId) return;
+            state.openOrderViewId = state.openOrderViewId === orderId ? '' : orderId;
+            state.columnSignatures = {};
+            renderKanban();
             return;
           }
           const moveBtn = event.target.closest('[data-move-order][data-move-target]');
