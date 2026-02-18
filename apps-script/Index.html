@@ -739,6 +739,22 @@
         gap: 6px;
       }
 
+      .ticket .move-row {
+        margin-top: 8px;
+      }
+
+      .ticket .move-btn {
+        border: 1px solid rgba(47, 42, 33, 0.35);
+        background: var(--move-bg, #fffaf1);
+        color: var(--move-ink, #2f2a21);
+        border-radius: 8px;
+        padding: 6px 8px;
+        font-size: 0.73rem;
+        font-weight: 700;
+        cursor: pointer;
+        flex: 1;
+      }
+
       .ticket .ghost-btn {
         border: 1px solid var(--line);
         background: #fffaf1;
@@ -763,6 +779,11 @@
         font-size: 0.69rem;
       }
 
+      .density-compact .ticket .move-btn {
+        font-size: 0.7rem;
+        padding: 5px 6px;
+      }
+
       .density-ultra .ticket {
         padding: 6px;
       }
@@ -776,6 +797,11 @@
       .density-ultra .ticket .ticket-age,
       .density-ultra .ticket .folio {
         font-size: 0.66rem;
+      }
+
+      .density-ultra .ticket .move-btn {
+        font-size: 0.68rem;
+        padding: 4px 5px;
       }
 
       .metrics {
@@ -1178,6 +1204,13 @@
         { status: 'Delivered', roleKey: 'roleDispatchShort', color: '#2d8aa7' },
         { status: 'Cancelled', roleKey: 'roleCancelled', color: '#8c8c8c' }
       ];
+      const MOVE_TARGETS = {
+        Pending: { next: 'Working' },
+        Working: { prev: 'Pending', next: 'Baked' },
+        Baked: { prev: 'Working', next: 'Delivered' },
+        Delivered: {},
+        Cancelled: {}
+      };
       const FALLBACK_PRODUCTS = [
         { id: 'P001', name: 'Quesadilla Salvadoreña (1/4 Regular)', price: 9, category: 'Food', active: true },
         { id: 'P002', name: 'Quesadilla Salvadoreña (Media Familia)', price: 15, category: 'Food', active: true },
@@ -1281,6 +1314,8 @@
         edit: 'Edit',
         reactivate: 'Reactivate',
         moveToCancelled: 'Cancel',
+        previous: 'Previous',
+        next: 'Next',
         expand: 'Expand',
         collapse: 'Collapse',
         state: 'State',
@@ -1389,6 +1424,44 @@
           Cancelled: 'Cancelled'
         };
         return map[status] || status;
+      }
+
+      function moveTargetsForStatus(status) {
+        return MOVE_TARGETS[status] || {};
+      }
+
+      function statusColor(status) {
+        const meta = STATUS_META.find((entry) => entry.status === status);
+        return (meta && meta.color) || '#d7c29f';
+      }
+
+      function hexToRgb(color) {
+        const normalized = String(color || '').trim().replace('#', '');
+        if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+        return {
+          r: parseInt(normalized.slice(0, 2), 16),
+          g: parseInt(normalized.slice(2, 4), 16),
+          b: parseInt(normalized.slice(4, 6), 16)
+        };
+      }
+
+      function readableTextColor(bgColor) {
+        const rgb = hexToRgb(bgColor);
+        if (!rgb) return '#2f2a21';
+        const linear = [rgb.r, rgb.g, rgb.b].map((channel) => {
+          const value = channel / 255;
+          return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        });
+        const luminance = (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2]);
+        return luminance > 0.44 ? '#1f1a14' : '#ffffff';
+      }
+
+      function buildMoveButtonHtml(orderId, direction, targetStatus) {
+        if (!targetStatus) return '';
+        const destinationColor = statusColor(targetStatus);
+        const textColor = readableTextColor(destinationColor);
+        const directionLabel = direction === 'prev' ? t('previous') : t('next');
+        return `<button class="move-btn" type="button" data-move-order="${orderId}" data-move-target="${targetStatus}" style="--move-bg:${destinationColor}; --move-ink:${textColor};">${directionLabel}: ${statusLabel(targetStatus)}</button>`;
       }
 
       function formatMoney(value) {
@@ -2400,6 +2473,15 @@
         const age = minutesElapsed(order.captured_at);
         const isLate = age > 90;
         const canEdit = order.status !== 'Delivered';
+        const moveTargets = moveTargetsForStatus(order.status);
+        const moveRow = moveTargets.prev || moveTargets.next
+          ? `
+            <div class="row move-row">
+              ${buildMoveButtonHtml(order.order_id, 'prev', moveTargets.prev)}
+              ${buildMoveButtonHtml(order.order_id, 'next', moveTargets.next)}
+            </div>
+          `
+          : '';
         const comments = extractTicketItemComments(order);
         const hasComments = comments.length > 0;
         const escapedComments = hasComments ? escapeHtml(comments.join(' | ')) : '';
@@ -2422,6 +2504,7 @@
             </div>
             ` : ''}
             <div class="meta">${statusLabel(order.status)}</div>
+            ${moveRow}
             <div class="row">
               <button class="ghost-btn" data-edit-order="${order.order_id}" ${canEdit ? '' : 'disabled'}>${t('edit')}</button>
               <button class="ghost-btn" data-cancel-order="${order.order_id}">${order.status === 'Cancelled' ? t('reactivate') : t('moveToCancelled')}</button>
