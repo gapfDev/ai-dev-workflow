@@ -27,6 +27,7 @@ Run:
 1. `adminSetSpreadsheetIdProperty({ spreadsheet_id: "YOUR_SHEET_ID" })`
 2. `adminPermissionReport({ spreadsheet_id: "YOUR_SHEET_ID" })` (or use `/exec?action=adminPermissionReport&spreadsheet_id=...`)
 3. `adminPrepareEnvironment()`
+4. Optional QA reset cycle: `adminResetQaData()` (creates backup, clears `Orders`/`Expenses`/`BoardDays`, then runs prepare+smoke)
 
 Expected:
 - `status: success`

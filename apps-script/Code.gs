@@ -96,6 +96,7 @@ function shouldBypassRuntimeCheck_(action) {
     'adminprepareenvironment',
     'adminpermissionreport',
     'adminrunsmoketests',
+    'adminresetqadata',
     'getspreadsheetinfo'
   ].indexOf(normalized) !== -1;
 }
@@ -258,6 +259,8 @@ function handleGetAction_(action, params) {
       return adminPermissionReport_(params || {});
     case 'adminPrepareEnvironment':
       return adminPrepareEnvironment();
+    case 'adminResetQaData':
+      return adminResetQaData(params || {});
     case 'adminMigrateLegacySheetById':
       return adminMigrateLegacySheetById({});
     case 'adminImportProductsFromSpreadsheet':
@@ -283,6 +286,8 @@ function handlePostAction_(action, payload) {
       return addExpense_(payload);
     case 'adminPrepareEnvironment':
       return adminPrepareEnvironment();
+    case 'adminResetQaData':
+      return adminResetQaData(payload || {});
     case 'adminSetSpreadsheetIdProperty':
       return adminSetSpreadsheetIdProperty(payload || {});
     case 'adminPermissionReport':

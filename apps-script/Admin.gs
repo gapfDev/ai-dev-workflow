@@ -47,6 +47,76 @@ function adminBackupSpreadsheet() {
   });
 }
 
+function adminResetQaData(payload) {
+  const options = payload || {};
+  const preserveProducts = options.preserve_products !== false;
+
+  const backup = adminBackupSpreadsheet();
+  if (backup.status !== 'success') {
+    return backup;
+  }
+
+  const cleared = {
+    orders: clearSheetDataRows_(CONFIG.SHEETS.ORDERS),
+    expenses: clearSheetDataRows_(CONFIG.SHEETS.EXPENSES),
+    board_days: clearSheetDataRows_(CONFIG.SHEETS.BOARD_DAYS)
+  };
+
+  if (!preserveProducts) {
+    cleared.products = clearSheetDataRows_(CONFIG.SHEETS.PRODUCTS);
+  }
+
+  const prepared = adminPrepareEnvironment();
+  if (prepared.status !== 'success') {
+    return {
+      status: 'error',
+      message: 'QA reset failed while preparing environment',
+      stage: 'prepare',
+      backup: backup,
+      cleared: cleared,
+      prepare_result: prepared
+    };
+  }
+
+  const smoke = adminRunSmokeTests();
+  if (smoke.status !== 'success') {
+    return {
+      status: 'error',
+      message: 'QA reset failed during smoke tests',
+      stage: 'smoke',
+      backup: backup,
+      cleared: cleared,
+      prepare_result: prepared,
+      smoke_result: smoke
+    };
+  }
+
+  return ok_({
+    message: 'QA reset completed',
+    preserve_products: preserveProducts,
+    backup: {
+      backup_file_id: backup.backup_file_id,
+      backup_name: backup.backup_name,
+      backup_url: backup.backup_url
+    },
+    cleared: cleared,
+    summary: prepared.summary,
+    smoke_metrics: smoke.metrics
+  });
+}
+
+function clearSheetDataRows_(sheetName) {
+  const sheet = getSheet_(sheetName);
+  const rowCount = Math.max(sheet.getLastRow() - 1, 0);
+  if (rowCount > 0) {
+    sheet.getRange(2, 1, rowCount, sheet.getLastColumn()).clearContent();
+  }
+  return {
+    sheet: sheetName,
+    cleared_rows: rowCount
+  };
+}
+
 function adminPrepareEnvironment() {
   setup();
 

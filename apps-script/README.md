@@ -90,6 +90,8 @@ Use these URLs on your active `/exec` deployment:
 
 - Spreadsheet + permission report:
   - `...?action=adminPermissionReport&spreadsheet_id=<target_sheet_id>`
+- QA reset gate (backup + clear Orders/Expenses/BoardDays + prepare + smoke):
+  - `...?action=adminResetQaData`
 - Current spreadsheet binding:
   - `...?action=getSpreadsheetInfo`
 
