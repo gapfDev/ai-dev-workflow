@@ -915,6 +915,25 @@
         font-weight: 700;
       }
 
+      .ticket-order-details {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px 8px;
+        margin-bottom: 6px;
+      }
+
+      .ticket-order-details .label {
+        color: var(--ink-soft);
+        font-size: 0.72rem;
+      }
+
+      .ticket-order-details .value {
+        font-size: 0.74rem;
+        font-weight: 700;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
       .ticket-order-items-title {
         font-size: 0.73rem;
         font-weight: 700;
@@ -1037,6 +1056,8 @@
       }
 
       .density-compact .ticket-order-items table,
+      .density-compact .ticket-order-details .label,
+      .density-compact .ticket-order-details .value,
       .density-compact .ticket-order-summary .label,
       .density-compact .ticket-order-summary .value {
         font-size: 0.68rem;
@@ -1063,6 +1084,8 @@
       }
 
       .density-ultra .ticket-order-items table,
+      .density-ultra .ticket-order-details .label,
+      .density-ultra .ticket-order-details .value,
       .density-ultra .ticket-order-summary .label,
       .density-ultra .ticket-order-summary .value {
         font-size: 0.66rem;
@@ -1638,6 +1661,7 @@
         viewOrder: 'Ver orden',
         hideOrder: 'Ocultar orden',
         orderSummary: 'Resumen de orden',
+        orderCapturedData: 'Datos capturados',
         orderItems: 'Items de la orden',
         itemName: 'Item',
         expand: 'Expand',
@@ -1698,6 +1722,7 @@
         archiveBoardDay: { scope: 'button', buttons: ['btnArchiveDay'], sectionId: 'screen-board' },
         unarchiveBoardDay: { scope: 'button', buttons: ['btnUnarchiveDay'], sectionId: 'screen-board' }
       };
+      const ORDER_VIEW_DETAIL_FIELDS = ['payment_method', 'deposit_amount', 'source_notes'];
 
       const state = {
         lang: 'en',
@@ -1846,6 +1871,34 @@
         const isExpanded = state.openOrderViewId === order.order_id;
         const items = extractTicketItemsForView(order);
         const detailLabel = `${isExpanded ? t('hideOrder') : t('viewOrder')} (${items.length})`;
+        const hasValue = (value) => value !== null && value !== undefined && String(value).trim() !== '';
+        const fieldValue = (value, fallback = t('notSelected')) => (hasValue(value) ? String(value).trim() : fallback);
+        const detailPending = orderMissingViewDetails(order);
+        const viewDetailValue = (fieldName, value, fallback = t('notSelected')) => {
+          if (detailPending && !Object.prototype.hasOwnProperty.call(order, fieldName)) return t('syncBusy');
+          return fieldValue(value, fallback);
+        };
+        const orderType = order.type === 'Pickup' ? t('pickup') : (order.type === 'Delivery' ? t('delivery') : order.type);
+        const paymentStatus = order.payment_status === 'Paid' ? t('paid') : (order.payment_status === 'Unpaid' ? t('unpaid') : order.payment_status);
+        const depositRaw = viewDetailValue('deposit_amount', order.deposit_amount, '');
+        const parsedDeposit = Number(depositRaw);
+        const depositValue = depositRaw && Number.isFinite(parsedDeposit) ? formatMoney(parsedDeposit) : viewDetailValue('deposit_amount', depositRaw);
+        const detailFields = [
+          { label: t('phone'), value: fieldValue(order.phone) },
+          { label: t('type'), value: fieldValue(orderType) },
+          { label: t('channel'), value: fieldValue(order.channel) },
+          { label: t('paymentStatus'), value: fieldValue(paymentStatus) },
+          { label: t('paymentMethod'), value: viewDetailValue('payment_method', order.payment_method) },
+          { label: t('deposit'), value: depositValue },
+          { label: t('address'), value: fieldValue(order.address) },
+          { label: t('sourceNotes'), value: viewDetailValue('source_notes', order.source_notes) }
+        ];
+        const detailsRows = detailFields.map((entry) => `
+          <div>
+            <div class="label">${entry.label}</div>
+            <div class="value">${escapeHtml(entry.value)}</div>
+          </div>
+        `).join('');
         const itemsRows = items.map((item) => `
           <tr>
             <td>${escapeHtml(item.itemName)}</td>
@@ -1876,6 +1929,10 @@
                   <div class="value">${escapeHtml(formatMoney(order.total_amount))}</div>
                 </div>
               </div>
+              <div class="ticket-order-items-title">${t('orderCapturedData')}</div>
+              <div class="ticket-order-details">
+                ${detailsRows}
+              </div>
               <div class="ticket-order-items-title">${t('orderItems')}</div>
               <div class="ticket-order-items">
                 ${items.length ? `
@@ -1894,6 +1951,56 @@
             </div>
           </div>
         `;
+      }
+
+      function orderMissingViewDetails(order) {
+        if (!order || typeof order !== 'object') return false;
+        return ORDER_VIEW_DETAIL_FIELDS.some((field) => !Object.prototype.hasOwnProperty.call(order, field));
+      }
+
+      function mergeOrderDetailFields(order, detailSource) {
+        if (!order || typeof order !== 'object' || !detailSource || typeof detailSource !== 'object') return order;
+        let changed = false;
+        const merged = { ...order };
+        ORDER_VIEW_DETAIL_FIELDS.forEach((field) => {
+          if (!Object.prototype.hasOwnProperty.call(detailSource, field)) return;
+          if (merged[field] === detailSource[field]) return;
+          merged[field] = detailSource[field];
+          changed = true;
+        });
+        return changed ? merged : order;
+      }
+
+      async function ensureOrderDetailsHydrated(orderId) {
+        const targetId = String(orderId || '').trim();
+        if (!targetId) return;
+        const targetOrder = state.orders.find((order) => String(order.order_id || '').trim() === targetId);
+        if (!targetOrder || !orderMissingViewDetails(targetOrder)) return;
+        try {
+          const scopedDay = state.selectedBoardDay || '';
+          const fullOrders = await api('getOrders', 'GET', scopedDay ? { board_day: scopedDay } : null);
+          if (!Array.isArray(fullOrders)) return;
+          const byId = {};
+          fullOrders.forEach((entry) => {
+            const id = String(entry && entry.order_id ? entry.order_id : '').trim();
+            if (!id) return;
+            byId[id] = entry;
+          });
+          let changed = false;
+          state.orders = state.orders.map((order) => {
+            const id = String(order && order.order_id ? order.order_id : '').trim();
+            if (!id || !byId[id]) return order;
+            const merged = mergeOrderDetailFields(order, byId[id]);
+            if (merged !== order) changed = true;
+            return merged;
+          });
+          if (changed) {
+            state.columnSignatures = {};
+            renderKanban();
+          }
+        } catch (err) {
+          console.warn('Order detail hydration failed', err);
+        }
       }
 
       function parseOrderItemsSafe(order) {
@@ -3673,9 +3780,20 @@
           }
 
           const rawOrders = Array.isArray(normalized.items) ? normalized.items : [];
+          const previousById = {};
+          state.orders.forEach((order) => {
+            const id = String(order && order.order_id ? order.order_id : '').trim();
+            if (!id) return;
+            previousById[id] = order;
+          });
           state.backendOutdated = backendContractOutdated(rawOrders);
           const nextOrders = rawOrders
             .filter((order) => String(order && order.order_id ? order.order_id : '').trim())
+            .map((order) => {
+              const id = String(order.order_id || '').trim();
+              const previous = previousById[id];
+              return previous ? mergeOrderDetailFields(order, previous) : order;
+            })
             .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
           const nextBoardRev = normalized.boardRev || computeBoardRevisionClient(nextOrders);
           const unchanged = state.skipNoChangeRenderEnabled && state.kanbanInitialized && !!state.boardRev && state.boardRev === nextBoardRev;
@@ -3872,9 +3990,13 @@
           if (toggleOrderViewBtn) {
             const orderId = String(toggleOrderViewBtn.dataset.toggleOrderView || '').trim();
             if (!orderId) return;
-            state.openOrderViewId = state.openOrderViewId === orderId ? '' : orderId;
+            const shouldOpen = state.openOrderViewId !== orderId;
+            state.openOrderViewId = shouldOpen ? orderId : '';
             state.columnSignatures = {};
             renderKanban();
+            if (shouldOpen) {
+              await ensureOrderDetailsHydrated(orderId);
+            }
             return;
           }
           const moveBtn = event.target.closest('[data-move-order][data-move-target]');

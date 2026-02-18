@@ -1,0 +1,13 @@
+[PASS] API createOrder ORD-1771401716089 ORD-18FEB-037
+[PASS] Detail hydration completed in 4s
+[PASS] Phone value -> 555-141-0001
+[PASS] Type value -> Delivery
+[PASS] Channel value -> Facebook
+[PASS] Payment status value -> Paid
+[PASS] Payment method value -> Card
+[PASS] Deposit formatted -> $12.50
+[PASS] Source notes value -> Fragile note
+[PASS] Item 1 -> Semita QA
+[PASS] Item 1 comment -> No sesame
+[PASS] Item 2 -> Pan Menudo
+[PASS] Item 2 comment -> Pack warm
