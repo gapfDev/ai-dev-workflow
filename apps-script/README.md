@@ -9,8 +9,10 @@
 - Fast order capture (manual + JSON paste from Square/GPT agent).
 - Per-item comment input (`details`) in selected lines with duplicate-row action.
 - JSON alias mapping for item comments: `details` > `notes` > `comment`.
-- Production Kanban with drag and drop and FIFO priority by capture time.
+- Production Kanban with drag-and-drop plus tap-first movement controls (Previous/Next) and FIFO priority by capture time.
 - One-line item comment preview on Kanban tickets with expand/collapse full text.
+- Phase View panel to scan all statuses with FIFO rows and search (folio/customer/phone).
+- Baker Summary panel with exact-product aggregates for `Stock / To Prepare` and `Delivered`.
 - Friendly daily folio format: `ORD-14FEB-001`.
 - Product popup grouped and sorted by product family with color coding.
 - Product menu fallback to keep menu visible during temporary API delays.
@@ -119,9 +121,36 @@ If report returns `SPREADSHEET_WRITE_DENIED`:
 - `Delivered` lock also blocks item-comment updates.
 - Only `Baked -> Delivered` is allowed.
 - `Cancelled` can be reverted only with confirmation.
+- Previous/Next button map:
+  - `Pending -> Working`
+  - `Working -> Pending | Baked`
+  - `Baked -> Working | Delivered`
+  - `Delivered` and `Cancelled` show no move buttons.
 - Visual age alert after 90+ minutes (red border).
 - `Delivery` + `Unpaid` is allowed with a warning.
 - Historical records without folio are marked as `LEGACY`.
+
+## Kanban Operations UX Additions
+- Movement controls:
+  - Drag-and-drop remains available.
+  - Tap movement uses existing transition authority (`requestStatusTransition(...)`).
+  - Move buttons are colored by destination status and auto-adjust text contrast.
+  - Duplicate fast taps are blocked.
+- Phase View:
+  - Open from the Kanban toolbar.
+  - Groups selected-day orders by status.
+  - Displays FIFO rows: folio, customer, delivery date/time, age, status.
+  - Includes search by folio, customer, and phone.
+- Baker Summary:
+  - Open from the Kanban toolbar.
+  - Uses selected-day data only.
+  - `Stock / To Prepare` = `Pending + Working + Baked`.
+  - `Delivered` = `Delivered` status totals + delivered order count.
+  - Aggregation is exact product line (variant-level) from `items_json.quantity`.
+  - Legacy/malformed `items_json` rows are skipped safely (no panel crash).
+- Terminology:
+  - `To Prepare` is production requirement for the selected day.
+  - It is not a warehouse stock ledger.
 
 ## Kanban DnD Target Highlight Behavior
 - During drag, only the currently hovered destination column is highlighted.
@@ -158,6 +187,10 @@ You can also run the managed flow with these functions:
 8. `Delivered` is blocked from statuses other than `Baked`.
 9. `Delivery` + `Unpaid` shows warning and still saves.
 10. 5-second refresh keeps the board synchronized.
+11. Previous/Next movement buttons respect the status map and call the normal transition path.
+12. Drag-and-drop still works with movement buttons enabled.
+13. Phase View groups selected-day orders by status with FIFO ordering and search.
+14. Baker Summary totals match selected-day orders (`To Prepare` and `Delivered`) and show delivered order count.
 
 ## Automated QA
 Prerequisites:
