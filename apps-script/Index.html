@@ -1,0 +1,3272 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bakery Ops Board v1</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+    :root {
+      --bg: #f7f3eb;
+      --bg-accent: #f0e5d3;
+      --ink: #2f2a21;
+      --ink-soft: #72644f;
+      --brand: #b45728;
+      --brand-strong: #8c3710;
+      --ok: #2c7a43;
+      --warn: #d48a1a;
+      --danger: #b4332e;
+      --card: #fff9ef;
+      --line: #dbc7aa;
+      --shadow: 0 10px 30px rgba(68, 42, 12, 0.1);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: radial-gradient(circle at 10% 0%, #fff6e7 0%, var(--bg) 45%, #efe3ce 100%);
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    body.menu-open {
+      overflow: hidden;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      background: linear-gradient(135deg, #fff9ef 0%, #f4e8d5 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .title-group h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: 0.02em;
+    }
+
+    .title-group p {
+      margin: 3px 0 0;
+      color: var(--ink-soft);
+      font-size: 0.88rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      border: 1px solid #d8c7a8;
+      background: #fff;
+      padding: 8px 11px;
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #999;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .sync-dot.idle {
+      background: #999;
+    }
+
+    .sync-dot.syncing {
+      background: var(--warn);
+      box-shadow: 0 0 8px var(--warn);
+      animation: pulse 1.5s infinite;
+    }
+
+    .sync-dot.error {
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0.4;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.4;
+      }
+    }
+
+    body.global-busy .status-pill {
+      color: var(--brand-strong);
+      border-color: #d8b786;
+      background: #fff4df;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      padding: 10px 14px;
+      position: relative;
+      font-weight: 700;
+      font-family: inherit;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s ease;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(180, 87, 40, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--brand-strong);
+    }
+
+    .btn-soft {
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--ink);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn.is-loading {
+      opacity: 0.85;
+      cursor: wait;
+    }
+
+    .btn.is-loading::after {
+      content: '';
+      position: absolute;
+      right: 9px;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      margin-top: -6px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      animation: spin 0.65s linear infinite;
+    }
+
+    .role-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .role-card {
+      background: #fff8ea;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .role-card strong {
+      display: block;
+      font-size: 0.86rem;
+      margin-bottom: 3px;
+    }
+
+    .role-card span {
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fff7e8;
+      color: var(--ink-soft);
+      padding: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      border-color: var(--brand-strong);
+      background: linear-gradient(135deg, #c86530, #8d3d19);
+    }
+
+    .banner {
+      margin-top: 10px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .banner.visible {
+      display: block;
+    }
+
+    .banner.warn {
+      background: #fff4df;
+      border: 1px solid #efc67c;
+      color: #7d4e00;
+    }
+
+    main {
+      margin-top: 12px;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid.capture {
+      grid-template-columns: 1fr;
+    }
+
+    .customer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .customer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sticky-controls {
+      position: sticky;
+      bottom: 0px;
+      background: rgba(247, 243, 235, 0.95);
+      backdrop-filter: blur(8px);
+      margin: 12px -14px -14px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 12px;
+      z-index: 100;
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    .field-error {
+      border-color: var(--danger) !important;
+      background-color: #fff0f0 !important;
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.75rem;
+      margin-top: 4px;
+      font-weight: 500;
+      display: none;
+    }
+
+    input.field-error+.error-msg {
+      display: block;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .card h2,
+    .card h3 {
+      margin: 0 0 10px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .form-row.triple {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid #ceb991;
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      font: inherit;
+      color: var(--ink);
+    }
+
+    .field textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    .field.missing input,
+    .field.missing select,
+    .field.missing textarea {
+      border-color: var(--danger);
+      background: #fff4f3;
+    }
+
+    .ticket.late {
+      border-color: var(--danger);
+      background: #fff8f8;
+    }
+
+    .ticket.optimistic-ghost {
+      opacity: 0.6;
+      cursor: wait;
+      pointer-events: none;
+      background: #fdfdfd;
+      border-style: dashed;
+    }
+
+    .helper {
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      max-height: 330px;
+      overflow-y: auto;
+    }
+
+    .product-btn {
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .product-btn strong {
+      display: block;
+      font-size: 0.84rem;
+    }
+
+    .product-btn span {
+      color: var(--ink-soft);
+      font-size: 0.77rem;
+    }
+
+    .menu-launch {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .menu-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .menu-families {
+      display: grid;
+      gap: 12px;
+    }
+
+    .family-block {
+      border: 1px solid #e1cfb3;
+      border-left-width: 6px;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fffdf7;
+    }
+
+    .family-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .family-title {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .family-count {
+      color: var(--ink-soft);
+      font-size: 0.76rem;
+    }
+
+    .family-title-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .family-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+    }
+
+    .menu-families .product-grid {
+      max-height: none;
+      overflow: visible;
+    }
+
+    .menu-families .product-btn {
+      border-left-width: 4px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .menu-families .product-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(24, 18, 10, 0.08);
+    }
+
+    .menu-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: none;
+    }
+
+    .menu-modal.active {
+      display: block;
+    }
+
+    .menu-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(22, 16, 10, 0.55);
+    }
+
+    .menu-modal-dialog {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(1100px, calc(100vw - 24px));
+      max-height: calc(100vh - 24px);
+      overflow: auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+      padding: 14px;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .items-table th,
+    .items-table td {
+      border-bottom: 1px solid #e6d5b9;
+      padding: 7px 5px;
+      text-align: left;
+    }
+
+    .qty-input {
+      width: 64px;
+    }
+
+    .item-details-input {
+      width: 100%;
+      min-height: 38px;
+      resize: vertical;
+    }
+
+    .item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .item-actions .btn {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 0.74rem;
+    }
+
+    .family-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: 0.68rem;
+      margin-bottom: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+    }
+
+    .totals {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .action-row .btn {
+      flex: 1;
+    }
+
+    .kanban-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .board-day-controls {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .day-ribbon {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 2px 8px;
+    }
+
+    .day-pill {
+      border: 1px solid #d7c29f;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink-soft);
+      padding: 6px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .day-pill.active {
+      border-color: #8d3d19;
+      color: #fff;
+      background: linear-gradient(135deg, #c86530, #8d3d19);
+    }
+
+    .day-pill.archived {
+      border-style: dashed;
+    }
+
+    .day-pill .mini {
+      font-size: 0.72rem;
+      opacity: 0.85;
+    }
+
+    .board-day-state {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .board-day-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .archive-flag {
+      border-radius: 999px;
+      border: 1px dashed #a96b3a;
+      background: #fff3dd;
+      color: #8d3d19;
+      padding: 3px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .kanban {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      align-items: start;
+    }
+
+    .kanban-column {
+      background: #fff7e8;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      min-height: 60vh;
+      padding: 8px;
+      transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    .kanban-column.drop-target-valid {
+      background: #eef8f0;
+      border-color: #9dc8a6;
+      box-shadow: inset 0 0 0 1px rgba(44, 122, 67, 0.25), 0 0 0 2px rgba(44, 122, 67, 0.12);
+    }
+
+    .kanban-column.drop-target-invalid {
+      background: #fff0ed;
+      border-color: #dc8f88;
+      box-shadow: inset 0 0 0 1px rgba(180, 51, 46, 0.28), 0 0 0 2px rgba(180, 51, 46, 0.14);
+    }
+
+    .kanban-column h3 {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .column-sub {
+      color: var(--ink-soft);
+      font-size: 0.76rem;
+      margin-top: 2px;
+    }
+
+    .column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+      border-bottom: 1px dashed #dbc7aa;
+      padding-bottom: 8px;
+    }
+
+    .ticket {
+      background: #fff;
+      border: 1px solid #d7c29f;
+      border-left: 5px solid #ba8d4f;
+      border-radius: 11px;
+      padding: 8px;
+      margin-bottom: 8px;
+      cursor: grab;
+      transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    .ticket.dragging {
+      background: #fff4df;
+      border-color: #bf955d;
+      box-shadow: 0 6px 16px rgba(133, 90, 35, 0.22);
+    }
+
+    .ticket[data-status='Working'] {
+      border-left-color: #c67700;
+    }
+
+    .ticket[data-status='Baked'] {
+      border-left-color: #327a48;
+    }
+
+    .ticket[data-status='Delivered'] {
+      border-left-color: #2b8ca7;
+      opacity: 0.9;
+    }
+
+    .ticket[data-status='Cancelled'] {
+      border-left-color: #8a8a8a;
+      background: #fafafa;
+    }
+
+    .ticket.late {
+      border-color: #d04b2f;
+      box-shadow: 0 0 0 2px rgba(208, 75, 47, 0.15);
+    }
+
+    .ticket .folio {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .ticket .ticket-age {
+      font-size: 0.74rem;
+      color: var(--ink-soft);
+    }
+
+    .ticket .name {
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    .ticket .meta {
+      margin-top: 3px;
+      font-size: 0.77rem;
+      color: var(--ink-soft);
+    }
+
+    .ticket-comment {
+      margin-top: 6px;
+      border-top: 1px dashed #e1cfb3;
+      padding-top: 6px;
+    }
+
+    .ticket-comment-preview {
+      font-size: 0.76rem;
+      color: var(--ink-soft);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ticket-comment-full {
+      display: none;
+      margin-top: 5px;
+      padding: 6px;
+      border: 1px solid #e6d5b9;
+      border-radius: 8px;
+      background: #fffaf1;
+      font-size: 0.76rem;
+      color: var(--ink);
+      white-space: pre-wrap;
+    }
+
+    .ticket-comment.expanded .ticket-comment-full {
+      display: block;
+    }
+
+    .ticket-comment-toggle {
+      margin-top: 5px;
+      width: auto;
+    }
+
+    .ticket .chip-row {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      border: 1px solid #dfceaf;
+      background: #fff8ed;
+    }
+
+    .chip.paid {
+      background: #eaf8ee;
+      border-color: #98c7a7;
+    }
+
+    .chip.unpaid {
+      background: #fff1f0;
+      border-color: #dd9b97;
+    }
+
+    .ticket .row {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .ticket .ghost-btn {
+      border: 1px solid var(--line);
+      background: #fffaf1;
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 0.74rem;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .density-wide .ticket {
+      padding: 10px;
+    }
+
+    .density-compact .ticket {
+      padding: 7px;
+    }
+
+    .density-compact .ticket .meta,
+    .density-compact .ticket .chip,
+    .density-compact .ticket .ticket-age {
+      font-size: 0.69rem;
+    }
+
+    .density-ultra .ticket {
+      padding: 6px;
+    }
+
+    .density-ultra .ticket .name {
+      font-size: 0.83rem;
+    }
+
+    .density-ultra .ticket .meta,
+    .density-ultra .ticket .chip,
+    .density-ultra .ticket .ticket-age,
+    .density-ultra .ticket .folio {
+      font-size: 0.66rem;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .metric span {
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 1.25rem;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .list-box {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .list-box ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .expense-list {
+      max-height: 300px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .expense-list table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .expense-list th,
+    .expense-list td {
+      border-bottom: 1px solid #ebdcc1;
+      padding: 8px;
+      text-align: left;
+      font-size: 0.84rem;
+    }
+
+    .toast {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      max-width: 360px;
+      z-index: 9999;
+      background: #2e2a20;
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 10px;
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: all 0.18s ease;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .section-busy {
+      position: relative;
+    }
+
+    .section-busy::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(255, 247, 232, 0.58);
+      z-index: 15;
+      pointer-events: all;
+    }
+
+    .section-busy::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 22px;
+      height: 22px;
+      margin-left: -11px;
+      margin-top: -11px;
+      border-radius: 50%;
+      border: 3px solid rgba(180, 87, 40, 0.28);
+      border-top-color: var(--brand-strong);
+      animation: spin 0.7s linear infinite;
+      z-index: 16;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1200px) {
+      .kanban {
+        grid-template-columns: repeat(5, minmax(200px, 1fr));
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .grid.capture {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .role-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .menu-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .board-day-state {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .board-day-state .action-row {
+        width: 100% !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .tabs {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .form-row,
+      .form-row.triple {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="title-group">
+        <h1 data-i18n="appTitle">Bakery Ops Board v1</h1>
+        <p data-i18n="appSubtitle">Visual FIFO + friendly folio for a 4-role team</p>
+      </div>
+      <div class="header-actions">
+        <div id="syncStatus" class="status-pill">
+          <div id="syncDot" class="sync-dot idle"></div>
+          <span id="syncText">Synced</span>
+        </div>
+        <button id="btnToggleLang" class="btn btn-soft">EN</button>
+      </div>
+    </header>
+
+    <section class="role-strip">
+      <div class="role-card"><strong data-i18n="roleTaker">Order Taker</strong><span data-i18n="roleTakerDesc">Fast
+          capture from calls/Facebook</span></div>
+      <div class="role-card"><strong data-i18n="roleCook">Cook</strong><span data-i18n="roleCookDesc">Works Working
+          column</span></div>
+      <div class="role-card"><strong data-i18n="rolePack">Organizer/Packing</strong><span
+          data-i18n="rolePackDesc">Prepares output in Baked</span></div>
+      <div class="role-card"><strong data-i18n="roleDispatch">Dispatch</strong><span
+          data-i18n="roleDispatchDesc">Confirms final delivery</span></div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-screen="capture" data-i18n="tabCapture">Capture</button>
+      <button class="tab-btn" data-screen="board" data-i18n="tabBoard">Kanban</button>
+    </nav>
+
+    <div id="banner" class="banner"></div>
+
+    <main>
+      <section id="screen-capture" class="screen active">
+        <div class="grid capture">
+          <article class="card">
+            <h2 data-i18n="customerTitle">Customer & Delivery</h2>
+            <div class="customer-grid">
+              <div class="field">
+                <label for="customerName" data-i18n="customerName">Customer</label>
+                <input id="customerName" type="text" placeholder="Customer" />
+                <span class="error-msg" data-i18n="customerRequired">Name is required</span>
+              </div>
+              <div class="field">
+                <label for="customerPhone" data-i18n="customerPhone">Phone</label>
+                <input id="customerPhone" type="tel" placeholder="Phone" />
+                <span class="error-msg" data-i18n="phoneRequired">Phone is required</span>
+              </div>
+            </div>
+            <div class="customer-grid" style="margin-top: 12px;">
+              <div class="field">
+                <label for="orderDate" data-i18n="date">Date</label>
+                <input id="orderDate" type="date" />
+              </div>
+              <div class="field">
+                <label for="orderTime" data-i18n="time">Time (optional)</label>
+                <input id="orderTime" type="time" />
+              </div>
+            </div>
+            <div class="customer-grid" style="margin-top: 12px;">
+              <div class="field">
+                <label for="orderType" data-i18n="type">Type</label>
+                <select id="orderType">
+                  <option value="Pickup">Pickup</option>
+                  <option value="Delivery">Delivery</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="paymentStatus" data-i18n="state">Payment Status</label>
+                <select id="paymentStatus">
+                  <option value="Unpaid" data-i18n="unpaid">Unpaid</option>
+                  <option value="Paid" data-i18n="paid">Paid</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="orderChannel" data-i18n="channel">Channel</label>
+                <select id="orderChannel">
+                  <option value="Phone" data-i18n="channelPhone">Phone</option>
+                  <option value="Facebook" data-i18n="channelFacebook">Facebook</option>
+                  <option value="Square">Square</option>
+                  <option value="Walk-in" data-i18n="channelWalkin">Walk-in</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="orderAddress" data-i18n="address">Address</label>
+                <input id="orderAddress" type="text" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="orderNotes" data-i18n="sourceNotes">Source notes</label>
+              <textarea id="orderNotes"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="aiPayload" data-i18n="aiPayloadLabel">JSON paste (Square/GPT Agent)</label>
+              <textarea id="aiPayload" placeholder='{"order_meta": {...}, "items": [...]}'></textarea>
+              <div class="action-row" style="margin-top: 6px;">
+                <button id="btnAutofill" class="btn btn-soft" data-i18n="autofill">Autofill</button>
+                <button id="btnClearAi" class="btn btn-soft" data-i18n="clear">Clear</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2 data-i18n="itemsTitle">Products & items</h2>
+            <div class="menu-launch">
+              <button id="btnOpenMenuScreen" class="btn btn-primary" data-i18n="openMenuScreen">Open menu by
+                family</button>
+              <div class="helper" data-i18n="menuHint">Add products from a popup grouped by family.</div>
+            </div>
+
+            <h3 style="margin-top: 14px;" data-i18n="selectedItems">Selected items</h3>
+            <div id="field-items" class="field">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="item">Item</th>
+                    <th data-i18n="qty">Qty</th>
+                    <th data-i18n="price">Price</th>
+                    <th data-i18n="itemComment">Comment</th>
+                    <th data-i18n="actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="selectedItemsBody"></tbody>
+              </table>
+            </div>
+
+            <div class="totals">
+              <span data-i18n="total">Total</span>
+              <span id="orderTotal">$0.00</span>
+            </div>
+
+            <div class="helper" id="captureModeLabel" data-i18n="modeCreate">Mode: create order</div>
+
+            <div class="sticky-controls">
+              <button id="btnSaveOrder" class="btn btn-primary" data-i18n="saveOrder">Save order</button>
+              <button id="btnResetForm" class="btn btn-soft" data-i18n="resetForm">Reset</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="screen-board" class="screen">
+        <article class="card">
+          <div class="kanban-toolbar">
+            <div>
+              <h2 style="margin:0;" data-i18n="boardTitle">Production Kanban</h2>
+              <div class="helper" data-i18n="boardSubtitle">FIFO by capture age · red border > 90 min</div>
+            </div>
+            <div class="action-row" style="margin-top:0; width: 290px;">
+              <button id="btnRefreshBoard" class="btn btn-soft" data-i18n="refresh">Refresh</button>
+              <button id="btnJumpCapture" class="btn btn-soft" data-i18n="newOrder">New order</button>
+            </div>
+          </div>
+          <div class="board-day-controls">
+            <div id="dayRibbon" class="day-ribbon"></div>
+            <div class="board-day-state">
+              <div class="board-day-label">
+                <span id="boardDayLabel" class="status-pill">Day: --</span>
+                <span id="boardDayArchiveFlag" class="archive-flag" style="display:none;">ARCHIVED</span>
+              </div>
+              <div class="action-row" style="margin-top:0; width: 360px;">
+                <button id="btnArchiveDay" class="btn btn-soft">Archive Day</button>
+                <button id="btnUnarchiveDay" class="btn btn-soft">Unarchive Day</button>
+              </div>
+            </div>
+          </div>
+          <div id="kanbanBoard" class="kanban density-wide"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div id="menuModal" class="menu-modal" aria-hidden="true">
+    <div class="menu-modal-overlay" data-close-menu="true"></div>
+    <div class="menu-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="menuModalTitle">
+      <div class="menu-toolbar">
+        <div>
+          <h2 id="menuModalTitle" style="margin:0;" data-i18n="menuScreenTitle">Menu by family</h2>
+          <div class="helper" data-i18n="menuScreenSubtitle">Pick products by category and return to capture.</div>
+        </div>
+        <div class="action-row" style="margin-top:0; width: 220px;">
+          <button id="btnCloseMenuModal" class="btn btn-soft" data-i18n="closeMenu">Close</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="menuSearch" data-i18n="searchProduct">Search product</label>
+        <input id="menuSearch" type="text" />
+      </div>
+      <div id="menuFamilies" class="menu-families"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // Local test support: pass ?apiBase=https://.../exec
+    // Apps Script support: fallback to ScriptApp.getService().getUrl().
+    const API_BASE = (() => {
+      const params = new URLSearchParams(window.location.search || '');
+      const fromQuery = params.get('apiBase') || params.get('api_base');
+      if (fromQuery && /^https?:\/\//i.test(fromQuery)) return fromQuery;
+      const currentUrl = `${window.location.origin}${window.location.pathname}`;
+      if (/^https?:\/\/script\.google\.com\/macros\/s\//i.test(currentUrl)) return currentUrl;
+      const webAppUrl = '<?= ScriptApp.getService().getUrl() ?>';
+      if (webAppUrl && webAppUrl.indexOf('http') === 0) return webAppUrl;
+      return '';
+    })();
+    const STATUS_META = [
+      { status: 'Pending', roleKey: 'roleOrg', color: '#c09347' },
+      { status: 'Working', roleKey: 'roleCookShort', color: '#ce7d14' },
+      { status: 'Baked', roleKey: 'rolePackShort', color: '#327a48' },
+      { status: 'Delivered', roleKey: 'roleDispatchShort', color: '#2d8aa7' },
+      { status: 'Cancelled', roleKey: 'roleCancelled', color: '#8c8c8c' }
+    ];
+    const FALLBACK_PRODUCTS = [
+      { id: 'P001', name: 'Quesadilla Salvadoreña (1/4 Regular)', price: 9, category: 'Food', active: true },
+      { id: 'P002', name: 'Quesadilla Salvadoreña (Media Familia)', price: 15, category: 'Food', active: true },
+      { id: 'P003', name: 'Quesadilla Salvadoreña (Familiar)', price: 25, category: 'Food', active: true },
+      { id: 'P004', name: 'Pan Francés (Unidad)', price: 1, category: 'Food', active: true },
+      { id: 'P005', name: 'Pan Francés (Docena)', price: 10, category: 'Food', active: true },
+      { id: 'P006', name: 'Semita Alta (1/4 Regular)', price: 10, category: 'Food', active: true },
+      { id: 'P007', name: 'Semita Alta (Media Familia)', price: 18, category: 'Food', active: true },
+      { id: 'P008', name: 'Semita Alta (Familiar)', price: 32, category: 'Food', active: true },
+      { id: 'P009', name: 'Pastelitos Rellenos (Unidad)', price: 2, category: 'Food', active: true },
+      { id: 'P010', name: 'Pastelitos Rellenos (Combo 3x)', price: 5, category: 'Food', active: true },
+      { id: 'P011', name: 'Pan Menudo (Unidad)', price: 1, category: 'Food', active: true },
+      { id: 'P012', name: 'Pan Menudo (Docena)', price: 10, category: 'Food', active: true },
+      { id: 'P013', name: 'Budín de Guineo', price: 5, category: 'Food', active: true },
+      { id: 'P014', name: 'Delivery Fee', price: 5, category: 'Delivery', active: true },
+      { id: 'P015', name: 'Delivery Fee External', price: 7, category: 'Delivery', active: true }
+    ];
+    const FAMILY_LIBRARY = [
+      { key: 'quesadilla_salvadorena', label: 'Quesadillas', color: '#C96A2B', order: 10, patterns: ['quesadilla'] },
+      { key: 'semita_alta', label: 'Semita Alta', color: '#2E8B57', order: 20, patterns: ['semita alta'] },
+      { key: 'pan_frances', label: 'Pan Frances', color: '#2B6CB0', order: 30, patterns: ['pan frances'] },
+      { key: 'pan_menudo', label: 'Pan Menudo', color: '#5A67D8', order: 40, patterns: ['pan menudo'] },
+      { key: 'pastelitos_rellenos', label: 'Pastelitos', color: '#D53F8C', order: 50, patterns: ['pastelito', 'pastelitos rellenos'] },
+      { key: 'budin_guineo', label: 'Budin', color: '#805AD5', order: 60, patterns: ['budin', 'guineo'] },
+      { key: 'delivery', label: 'Delivery', color: '#718096', order: 90, patterns: ['delivery fee', 'delivery'] }
+    ];
+
+    const I18N_EN = {
+      appTitle: 'Bakery Ops Board v1',
+      appSubtitle: 'Visual FIFO + friendly folio for a 4-role team',
+      syncReady: 'Synced',
+      syncBusy: 'Syncing...',
+      roleTaker: 'Order Taker',
+      roleTakerDesc: 'Fast capture from calls/Facebook',
+      roleCook: 'Cook',
+      roleCookDesc: 'Works Working column',
+      rolePack: 'Organizer/Packing',
+      rolePackDesc: 'Prepares output in Baked',
+      roleDispatch: 'Dispatch',
+      roleDispatchDesc: 'Confirms final delivery',
+      tabCapture: 'Capture',
+      tabBoard: 'Kanban',
+      captureTitle: 'Fast Capture',
+      customer: 'Customer',
+      phone: 'Phone',
+      date: 'Date',
+      time: 'Time (optional)',
+      type: 'Type',
+      pickup: 'Pickup',
+      delivery: 'Delivery',
+      paymentStatus: 'Payment status',
+      paymentMethod: 'Payment method',
+      notSelected: 'Not set',
+      deposit: 'Deposit',
+      channel: 'Channel',
+      channelPhone: 'Phone',
+      channelFacebook: 'Facebook',
+      channelWalkin: 'Walk-in',
+      address: 'Address',
+      sourceNotes: 'Source notes',
+      aiPayloadLabel: 'JSON paste (Square/GPT Agent)',
+      autofill: 'Autofill',
+      clear: 'Clear',
+      itemsTitle: 'Products & items',
+      openMenuScreen: 'Open menu by family',
+      menuHint: 'Add products from a popup grouped by family.',
+      menuScreenTitle: 'Menu by family',
+      menuScreenSubtitle: 'Pick products by category and close the popup.',
+      closeMenu: 'Close',
+      searchProduct: 'Search product',
+      selectedItems: 'Selected items',
+      item: 'Item',
+      qty: 'Qty',
+      price: 'Price',
+      itemComment: 'Comment',
+      actions: 'Actions',
+      duplicate: 'Duplicate',
+      remove: 'Remove',
+      total: 'Total',
+      modeCreate: 'Mode: create order',
+      modeEdit: 'Mode: edit order',
+      saveOrder: 'Save order',
+      updateOrder: 'Update order',
+      resetForm: 'Reset',
+      boardTitle: 'Production Kanban',
+      boardSubtitle: 'FIFO by capture age · red border > 90 min',
+      refresh: 'Refresh',
+      newOrder: 'New order',
+      category: 'Category',
+      amount: 'Amount',
+      description: 'Description',
+      unpaid: 'Unpaid',
+      paid: 'Paid',
+      roleOrg: 'Organizer',
+      roleCookShort: 'Cook',
+      rolePackShort: 'Packing',
+      roleDispatchShort: 'Dispatch',
+      roleCancelled: 'Cancelled',
+      elapsed: 'Age',
+      minutes: 'min',
+      edit: 'Edit',
+      reactivate: 'Reactivate',
+      moveToCancelled: 'Cancel',
+      expand: 'Expand',
+      collapse: 'Collapse',
+      state: 'State',
+      captured: 'Captured',
+      noData: 'No data',
+      remoteChanges: 'Remote changes detected. Data refreshed.',
+      saved: 'Saved',
+      backendOutdated: 'Outdated backend detected on /exec. Deploy a new Code.gs version (missing folio/FIFO fields or empty order_id).',
+      apiInvalidJson: 'API did not return valid JSON. Check Web App deployment (/exec).',
+      apiAccessRestricted: 'Web App access is restricted. Fix deployment access (Execute as: Me, Who has access: Anyone/Anyone with Google account) and domain policy.',
+      missingOrderIdResponse: 'Order was saved but backend did not return order_id. Update production Code.gs.',
+      familyDefault: 'General',
+      warningDeliveryUnpaid: 'Delivery is Unpaid: order will be saved with warning.',
+      fillRequired: 'Complete customer, date, type and at least one item.',
+      invalidJson: 'Invalid JSON payload for autofill.',
+      reactivated: 'Order reactivated.',
+      onlyFromBaked: 'Delivered is allowed only from Baked.',
+      deliveredLocked: 'Delivered cannot be edited/changed.',
+      confirmReactivate: 'Confirm reactivating this cancelled order?',
+      confirmCancel: 'Confirm moving order to Cancelled?',
+      confirmDelivered: 'Confirm marking this order as Delivered?',
+      archiveDay: 'Archive Day',
+      unarchiveDay: 'Unarchive Day',
+      dayPrefix: 'Day',
+      archivedTag: 'ARCHIVED',
+      confirmArchiveStep1: 'Archive selected day? Pending orders are still allowed.',
+      dayUnarchivedSaved: 'Day unarchived.',
+      customerRequired: 'Customer name is required',
+      phoneRequired: 'Phone number is required',
+      syncBusy: 'Syncing...',
+      syncReady: 'Synced',
+      syncError: 'Error'
+    };
+    const I18N = { en: I18N_EN, es: I18N_EN };
+    const LOADING_THRESHOLD_MS = 25;
+    const LOADING_MIN_VISIBLE_MS = 180;
+    const RENDER_HEAVY_LIMITS = {
+      menuProducts: 24,
+      selectedItems: 10,
+      boardOrders: 16
+    };
+    const LOADING_OPS = {
+      loadClientConfig: { scope: 'global' },
+      refreshAll: { scope: 'global' },
+      refreshProducts: { scope: 'section', sectionId: 'screen-capture' },
+      refreshBoardDays: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
+      // Polling refresh must not lock board interactions with section overlay.
+      refreshOrders: { scope: 'global' },
+      boardEntrySync: { scope: 'section', sectionId: 'screen-board', buttons: ['btnRefreshBoard'] },
+      startEditing: { scope: 'section', sectionId: 'screen-capture' },
+      saveOrder: { scope: 'button', buttons: ['btnSaveOrder'], sectionId: 'screen-capture' },
+      statusTransition: { scope: 'section', sectionId: 'screen-board' },
+      switchBoardDay: { scope: 'section', sectionId: 'screen-board' },
+      archiveBoardDay: { scope: 'button', buttons: ['btnArchiveDay'], sectionId: 'screen-board' },
+      unarchiveBoardDay: { scope: 'button', buttons: ['btnUnarchiveDay'], sectionId: 'screen-board' },
+      saveOrder: { scope: 'global', sectionId: 'screen-capture', minVisibleMs: 500 }
+    };
+
+    const state = {
+      lang: 'en',
+      screen: 'capture',
+      products: FALLBACK_PRODUCTS.slice(),
+      orders: [],
+      boardRev: '',
+      boardSnapshotEnabled: true,
+      boardDeltaEnabled: true,
+      skipNoChangeRenderEnabled: true,
+      incrementalRenderEnabled: true,
+      boardLastUpdatedAt: '',
+      selectedItems: [],
+      editingOrderId: null,
+      knownVersions: {},
+      pendingWrites: new Set(),
+      backendOutdated: false,
+      pollId: null,
+      pollFailures: 0,
+      kanbanInitialized: false,
+      columnSignatures: {},
+      boardDays: [],
+      selectedBoardDay: '',
+      selectedDayArchived: false,
+      boardDaysLastFetchMs: 0,
+      dragRuntime: {
+        orderId: '',
+        sourceStatus: '',
+        activeColumnStatus: '',
+        draggingTicketId: ''
+      },
+      loading: {
+        operation: {},
+        globalCount: 0,
+        buttonCounts: {},
+        sectionCounts: {},
+        tokenSeq: 0
+      }
+    };
+
+    function t(key) {
+      return (I18N[state.lang] && I18N[state.lang][key]) || key;
+    }
+
+    function statusLabel(status) {
+      const map = {
+        Pending: 'Pending',
+        Working: 'Working',
+        Baked: 'Baked',
+        Delivered: 'Delivered',
+        Cancelled: 'Cancelled'
+      };
+      return map[status] || status;
+    }
+
+    function formatMoney(value) {
+      return '$' + Number(value || 0).toFixed(2);
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function extractTicketItemComments(order) {
+      if (!order || !order.items_json) return [];
+      let parsed = [];
+      try {
+        parsed = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
+      } catch (err) {
+        return [];
+      }
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((item) => String((item && item.details) || '').trim())
+        .filter(Boolean);
+    }
+
+    function normalizeTextForMatch(text) {
+      return String(text || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9/ ]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function isGenericFamilyValueClient(value) {
+      const normalized = normalizeTextForMatch(value);
+      if (!normalized) return true;
+      const generic = [
+        'food', 'foods', 'comida',
+        'menu', 'menus',
+        'product', 'products', 'producto', 'productos',
+        'item', 'items',
+        'general',
+        'all', 'todo', 'todos',
+        'bakery', 'panaderia',
+        'catalog', 'catalogo'
+      ];
+      return generic.includes(normalized);
+    }
+
+    function shouldFallbackFamilyClient(product, rawFamilyKey, rawFamilyLabel) {
+      const normalizedCategory = normalizeTextForMatch(product && product.category);
+      const normalizedKey = normalizeTextForMatch(rawFamilyKey);
+      const normalizedLabel = normalizeTextForMatch(rawFamilyLabel);
+
+      if (!rawFamilyKey && !rawFamilyLabel) return true;
+
+      const keyGeneric = isGenericFamilyValueClient(rawFamilyKey);
+      const labelGeneric = isGenericFamilyValueClient(rawFamilyLabel);
+      const keyMatchesCategory = normalizedKey && normalizedCategory && normalizedKey === normalizedCategory && normalizedCategory !== 'delivery';
+      const labelMatchesCategory = normalizedLabel && normalizedCategory && normalizedLabel === normalizedCategory && normalizedCategory !== 'delivery';
+
+      return keyGeneric || labelGeneric || keyMatchesCategory || labelMatchesCategory;
+    }
+
+    function inferVariantOrder(normalizedName) {
+      const checks = [
+        { order: 10, terms: ['unidad', 'unit'] },
+        { order: 20, terms: ['1/4', '1 4', 'cuarto', 'quarter', 'regular'] },
+        { order: 30, terms: ['media', 'half'] },
+        { order: 40, terms: ['docena', 'dozen'] },
+        { order: 50, terms: ['combo', '3x'] },
+        { order: 60, terms: ['familiar', 'familia', 'family'] },
+        { order: 80, terms: ['external', 'externo'] }
+      ];
+      const hit = checks.find((c) => c.terms.some((term) => normalizedName.includes(term)));
+      return hit ? hit.order : 70;
+    }
+
+    function inferFamilyMetaClient(product) {
+      const normalizedName = normalizeTextForMatch(product && product.name);
+      const normalizedCategory = normalizeTextForMatch(product && product.category);
+      let family = FAMILY_LIBRARY.find((f) => f.patterns.some((pattern) => normalizedName.includes(pattern)));
+      if (!family && normalizedCategory.includes('delivery')) {
+        family = FAMILY_LIBRARY.find((f) => f.key === 'delivery');
+      }
+      if (!family) {
+        family = { key: 'general', label: t('familyDefault'), color: '#A0AEC0', order: 99 };
+      }
+      return {
+        family_key: family.key,
+        family_label: family.label,
+        family_color: family.color,
+        family_order: Number(family.order || 99),
+        variant_order: inferVariantOrder(normalizedName)
+      };
+    }
+
+    function normalizeProductClient(rawProduct) {
+      const p = rawProduct || {};
+      const inferred = inferFamilyMetaClient(p);
+      const rawFamilyKey = String(p.family_key || '').trim();
+      const rawFamilyLabel = String(p.family_label || '').trim();
+      const rawFamilyColor = String(p.family_color || '').trim();
+      const useInferredFamily = shouldFallbackFamilyClient(p, rawFamilyKey, rawFamilyLabel);
+      const parsedFamilyOrder = Number(p.family_order);
+      const parsedVariantOrder = Number(p.variant_order);
+      return {
+        id: p.id,
+        name: p.name || '',
+        price: Number(p.price || 0),
+        category: p.category || t('familyDefault'),
+        family_key: useInferredFamily || !rawFamilyKey ? inferred.family_key : rawFamilyKey,
+        family_label: useInferredFamily || !rawFamilyLabel ? inferred.family_label : rawFamilyLabel,
+        family_color: useInferredFamily || !rawFamilyColor ? inferred.family_color : rawFamilyColor,
+        family_order: useInferredFamily || !Number.isFinite(parsedFamilyOrder) ? Number(inferred.family_order) : parsedFamilyOrder,
+        variant_order: Number.isFinite(parsedVariantOrder) ? parsedVariantOrder : Number(inferred.variant_order),
+        active: p.active !== false
+      };
+    }
+
+    function colorWithAlpha(color, alpha) {
+      if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) return `rgba(0,0,0,${alpha})`;
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function formatDateTime(input) {
+      if (!input) return '--';
+      const d = new Date(input);
+      if (Number.isNaN(d.getTime())) return '--';
+      return d.toLocaleString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function minutesElapsed(input) {
+      if (!input) return 0;
+      const d = new Date(input);
+      if (Number.isNaN(d.getTime())) return 0;
+      return Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+    }
+
+    function showToast(message, duration = 2200) {
+      const el = document.getElementById('toast');
+      el.textContent = message;
+      el.classList.add('visible');
+      window.clearTimeout(showToast._timer);
+      showToast._timer = window.setTimeout(() => el.classList.remove('visible'), duration);
+    }
+
+    function setBanner(message, level = 'warn') {
+      const banner = document.getElementById('banner');
+      if (!message) {
+        banner.className = 'banner';
+        banner.textContent = '';
+        return;
+      }
+      banner.className = `banner visible ${level}`;
+      banner.textContent = message;
+    }
+
+    function backendContractOutdated(rawOrders) {
+      if (!Array.isArray(rawOrders) || !rawOrders.length) return false;
+      const hasOrderNumber = rawOrders.some((order) => Object.prototype.hasOwnProperty.call(order, 'order_number'));
+      const hasCapturedAt = rawOrders.some((order) => Object.prototype.hasOwnProperty.call(order, 'captured_at'));
+      const hasEmptyOrderId = rawOrders.some((order) => !String(order && order.order_id ? order.order_id : '').trim());
+      return !hasOrderNumber || !hasCapturedAt || hasEmptyOrderId;
+    }
+
+    function resolveElements(targets) {
+      const list = Array.isArray(targets) ? targets : (targets ? [targets] : []);
+      return list.map((target) => {
+        if (!target) return null;
+        if (typeof target === 'string') return document.getElementById(target);
+        return target;
+      }).filter(Boolean);
+    }
+
+    function loadingTokenKey(target, prefix) {
+      if (target.id) return `${prefix}:${target.id}`;
+      if (!target.dataset.loadingKey) {
+        state.loading.tokenSeq += 1;
+        target.dataset.loadingKey = String(state.loading.tokenSeq);
+      }
+      return `${prefix}:anon:${target.dataset.loadingKey}`;
+    }
+
+    function setButtonBusy(button, busy) {
+      if (!button) return;
+      if (busy) {
+        if (!Object.prototype.hasOwnProperty.call(button.dataset, 'loadingPrevDisabled')) {
+          button.dataset.loadingPrevDisabled = button.disabled ? '1' : '0';
+        }
+        button.disabled = true;
+        button.classList.add('is-loading');
+        button.setAttribute('aria-busy', 'true');
+        return;
+      }
+
+      const wasDisabled = button.dataset.loadingPrevDisabled === '1';
+      button.disabled = wasDisabled;
+      delete button.dataset.loadingPrevDisabled;
+      button.classList.remove('is-loading');
+      button.removeAttribute('aria-busy');
+    }
+
+    function updateButtonCounts(buttons, delta) {
+      buttons.forEach((button) => {
+        const key = loadingTokenKey(button, 'btn');
+        const current = Number(state.loading.buttonCounts[key] || 0);
+        const next = Math.max(0, current + delta);
+        if (next === 0) delete state.loading.buttonCounts[key];
+        else state.loading.buttonCounts[key] = next;
+        if (current === 0 && next > 0) setButtonBusy(button, true);
+        if (current > 0 && next === 0) setButtonBusy(button, false);
+      });
+    }
+
+    function setSectionBusy(section, busy) {
+      if (!section) return;
+      section.classList.toggle('section-busy', busy);
+      if (busy) section.setAttribute('aria-busy', 'true');
+      else section.removeAttribute('aria-busy');
+    }
+
+    function updateSectionCounts(sections, delta) {
+      sections.forEach((section) => {
+        const key = loadingTokenKey(section, 'section');
+        const current = Number(state.loading.sectionCounts[key] || 0);
+        const next = Math.max(0, current + delta);
+        if (next === 0) delete state.loading.sectionCounts[key];
+        else state.loading.sectionCounts[key] = next;
+        if (current === 0 && next > 0) setSectionBusy(section, true);
+        if (current > 0 && next === 0) setSectionBusy(section, false);
+      });
+    }
+
+    function setSyncStatus(state) {
+      const dot = document.getElementById('syncDot');
+      const text = document.getElementById('syncText');
+      if (!dot || !text) return;
+
+      dot.className = 'sync-dot ' + state;
+      if (state === 'syncing') {
+        text.textContent = t('syncBusy');
+      } else if (state === 'error') {
+        text.textContent = t('syncError');
+      } else {
+        text.textContent = t('syncReady');
+      }
+    }
+
+    function setGlobalBusy(isBusy) {
+      const body = document.body;
+      if (isBusy) body.classList.add('global-busy');
+      else body.classList.remove('global-busy');
+      setSyncStatus(isBusy ? 'syncing' : 'idle');
+    }
+
+    function updateGlobalCount(delta) {
+      state.loading.globalCount = Math.max(0, Number(state.loading.globalCount || 0) + delta);
+      setGlobalBusy(state.loading.globalCount > 0);
+    }
+
+    function operationConfig(name, overrides) {
+      const base = LOADING_OPS[name] || {};
+      return {
+        scope: overrides && overrides.scope ? overrides.scope : (base.scope || 'section'),
+        sectionId: overrides && Object.prototype.hasOwnProperty.call(overrides, 'sectionId') ? overrides.sectionId : base.sectionId,
+        buttons: overrides && Object.prototype.hasOwnProperty.call(overrides, 'buttons') ? overrides.buttons : base.buttons,
+        minVisibleMs: Number((overrides && overrides.minVisibleMs) || base.minVisibleMs || LOADING_MIN_VISIBLE_MS)
+      };
+    }
+
+    function beginLoadingOperation(name, overrides) {
+      const cfg = operationConfig(name, overrides);
+      const buttons = resolveElements(cfg.buttons);
+      const sections = resolveElements(cfg.sectionId);
+      state.loading.operation[name] = Number(state.loading.operation[name] || 0) + 1;
+
+      const token = {
+        name,
+        cfg,
+        buttons,
+        sections,
+        shown: false,
+        showAt: 0,
+        timer: null
+      };
+
+      token.timer = window.setTimeout(() => {
+        token.shown = true;
+        token.showAt = Date.now();
+        if (cfg.scope === 'global') updateGlobalCount(1);
+        if (cfg.scope === 'section' || cfg.scope === 'button') updateSectionCounts(sections, 1);
+        if (cfg.scope === 'button') updateButtonCounts(buttons, 1);
+      }, LOADING_THRESHOLD_MS);
+
+      return token;
+    }
+
+    function endLoadingOperation(token) {
+      if (!token) return Promise.resolve();
+      window.clearTimeout(token.timer);
+
+      const finalize = () => {
+        if (token.shown) {
+          if (token.cfg.scope === 'global') updateGlobalCount(-1);
+          if (token.cfg.scope === 'section' || token.cfg.scope === 'button') updateSectionCounts(token.sections, -1);
+          if (token.cfg.scope === 'button') updateButtonCounts(token.buttons, -1);
+        }
+        const remaining = Math.max(0, Number(state.loading.operation[token.name] || 0) - 1);
+        if (remaining === 0) delete state.loading.operation[token.name];
+        else state.loading.operation[token.name] = remaining;
+      };
+
+      if (!token.shown) {
+        finalize();
+        return Promise.resolve();
+      }
+
+      const elapsed = Date.now() - token.showAt;
+      const wait = Math.max(0, Number(token.cfg.minVisibleMs || LOADING_MIN_VISIBLE_MS) - elapsed);
+      if (!wait) {
+        finalize();
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        window.setTimeout(() => {
+          finalize();
+          resolve();
+        }, wait);
+      });
+    }
+
+    async function withLoading(name, task, overrides) {
+      const token = beginLoadingOperation(name, overrides);
+      try {
+        return await task();
+      } finally {
+        await endLoadingOperation(token);
+      }
+    }
+
+    function operationInFlight(name) {
+      return Number(state.loading.operation[name] || 0) > 0;
+    }
+
+    async function api(action, method = 'GET', payload = null) {
+      if (!API_BASE) {
+        throw new Error('Missing API base. Open local with ?apiBase=https://.../exec');
+      }
+      const query = new URLSearchParams({ action: String(action || '') });
+      if (method === 'GET' && payload && typeof payload === 'object') {
+        Object.keys(payload).forEach((key) => {
+          if (payload[key] === undefined || payload[key] === null || payload[key] === '') return;
+          query.set(key, String(payload[key]));
+        });
+      }
+      const url = `${API_BASE}?${query.toString()}`;
+      const options = { method };
+      if (method === 'POST') {
+        // Use a simple request content type to avoid browser CORS preflight on local UI tests.
+        options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+        options.body = JSON.stringify(payload || {});
+      }
+      let response;
+      try {
+        response = await fetch(url, options);
+      } catch (err) {
+        const msg = err && err.message ? err.message : 'Failed to fetch';
+        throw new Error(`${msg} (api: ${API_BASE})`);
+      }
+      const raw = await response.text();
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const lowered = String(raw || '').slice(0, 1600).toLowerCase();
+      const redirectedToLogin = response.redirected && String(response.url || '').toLowerCase().includes('accounts.google.com');
+      const looksLikeAccessGate = redirectedToLogin
+        || lowered.includes('unable to open the file at this time')
+        || lowered.includes('<title>moved temporarily</title>')
+        || lowered.includes('servicelogin')
+        || lowered.includes('accounts.google.com');
+      if (looksLikeAccessGate) {
+        throw new Error(t('apiAccessRestricted'));
+      }
+      try {
+        return JSON.parse(raw);
+      } catch (err) {
+        throw new Error(t('apiInvalidJson'));
+      }
+    }
+
+    function applyI18n() {
+      document.querySelectorAll('[data-i18n]').forEach((node) => {
+        const key = node.dataset.i18n;
+        node.textContent = t(key);
+      });
+      document.getElementById('langToggle').textContent = 'EN';
+      document.getElementById('syncStatus').textContent = state.loading.globalCount > 0 ? t('syncBusy') : t('syncReady');
+      document.getElementById('captureModeLabel').textContent = state.editingOrderId ? t('modeEdit') : t('modeCreate');
+      document.getElementById('btnSaveOrder').textContent = state.editingOrderId ? t('updateOrder') : t('saveOrder');
+      document.getElementById('btnArchiveDay').textContent = t('archiveDay');
+      document.getElementById('btnUnarchiveDay').textContent = t('unarchiveDay');
+      renderBoardDayState();
+    }
+
+    function todayStr() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function normalizeDayKeyClient(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      const strict = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (strict) return raw;
+      const parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) return '';
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const day = String(parsed.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatDayLabel(dayKey) {
+      if (!dayKey) return '--';
+      const parsed = new Date(`${dayKey}T00:00:00`);
+      if (Number.isNaN(parsed.getTime())) return dayKey;
+      return parsed.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    }
+
+    function pickInitialBoardDay(dayKeys) {
+      if (!Array.isArray(dayKeys) || !dayKeys.length) return '';
+      const today = todayStr();
+      if (dayKeys.includes(today)) return today;
+      const todayTs = new Date(`${today}T00:00:00`).getTime();
+      return dayKeys.reduce((best, current) => {
+        if (!best) return current;
+        const bestDiff = Math.abs(new Date(`${best}T00:00:00`).getTime() - todayTs);
+        const currDiff = Math.abs(new Date(`${current}T00:00:00`).getTime() - todayTs);
+        if (currDiff < bestDiff) return current;
+        return best;
+      }, '');
+    }
+
+    function selectedDayMeta() {
+      return state.boardDays.find((day) => day.day_key === state.selectedBoardDay) || null;
+    }
+
+    function renderBoardDayState() {
+      const labelNode = document.getElementById('boardDayLabel');
+      const archivedFlag = document.getElementById('boardDayArchiveFlag');
+      if (!labelNode || !archivedFlag) return;
+
+      if (!state.selectedBoardDay) {
+        labelNode.textContent = `${t('dayPrefix')}: --`;
+        archivedFlag.style.display = 'none';
+        return;
+      }
+
+      const selected = selectedDayMeta();
+      const count = selected ? Number(selected.order_count || 0) : 0;
+      labelNode.textContent = `${t('dayPrefix')}: ${formatDayLabel(state.selectedBoardDay)} (${count})`;
+      archivedFlag.textContent = t('archivedTag');
+      archivedFlag.style.display = state.selectedDayArchived ? 'inline-flex' : 'none';
+
+      const archiveBtn = document.getElementById('btnArchiveDay');
+      const unarchiveBtn = document.getElementById('btnUnarchiveDay');
+      if (archiveBtn) archiveBtn.disabled = !state.selectedBoardDay || state.selectedDayArchived;
+      if (unarchiveBtn) unarchiveBtn.disabled = !state.selectedBoardDay || !state.selectedDayArchived;
+    }
+
+    function renderDayRibbon() {
+      const mount = document.getElementById('dayRibbon');
+      if (!mount) return;
+
+      if (!state.boardDays.length) {
+        mount.innerHTML = `<div class="helper">${t('noData')}</div>`;
+        renderBoardDayState();
+        return;
+      }
+
+      mount.innerHTML = state.boardDays.map((day) => {
+        const isActive = day.day_key === state.selectedBoardDay;
+        const archived = day.is_archived === true;
+        const className = `day-pill${isActive ? ' active' : ''}${archived ? ' archived' : ''}`;
+        return `
+            <button class="${className}" data-day-key="${day.day_key}">
+              <span>${formatDayLabel(day.day_key)}</span>
+              <span class="mini">${Number(day.order_count || 0)}</span>
+              ${archived ? `<span class="mini">${t('archivedTag')}</span>` : ''}
+            </button>
+          `;
+      }).join('');
+      renderBoardDayState();
+    }
+
+    async function setSelectedBoardDay(dayKey, options = {}) {
+      if (operationInFlight('switchBoardDay')) return;
+      return withLoading('switchBoardDay', async () => {
+        const next = normalizeDayKeyClient(dayKey);
+        if (!next || next === state.selectedBoardDay) return;
+        state.selectedBoardDay = next;
+        const selected = selectedDayMeta();
+        state.selectedDayArchived = !!(selected && selected.is_archived);
+        state.boardRev = '';
+        state.boardLastUpdatedAt = '';
+        renderDayRibbon();
+        if (options.refresh !== false) {
+          await refreshOrders();
+        }
+      });
+    }
+
+    async function runBoardEntrySync(forceDays = true) {
+      if (operationInFlight('boardEntrySync')) return;
+      const syncNode = document.getElementById('syncStatus');
+      if (syncNode) syncNode.textContent = t('syncBusy');
+      return withLoading('boardEntrySync', async () => {
+        await refreshBoardDays(forceDays);
+        await refreshOrders();
+        setSyncStatus('OK');
+      });
+    }
+
+    async function refreshBoardDays(force = false) {
+      if (operationInFlight('refreshBoardDays')) return;
+      return withLoading('refreshBoardDays', async () => {
+        const now = Date.now();
+        if (!force && state.boardDaysLastFetchMs && (now - state.boardDaysLastFetchMs) < 10000) {
+          renderDayRibbon();
+          return;
+        }
+
+        let raw = [];
+        try {
+          const response = await api('getBoardDays');
+          if (Array.isArray(response)) {
+            raw = response;
+          } else if (response && response.status === 'success' && Array.isArray(response.items)) {
+            raw = response.items;
+          }
+        } catch (err) {
+          raw = [];
+        }
+
+        state.boardDays = raw
+          .map((day) => ({
+            day_key: normalizeDayKeyClient(day.day_key),
+            order_count: Number(day.order_count || 0),
+            pending_count: Number(day.pending_count || 0),
+            is_archived: day.is_archived === true,
+            updated_at: String(day.updated_at || '')
+          }))
+          .filter((day) => !!day.day_key)
+          .sort((a, b) => String(a.day_key).localeCompare(String(b.day_key)));
+
+        const keys = state.boardDays.map((day) => day.day_key);
+        if (!state.selectedBoardDay || !keys.includes(state.selectedBoardDay)) {
+          state.selectedBoardDay = pickInitialBoardDay(keys);
+          state.boardRev = '';
+          state.boardLastUpdatedAt = '';
+        }
+
+        const selected = selectedDayMeta();
+        state.selectedDayArchived = !!(selected && selected.is_archived);
+        state.boardDaysLastFetchMs = now;
+        renderDayRibbon();
+      });
+    }
+
+    async function archiveSelectedBoardDay() {
+      if (operationInFlight('archiveBoardDay')) return;
+      return withLoading('archiveBoardDay', async () => {
+        if (!state.selectedBoardDay) return;
+        if (!window.confirm(t('confirmArchiveStep1'))) return;
+        if (!window.confirm(t('confirmArchiveStep2'))) return;
+        const reason = window.prompt(t('archiveReasonPrompt'), '');
+        if (!reason || !reason.trim()) {
+          showToast(t('archiveReasonPrompt'));
+          return;
+        }
+        const response = await api('archiveBoardDay', 'POST', {
+          action: 'archiveBoardDay',
+          day_key: state.selectedBoardDay,
+          reason: reason.trim(),
+          confirm_step_1: true,
+          confirm_step_2: true
+        });
+        if (!response || response.status !== 'success') {
+          showToast((response && response.message) || 'Error');
+          return;
+        }
+        showToast(t('dayArchivedSaved'));
+        await refreshBoardDays(true);
+        await refreshOrders();
+      });
+    }
+
+    async function unarchiveSelectedBoardDay() {
+      if (operationInFlight('unarchiveBoardDay')) return;
+      return withLoading('unarchiveBoardDay', async () => {
+        if (!state.selectedBoardDay) return;
+        const reason = window.prompt(t('unarchiveReasonPrompt'), '');
+        if (!reason || !reason.trim()) {
+          showToast(t('unarchiveReasonPrompt'));
+          return;
+        }
+        const response = await api('unarchiveBoardDay', 'POST', {
+          action: 'unarchiveBoardDay',
+          day_key: state.selectedBoardDay,
+          reason: reason.trim()
+        });
+        if (!response || response.status !== 'success') {
+          showToast((response && response.message) || 'Error');
+          return;
+        }
+        showToast(t('dayUnarchivedSaved'));
+        await refreshBoardDays(true);
+        await refreshOrders();
+      });
+    }
+
+    function switchScreen(name) {
+      state.screen = name;
+      document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+      document.getElementById(`screen-${name}`).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.screen === name);
+      });
+      if (name === 'board') {
+        runBoardEntrySync(true)
+          .catch(() => { });
+      }
+      if (typeof restartPolling === 'function') restartPolling(false);
+    }
+
+    function openMenuModal() {
+      const modal = document.getElementById('menuModal');
+      if (!modal) return;
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('menu-open');
+      renderMenuFamilies();
+      window.setTimeout(() => {
+        const input = document.getElementById('menuSearch');
+        if (input) input.focus();
+      }, 20);
+    }
+
+    function closeMenuModal() {
+      const modal = document.getElementById('menuModal');
+      if (!modal) return;
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('menu-open');
+    }
+
+    function validateOrderForm() {
+      const customerNode = document.getElementById('customerName');
+      const phoneNode = document.getElementById('customerPhone');
+
+      let isValid = true;
+
+      // Clean previous errors
+      customerNode.classList.remove('field-error');
+      phoneNode.classList.remove('field-error');
+      document.getElementById('field-items').classList.remove('field-error');
+
+      if (!customerNode.value.trim()) {
+        customerNode.classList.add('field-error');
+        isValid = false;
+      }
+      if (!phoneNode.value.trim()) {
+        phoneNode.classList.add('field-error');
+        isValid = false;
+      }
+      if (state.selectedItems.length === 0) {
+        document.getElementById('field-items').classList.add('field-error');
+        isValid = false;
+      }
+
+      if (!isValid) {
+        showToast(t('fillRequired'));
+      }
+      return isValid;
+    }
+
+    function formPayload() {
+      const total = state.selectedItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity || 1)), 0);
+      return {
+        customer_name: document.getElementById('customerName').value.trim(),
+        phone: document.getElementById('customerPhone').value.trim(),
+        delivery_date: document.getElementById('orderDate').value,
+        delivery_time: document.getElementById('orderTime').value,
+        type: document.getElementById('orderType').value,
+        payment_status: document.getElementById('paymentStatus').value,
+        payment_method: '', // Not used anymore in grid but keeping key for compatibility
+        deposit_amount: document.getElementById('orderDeposit').value,
+        channel: 'Phone',
+        address: '',
+        source_notes: '',
+        items_json: state.selectedItems.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: Number(item.price),
+          quantity: Number(item.quantity || 1),
+          family_key: item.family_key || '',
+          family_label: item.family_label || '',
+          family_color: item.family_color || '',
+          variant: item.variant || '',
+          details: item.details || ''
+        })),
+        total_amount: total
+      };
+    }
+
+    function setSyncStatus(text, timeout = 1200) {
+      const node = document.getElementById('syncStatus');
+      node.textContent = text;
+      window.clearTimeout(setSyncStatus._timer);
+      setSyncStatus._timer = window.setTimeout(() => {
+        delete setSyncStatus._timer;
+        node.textContent = state.loading.globalCount > 0 ? t('syncBusy') : t('syncReady');
+      }, timeout);
+    }
+
+    function resetForm() {
+      state.editingOrderId = null;
+      state.selectedItems = [];
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerPhone').value = '';
+      document.getElementById('orderDate').value = todayStr();
+      document.getElementById('orderTime').value = '';
+      document.getElementById('orderType').value = 'Pickup';
+      document.getElementById('paymentStatus').value = 'Unpaid';
+      document.getElementById('aiPayload').value = '';
+
+      // Clear visual errors
+      document.getElementById('customerName').classList.remove('field-error');
+      document.getElementById('customerPhone').classList.remove('field-error');
+      document.getElementById('field-items').classList.remove('field-error');
+
+      renderSelectedItems();
+      applyI18n();
+    }
+
+    function renderMenuFamilies() {
+      const mount = document.getElementById('menuFamilies');
+      if (!mount) return;
+      const renderSections = state.products.length >= RENDER_HEAVY_LIMITS.menuProducts
+        ? resolveElements('screen-capture')
+        : [];
+      if (renderSections.length) updateSectionCounts(renderSections, 1);
+
+      try {
+        const term = (document.getElementById('menuSearch').value || '').trim().toLowerCase();
+        const filtered = state.products.filter((p) => {
+          const name = (p.name || '').toLowerCase();
+          const family = (p.family_label || p.category || t('familyDefault')).toLowerCase();
+          return !term || name.includes(term) || family.includes(term);
+        });
+
+        if (!filtered.length) {
+          mount.innerHTML = `<div class="helper">${t('noData')}</div>`;
+          return;
+        }
+
+        const grouped = {};
+        filtered.forEach((product) => {
+          const familyKey = product.family_key || 'general';
+          if (!grouped[familyKey]) {
+            grouped[familyKey] = {
+              key: familyKey,
+              label: product.family_label || product.category || t('familyDefault'),
+              color: product.family_color || '#A0AEC0',
+              order: Number(product.family_order || 99),
+              items: []
+            };
+          }
+          grouped[familyKey].items.push(product);
+        });
+
+        const familyGroups = Object.keys(grouped).map((k) => grouped[k]).sort((a, b) => {
+          const orderDiff = Number(a.order || 99) - Number(b.order || 99);
+          if (orderDiff !== 0) return orderDiff;
+          return String(a.label || '').localeCompare(String(b.label || ''));
+        });
+
+        mount.innerHTML = familyGroups.map((group) => {
+          const items = group.items.sort((a, b) => {
+            const variantDiff = Number(a.variant_order || 999) - Number(b.variant_order || 999);
+            if (variantDiff !== 0) return variantDiff;
+            return String(a.name || '').localeCompare(String(b.name || ''));
+          });
+          const accent = group.color || '#A0AEC0';
+          const blockBg = `linear-gradient(135deg, ${colorWithAlpha(accent, 0.14)} 0%, #fffdf7 72%)`;
+          const productBg = colorWithAlpha(accent, 0.09);
+          const productBorder = colorWithAlpha(accent, 0.36);
+          return `
+              <section class="family-block" style="border-left-color:${accent}; background:${blockBg};">
+                <div class="family-head">
+                  <div class="family-title-row">
+                    <span class="family-dot" style="background:${accent};"></span>
+                    <h3 class="family-title">${group.label}</h3>
+                  </div>
+                  <span class="family-count">${items.length}</span>
+                </div>
+                <div class="product-grid">
+                  ${items.map((p) => `
+                    <button class="product-btn" data-product-id="${p.id}" style="border-left-color:${accent}; border-color:${productBorder}; background:${productBg};">
+                      <strong>${p.name}</strong>
+                      <span style="color:${accent};">${group.label} · ${formatMoney(p.price)}</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </section>
+            `;
+        }).join('');
+      } finally {
+        if (renderSections.length) {
+          window.requestAnimationFrame(() => updateSectionCounts(renderSections, -1));
+        }
+      }
+    }
+
+    function addItem(productId) {
+      const product = state.products.find((p) => String(p.id) === String(productId));
+      if (!product) return;
+      const existing = state.selectedItems.find((i) => i.id === product.id);
+      if (existing) {
+        existing.quantity += 1;
+        if (!existing.family_label) existing.family_label = product.family_label || product.category || t('familyDefault');
+        if (!existing.family_color) existing.family_color = product.family_color || '#A0AEC0';
+        if (!existing.family_key) existing.family_key = product.family_key || 'general';
+      } else {
+        state.selectedItems.push({
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          quantity: 1,
+          family_key: product.family_key || 'general',
+          family_label: product.family_label || product.category || t('familyDefault'),
+          family_color: product.family_color || '#A0AEC0',
+          variant: 'Standard',
+          details: ''
+        });
+      }
+      renderSelectedItems();
+    }
+
+    function renderSelectedItems() {
+      const body = document.getElementById('selectedItemsBody');
+      const renderSections = state.selectedItems.length >= RENDER_HEAVY_LIMITS.selectedItems
+        ? resolveElements('screen-capture')
+        : [];
+      if (renderSections.length) updateSectionCounts(renderSections, 1);
+      try {
+        if (!state.selectedItems.length) {
+          body.innerHTML = `<tr><td colspan="5" class="helper">${t('noData')}</td></tr>`;
+          document.getElementById('orderTotal').textContent = formatMoney(0);
+          return;
+        }
+
+        body.innerHTML = state.selectedItems.map((item, index) => `
+            <tr>
+              <td>
+                <span class="family-chip" style="background:${colorWithAlpha(item.family_color || '#A0AEC0', 0.16)}; border-color:${colorWithAlpha(item.family_color || '#A0AEC0', 0.36)};">${item.family_label || t('familyDefault')}</span>
+                <div>${item.name}</div>
+              </td>
+              <td><input class="qty-input" type="number" min="1" value="${item.quantity}" data-qty-index="${index}" /></td>
+              <td>${formatMoney(item.price * item.quantity)}</td>
+              <td>
+                <textarea class="item-details-input" rows="2" data-details-index="${index}" placeholder="${t('itemComment')}">${item.details || ''}</textarea>
+              </td>
+              <td>
+                <div class="item-actions">
+                  <button class="btn btn-soft" type="button" data-duplicate-index="${index}">${t('duplicate')}</button>
+                  <button class="btn btn-soft" type="button" data-remove-index="${index}">${t('remove')}</button>
+                </div>
+              </td>
+            </tr>
+          `).join('');
+
+        const total = state.selectedItems.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+        document.getElementById('orderTotal').textContent = formatMoney(total);
+      } finally {
+        if (renderSections.length) {
+          window.requestAnimationFrame(() => updateSectionCounts(renderSections, -1));
+        }
+      }
+    }
+
+    function duplicateSelectedItem(index) {
+      const source = state.selectedItems[index];
+      if (!source) return;
+      const clone = {
+        ...source,
+        quantity: Number(source.quantity || 1),
+        details: source.details || ''
+      };
+      state.selectedItems.splice(index + 1, 0, clone);
+      renderSelectedItems();
+    }
+
+    function compareVersionSnapshots(nextOrders) {
+      const nextMap = {};
+      let remoteChange = false;
+      nextOrders.forEach((order) => {
+        const key = order.order_id;
+        const version = Number(order.sync_version || 1);
+        nextMap[key] = version;
+        if (state.knownVersions[key] && state.knownVersions[key] !== version && !state.pendingWrites.has(key)) {
+          remoteChange = true;
+        }
+      });
+      state.knownVersions = nextMap;
+      if (remoteChange) {
+        showToast(t('remoteChanges'));
+      }
+    }
+
+    function computeBoardRevisionClient(orders) {
+      const canonical = (orders || [])
+        .map((o) => [o.order_id || '', o.status || '', Number(o.sync_version || 1), o.updated_at || o.captured_at || ''].join('|'))
+        .sort()
+        .join('||');
+      let hash = 2166136261;
+      for (let i = 0; i < canonical.length; i += 1) {
+        hash ^= canonical.charCodeAt(i);
+        hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+      }
+      return (hash >>> 0).toString(16);
+    }
+
+    function normalizeBoardResponse(data) {
+      if (Array.isArray(data)) {
+        return {
+          items: data,
+          boardRev: computeBoardRevisionClient(data),
+          fallback: true
+        };
+      }
+      if (data && data.status === 'success' && Array.isArray(data.items)) {
+        return {
+          items: data.items,
+          boardRev: String(data.board_rev || ''),
+          fallback: false
+        };
+      }
+      return {
+        items: [],
+        boardRev: '',
+        fallback: true
+      };
+    }
+
+    function normalizeBoardDeltaResponse(data) {
+      if (!data || data.status !== 'success') return null;
+      if (!Array.isArray(data.changed) || !Array.isArray(data.removed)) return null;
+      return {
+        boardRev: String(data.board_rev || ''),
+        changed: data.changed,
+        removed: data.removed.map((id) => String(id || '').trim()).filter(Boolean),
+        full: data.full === true
+      };
+    }
+
+    function mergeDeltaOrders(baseOrders, delta) {
+      const byId = {};
+      (baseOrders || []).forEach((order) => {
+        const id = String(order && order.order_id ? order.order_id : '').trim();
+        if (!id) return;
+        byId[id] = order;
+      });
+
+      (delta.changed || []).forEach((order) => {
+        const id = String(order && order.order_id ? order.order_id : '').trim();
+        if (!id) return;
+        byId[id] = order;
+      });
+
+      (delta.removed || []).forEach((id) => {
+        delete byId[id];
+      });
+
+      return Object.keys(byId).map((id) => byId[id]);
+    }
+
+    function latestOrderStamp(orders) {
+      let maxStamp = 0;
+      (orders || []).forEach((order) => {
+        const parsed = Date.parse(order.updated_at || order.captured_at || '');
+        if (!Number.isNaN(parsed) && parsed > maxStamp) {
+          maxStamp = parsed;
+        }
+      });
+      return maxStamp > 0 ? new Date(maxStamp).toISOString() : '';
+    }
+
+    function ticketSortValue(order) {
+      const captured = new Date(order.captured_at || order.updated_at || order.delivery_at || order.delivery_date || 0).getTime();
+      return Number.isNaN(captured) ? 0 : captured;
+    }
+
+    function activeOrderCount() {
+      return state.orders.filter((o) => o.status !== 'Cancelled').length;
+    }
+
+    function applyDensityClass() {
+      const board = document.getElementById('kanbanBoard');
+      board.classList.remove('density-wide', 'density-compact', 'density-ultra');
+      const count = activeOrderCount();
+      if (count <= 8) board.classList.add('density-wide');
+      else if (count <= 20) board.classList.add('density-compact');
+      else board.classList.add('density-ultra');
+    }
+
+    function buildTicketHtml(order) {
+      const age = minutesElapsed(order.captured_at);
+      const isLate = age > 90;
+      const isOptimistic = order.is_optimistic === true;
+      const canEdit = order.status !== 'Delivered' && !isOptimistic;
+      const comments = extractTicketItemComments(order);
+      const hasComments = comments.length > 0;
+      const escapedComments = hasComments ? escapeHtml(comments.join(' | ')) : '';
+      return `
+          <div class="ticket ${isLate ? 'late' : ''} ${isOptimistic ? 'optimistic-ghost' : ''}" draggable="${!isOptimistic}" data-order-id="${order.order_id}" data-status="${order.status}">
+            <div class="folio">${order.order_number || 'LEGACY'}</div>
+            <div class="ticket-age">${t('captured')}: ${formatDateTime(order.captured_at)} · ${age} ${t('minutes')}</div>
+            <div class="name">${order.customer_name || '-'}</div>
+            <div class="meta">${formatDateTime(order.delivery_at || order.delivery_date)} · ${order.type || '-'}</div>
+            <div class="chip-row">
+              <span class="chip">${order.channel || 'Phone'}</span>
+              <span class="chip ${order.payment_status === 'Paid' ? 'paid' : 'unpaid'}">${order.payment_status}</span>
+              <span class="chip">${formatMoney(order.total_amount)}</span>
+            </div>
+            ${hasComments ? `
+            <div class="ticket-comment">
+              <div class="ticket-comment-preview">${escapedComments}</div>
+              <div class="ticket-comment-full">${escapedComments}</div>
+              <button class="ghost-btn ticket-comment-toggle" type="button" data-toggle-comment="${order.order_id}">${t('expand')}</button>
+            </div>
+            ` : ''}
+            <div class="meta">${statusLabel(order.status)}</div>
+            <div class="row">
+              <button class="ghost-btn" data-edit-order="${order.order_id}" ${canEdit ? '' : 'disabled'}>${t('edit')}</button>
+              <button class="ghost-btn" data-cancel-order="${order.order_id}">${order.status === 'Cancelled' ? t('reactivate') : t('moveToCancelled')}</button>
+            </div>
+          </div>
+        `;
+    }
+
+    function ensureKanbanSkeleton() {
+      if (state.kanbanInitialized) return;
+      const board = document.getElementById('kanbanBoard');
+      board.innerHTML = STATUS_META.map((meta) => `
+          <div class="kanban-column" data-drop-status="${meta.status}">
+            <div class="column-header">
+              <div>
+                <h3>${statusLabel(meta.status)}</h3>
+                <div class="column-sub">${t(meta.roleKey)}</div>
+              </div>
+              <strong data-count="${meta.status}">0</strong>
+            </div>
+            <div class="column-body" data-body="${meta.status}"></div>
+          </div>
+        `).join('');
+      state.kanbanInitialized = true;
+    }
+
+    function renderKanban() {
+      const board = document.getElementById('kanbanBoard');
+      const renderSections = state.orders.length >= RENDER_HEAVY_LIMITS.boardOrders
+        ? resolveElements('screen-board')
+        : [];
+      if (renderSections.length) updateSectionCounts(renderSections, 1);
+      try {
+        applyDensityClass();
+        ensureKanbanSkeleton();
+        if (!state.incrementalRenderEnabled) {
+          state.columnSignatures = {};
+        }
+
+        STATUS_META.forEach((meta) => {
+          const list = state.orders
+            .filter((o) => o.status === meta.status)
+            .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+
+          const signature = list.map((o) => `${o.order_id}:${o.status}:${o.sync_version}`).join('|');
+          const countNode = board.querySelector(`[data-count="${meta.status}"]`);
+          if (countNode) countNode.textContent = String(list.length);
+
+          if (state.incrementalRenderEnabled && state.columnSignatures[meta.status] === signature) return;
+          state.columnSignatures[meta.status] = signature;
+
+          const bodyNode = board.querySelector(`[data-body="${meta.status}"]`);
+          if (!bodyNode) return;
+          bodyNode.innerHTML = list.map((order) => buildTicketHtml(order)).join('') || `<div class="helper">${t('noData')}</div>`;
+        });
+      } finally {
+        if (renderSections.length) {
+          window.requestAnimationFrame(() => updateSectionCounts(renderSections, -1));
+        }
+      }
+    }
+
+    function clearDropTargetClasses(board) {
+      const mount = board || document.getElementById('kanbanBoard');
+      if (!mount) return;
+      mount.querySelectorAll('.kanban-column.drop-target-valid, .kanban-column.drop-target-invalid').forEach((column) => {
+        column.classList.remove('drop-target-valid', 'drop-target-invalid');
+      });
+    }
+
+    function cleanupDragRuntime(board) {
+      clearDropTargetClasses(board);
+      if (state.dragRuntime.draggingTicketId) {
+        const ticket = document.querySelector(`.ticket[data-order-id="${state.dragRuntime.draggingTicketId}"]`);
+        if (ticket) ticket.classList.remove('dragging');
+      }
+      state.dragRuntime.orderId = '';
+      state.dragRuntime.sourceStatus = '';
+      state.dragRuntime.activeColumnStatus = '';
+      state.dragRuntime.draggingTicketId = '';
+    }
+
+    function isValidVisualDropTarget(sourceStatus, targetStatus) {
+      if (!sourceStatus || !targetStatus) return false;
+      if (sourceStatus === targetStatus) return false;
+      if (sourceStatus === 'Delivered') return false;
+      if (targetStatus === 'Delivered' && sourceStatus !== 'Baked') return false;
+      return true;
+    }
+
+    async function requestStatusTransition(order, targetStatus) {
+      if (operationInFlight('statusTransition')) return;
+      return withLoading('statusTransition', async () => {
+        try {
+          if (order.status === 'Delivered') {
+            showToast(t('deliveredLocked'));
+            return;
+          }
+
+          let confirmReactivate = false;
+          if (targetStatus === 'Delivered' && order.status !== 'Baked') {
+            showToast(t('onlyFromBaked'));
+            return;
+          }
+
+          if (targetStatus === 'Cancelled') {
+            const ok = window.confirm(t('confirmCancel'));
+            if (!ok) return;
+          }
+
+          if (order.status === 'Cancelled' && targetStatus !== 'Cancelled') {
+            const ok = window.confirm(t('confirmReactivate'));
+            if (!ok) return;
+            confirmReactivate = true;
+          }
+
+          if (targetStatus === 'Delivered') {
+            const ok = window.confirm(t('confirmDelivered'));
+            if (!ok) return;
+          }
+
+          const response = await api('updateOrderStatus', 'POST', {
+            action: 'updateOrderStatus',
+            order_id: order.order_id,
+            status: targetStatus,
+            confirm_reactivate: confirmReactivate,
+            base_sync_version: order.sync_version
+          });
+
+          if (response.status !== 'success') {
+            showToast(response.message || 'Error');
+            return;
+          }
+
+          markPendingWrite(order.order_id);
+          await refreshBoardDays(true);
+          await refreshOrders();
+          setSyncStatus('OK');
+        } catch (err) {
+          setBanner(err.message || String(err), 'warn');
+        }
+      });
+    }
+
+    function markPendingWrite(orderId) {
+      state.pendingWrites.add(orderId);
+      window.setTimeout(() => state.pendingWrites.delete(orderId), 6000);
+      restartPolling(true);
+    }
+
+    function buildPhoneHints() {
+      const datalist = document.getElementById('phoneHints');
+      const byPhone = {};
+      state.orders.forEach((order) => {
+        const phone = (order.phone || '').trim();
+        if (!phone) return;
+        if (!byPhone[phone]) byPhone[phone] = order;
+      });
+      datalist.innerHTML = Object.keys(byPhone).slice(0, 120).map((phone) => {
+        const order = byPhone[phone];
+        return `<option value="${phone}">${order.customer_name || ''}</option>`;
+      }).join('');
+    }
+
+    function fillByPhone(phone) {
+      const normalized = (phone || '').trim();
+      if (!normalized) return;
+      const order = state.orders.find((o) => (o.phone || '').trim() === normalized);
+      if (!order) return;
+      if (!document.getElementById('customerName').value.trim()) {
+        document.getElementById('customerName').value = order.customer_name || '';
+      }
+      if (!document.getElementById('orderAddress').value.trim()) {
+        document.getElementById('orderAddress').value = order.address || '';
+      }
+    }
+
+    function parsePayloadToForm(rawText) {
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (err) {
+        showToast(t('invalidJson'));
+        return;
+      }
+
+      const meta = data.order_meta || data.meta || {};
+      document.getElementById('customerName').value = data.customer_name || meta.customer_name || document.getElementById('customerName').value;
+      document.getElementById('customerPhone').value = data.phone || meta.phone || document.getElementById('customerPhone').value;
+      document.getElementById('orderAddress').value = data.address || meta.address || document.getElementById('orderAddress').value;
+
+      const date = data.delivery_date || meta.service_date || meta.invoice_date || '';
+      if (date) document.getElementById('orderDate').value = date.slice(0, 10);
+
+      const time = data.delivery_time || meta.delivery_time || '';
+      if (time) document.getElementById('orderTime').value = time;
+
+      const orderType = data.type || meta.order_type;
+      if (orderType && ['Pickup', 'Delivery'].includes(orderType)) {
+        document.getElementById('orderType').value = orderType;
+      }
+
+      if (data.payment_status) {
+        document.getElementById('orderPaymentStatus').value = data.payment_status === 'Paid' ? 'Paid' : 'Unpaid';
+      }
+
+      const rawItems = Array.isArray(data.items) ? data.items : [];
+      if (rawItems.length) {
+        state.selectedItems = rawItems.map((item) => {
+          const normalized = normalizeProductClient({
+            id: item.id || item.sku || item.name,
+            name: item.name,
+            price: item.price || 0,
+            category: item.family_label || item.category || ''
+          });
+          return {
+            ...normalized,
+            id: item.id || item.sku || item.name,
+            name: item.name,
+            price: Number(item.price || 0),
+            quantity: Number(item.quantity || item.qty || 1),
+            family_key: item.family_key || normalized.family_key,
+            family_label: item.family_label || item.family || normalized.family_label || item.category || t('familyDefault'),
+            family_color: item.family_color || normalized.family_color,
+            variant: item.variant || '',
+            details: normalizeImportedItemDetails(item)
+          };
+        });
+        renderSelectedItems();
+      }
+
+      validateOrderForm();
+    }
+
+    function normalizeImportedItemDetails(item) {
+      const sources = ['details', 'notes', 'comment'];
+      for (let i = 0; i < sources.length; i += 1) {
+        const value = item[sources[i]];
+        if (value === undefined || value === null) continue;
+        const text = String(value).trim();
+        if (text) return text;
+      }
+      return '';
+    }
+
+    async function startEditing(orderId) {
+      return withLoading('startEditing', async () => {
+        let order = state.orders.find((o) => o.order_id === orderId);
+        if (!order || order.status === 'Delivered') {
+          showToast(t('deliveredLocked'));
+          return;
+        }
+
+        if (!order.items_json) {
+          try {
+            const response = await api('getOrderDetails', 'GET', { order_id: orderId });
+            if (response && response.status === 'success' && response.order && response.order.order_id === orderId) {
+              order = response.order;
+            }
+          } catch (err) { }
+        }
+
+        state.editingOrderId = orderId;
+        document.getElementById('customerName').value = order.customer_name || '';
+        document.getElementById('customerPhone').value = order.phone || '';
+        document.getElementById('orderDate').value = (order.delivery_date || '').slice(0, 10);
+        document.getElementById('orderTime').value = order.delivery_time || '';
+        document.getElementById('orderType').value = order.type || 'Pickup';
+        document.getElementById('paymentStatus').value = order.payment_status || 'Unpaid';
+        document.getElementById('orderDeposit').value = order.deposit_amount || '';
+        document.getElementById('orderChannel').value = order.channel || 'Phone';
+        document.getElementById('orderAddress').value = order.address || '';
+        document.getElementById('orderNotes').value = order.source_notes || '';
+
+        try {
+          const parsed = JSON.parse(order.items_json || '[]');
+          if (Array.isArray(parsed)) {
+            state.selectedItems = parsed.map((item) => {
+              const normalized = normalizeProductClient({
+                id: item.id || item.name,
+                name: item.name,
+                price: item.price || 0,
+                category: item.family_label || item.category || ''
+              });
+              return {
+                ...normalized,
+                id: item.id || item.name,
+                name: item.name,
+                price: Number(item.price || 0),
+                quantity: Number(item.quantity || 1),
+                family_key: item.family_key || normalized.family_key,
+                family_label: item.family_label || item.family || normalized.family_label || item.category || t('familyDefault'),
+                family_color: item.family_color || normalized.family_color,
+                variant: item.variant || '',
+                details: normalizeImportedItemDetails(item)
+              };
+            });
+          } else {
+            state.selectedItems = [];
+          }
+        } catch (err) {
+          state.selectedItems = [];
+        }
+
+        renderSelectedItems();
+        switchScreen('capture');
+        applyI18n();
+      });
+    }
+
+    async function saveOrder() {
+      const op = beginLoadingOperation('saveOrder');
+      try {
+        if (!validateOrderForm()) return;
+
+        const payload = formPayload();
+        if (payload.type === 'Delivery' && payload.payment_status === 'Unpaid') {
+          showToast(t('warningDeliveryUnpaid'));
+        }
+
+        // --- OPTIMISTIC UI START ---
+        // 1. Reset form instantly
+        const editingId = state.editingOrderId;
+        const previousItems = [...state.selectedItems];
+        resetForm();
+
+        // 2. Add "Ghost" ticket to Kanban if new
+        if (!editingId) {
+          const ghostId = 'temp-' + Date.now();
+          const ghostOrder = {
+            order_id: ghostId,
+            order_number: 'PENDING...',
+            customer_name: payload.customer_name,
+            status: 'Pending',
+            captured_at: new Date().toISOString(),
+            is_optimistic: true // Visual flag for opacity/loading state
+          };
+          state.orders.push(ghostOrder);
+          renderKanban();
+        }
+        // --- OPTIMISTIC UI END ---
+
+        let response;
+        if (editingId) {
+          const order = state.orders.find((o) => o.order_id === editingId);
+          response = await api('updateOrderDetails', 'POST', {
+            action: 'updateOrderDetails',
+            order_id: editingId,
+            base_sync_version: order ? order.sync_version : 1,
+            ...payload
+          });
+        } else {
+          response = await api('createOrder', 'POST', {
+            action: 'createOrder',
+            ...payload,
+            status: 'Pending'
+          });
+        }
+
+        if (response.status === 'success') {
+          showToast(t('saved'));
+          setSyncStatus('idle');
+        } else {
+          showToast(response.message || 'Error');
+          setSyncStatus('error');
+        }
+
+        await refreshOrders();
+      } catch (err) {
+        showToast(err.message || 'Network Error');
+        setSyncStatus('error');
+      } finally {
+        await endLoadingOperation(op);
+      }
+    }
+
+    async function refreshProducts() {
+      return withLoading('refreshProducts', async () => {
+        try {
+          const data = await api('getProducts');
+          state.products = Array.isArray(data) ? data.map((p) => normalizeProductClient(p)) : [];
+        } catch (err) {
+          state.products = [];
+          setBanner(err.message || String(err), 'warn');
+        }
+        if (!Array.isArray(state.products) || state.products.length === 0) {
+          state.products = FALLBACK_PRODUCTS.map((p) => normalizeProductClient(p));
+        }
+        renderMenuFamilies();
+      });
+    }
+
+    async function loadClientConfig() {
+      return withLoading('loadClientConfig', async () => {
+        try {
+          const config = await api('getClientConfig');
+          if (!config || config.status !== 'success' || !config.flags) return;
+          const flags = config.flags;
+          state.boardSnapshotEnabled = flags.board_snapshot_enabled !== false;
+          state.boardDeltaEnabled = flags.board_delta_sync_enabled !== false;
+          state.skipNoChangeRenderEnabled = flags.board_skip_nochange_render_enabled !== false;
+          state.incrementalRenderEnabled = flags.board_incremental_render_enabled !== false;
+          if (!state.incrementalRenderEnabled) {
+            state.columnSignatures = {};
+          }
+        } catch (err) { }
+      });
+    }
+
+    async function refreshOrders() {
+      return withLoading('refreshOrders', async () => {
+        const shouldRefreshDays = !state.selectedBoardDay || !state.boardDays.length || (Date.now() - state.boardDaysLastFetchMs) > 20000;
+        if (shouldRefreshDays) {
+          await refreshBoardDays(!state.boardDays.length || !state.selectedBoardDay);
+        }
+
+        const scopedDay = state.selectedBoardDay || '';
+        let normalized;
+        if (state.boardSnapshotEnabled && state.boardDeltaEnabled && state.kanbanInitialized && state.boardRev) {
+          try {
+            const deltaParams = { since_rev: state.boardRev };
+            if (scopedDay) {
+              deltaParams.board_day = scopedDay;
+            }
+            if (state.boardLastUpdatedAt) {
+              deltaParams.since_updated_at = state.boardLastUpdatedAt;
+            }
+            const delta = normalizeBoardDeltaResponse(await api('getBoardDelta', 'GET', deltaParams));
+            if (delta) {
+              const merged = delta.full ? delta.changed : mergeDeltaOrders(state.orders, delta);
+              normalized = {
+                items: merged,
+                boardRev: delta.boardRev || computeBoardRevisionClient(merged),
+                fallback: false
+              };
+            } else {
+              state.boardDeltaEnabled = false;
+            }
+          } catch (err) {
+            const msg = String(err && err.message ? err.message : err).toLowerCase();
+            if (msg.includes('unknown get action') || msg.includes('since_updated_at is invalid')) {
+              state.boardDeltaEnabled = false;
+            }
+          }
+        }
+
+        if (state.boardSnapshotEnabled) {
+          if (!normalized) {
+            try {
+              normalized = normalizeBoardResponse(await api('getBoardSnapshot', 'GET', scopedDay ? { board_day: scopedDay } : null));
+              if (normalized.fallback) {
+                normalized = null;
+                state.boardSnapshotEnabled = false;
+                state.boardDeltaEnabled = false;
+              } else if (!normalized.boardRev) {
+                normalized.boardRev = computeBoardRevisionClient(normalized.items);
+              }
+            } catch (err) {
+              state.boardSnapshotEnabled = false;
+              state.boardDeltaEnabled = false;
+            }
+          }
+        }
+
+        if (!normalized) {
+          normalized = normalizeBoardResponse(await api('getOrders', 'GET', scopedDay ? { board_day: scopedDay } : null));
+        }
+
+        const rawOrders = Array.isArray(normalized.items) ? normalized.items : [];
+        state.backendOutdated = backendContractOutdated(rawOrders);
+        const nextOrders = rawOrders
+          .filter((order) => String(order && order.order_id ? order.order_id : '').trim())
+          .sort((a, b) => ticketSortValue(a) - ticketSortValue(b));
+        const nextBoardRev = normalized.boardRev || computeBoardRevisionClient(nextOrders);
+        const unchanged = state.skipNoChangeRenderEnabled && state.kanbanInitialized && !!state.boardRev && state.boardRev === nextBoardRev;
+
+        state.orders = nextOrders;
+        state.boardRev = nextBoardRev;
+        state.boardLastUpdatedAt = latestOrderStamp(nextOrders) || new Date().toISOString();
+        if (state.backendOutdated) {
+          setBanner(t('backendOutdated'), 'warn');
+        }
+
+        if (unchanged) {
+          setSyncStatus('OK', 450);
+          return;
+        }
+
+        compareVersionSnapshots(state.orders);
+        buildPhoneHints();
+        renderKanban();
+      });
+    }
+
+    async function refreshAll() {
+      return withLoading('refreshAll', async () => {
+        let ordersErr = null;
+        await refreshProducts();
+        await refreshBoardDays(true);
+        try {
+          await refreshOrders();
+        } catch (err) {
+          ordersErr = err;
+        }
+        if (!ordersErr && !state.backendOutdated) {
+          setBanner('');
+          return;
+        }
+        if (ordersErr) {
+          setBanner(ordersErr.message || String(ordersErr), 'warn');
+        }
+      });
+    }
+
+    function desiredPollIntervalMs() {
+      if (document.visibilityState === 'hidden') return 20000;
+      if (state.screen === 'board') return 3000;
+      return 8000;
+    }
+
+    async function pollOnceAndSchedule() {
+      try {
+        await refreshOrders();
+        state.pollFailures = 0;
+      } catch (err) {
+        state.pollFailures += 1;
+      }
+
+      const base = desiredPollIntervalMs();
+      const backoffFactor = state.pollFailures > 0 ? Math.min(state.pollFailures + 1, 4) : 1;
+      const delay = base * backoffFactor;
+      state.pollId = window.setTimeout(pollOnceAndSchedule, delay);
+    }
+
+    function restartPolling(immediate) {
+      if (state.pollId) window.clearTimeout(state.pollId);
+      if (immediate) {
+        pollOnceAndSchedule();
+        return;
+      }
+      state.pollId = window.setTimeout(pollOnceAndSchedule, desiredPollIntervalMs());
+    }
+
+    function bindEvents() {
+      document.getElementById('langToggle').addEventListener('click', () => {
+        state.lang = 'en';
+        applyI18n();
+        renderKanban();
+        renderMenuFamilies();
+        renderSelectedItems();
+      });
+
+      document.querySelectorAll('.tab-btn').forEach((button) => {
+        button.addEventListener('click', () => switchScreen(button.dataset.screen));
+      });
+
+      document.getElementById('menuSearch').addEventListener('input', renderMenuFamilies);
+      document.getElementById('menuFamilies').addEventListener('click', (event) => {
+        const target = event.target.closest('.product-btn');
+        if (!target) return;
+        addItem(target.dataset.productId);
+      });
+
+      document.getElementById('btnOpenMenuScreen').addEventListener('click', openMenuModal);
+      document.getElementById('btnCloseMenuModal').addEventListener('click', closeMenuModal);
+      document.querySelectorAll('[data-close-menu=\"true\"]').forEach((el) => {
+        el.addEventListener('click', closeMenuModal);
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeMenuModal();
+      });
+
+      const board = document.getElementById('kanbanBoard');
+      board.addEventListener('dragstart', (event) => {
+        const ticket = event.target.closest('.ticket[draggable="true"]');
+        if (!ticket) return;
+        const payload = {
+          orderId: ticket.dataset.orderId || '',
+          status: ticket.dataset.status || ''
+        };
+        state.dragRuntime.orderId = payload.orderId;
+        state.dragRuntime.sourceStatus = payload.status;
+        state.dragRuntime.activeColumnStatus = '';
+        state.dragRuntime.draggingTicketId = payload.orderId;
+        ticket.classList.add('dragging');
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', JSON.stringify(payload));
+        }
+      });
+      board.addEventListener('dragover', (event) => {
+        const column = event.target.closest('.kanban-column');
+        if (!column) return;
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        const targetStatus = column.dataset.dropStatus || '';
+        if (!state.dragRuntime.orderId || state.dragRuntime.activeColumnStatus === targetStatus) return;
+        clearDropTargetClasses(board);
+        const valid = isValidVisualDropTarget(state.dragRuntime.sourceStatus, targetStatus);
+        column.classList.add(valid ? 'drop-target-valid' : 'drop-target-invalid');
+        state.dragRuntime.activeColumnStatus = targetStatus;
+      });
+      board.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        const column = event.target.closest('.kanban-column');
+        const fallbackPayload = {
+          orderId: state.dragRuntime.orderId || '',
+          status: state.dragRuntime.sourceStatus || ''
+        };
+        let payload = fallbackPayload;
+        if (event.dataTransfer) {
+          const raw = event.dataTransfer.getData('text/plain');
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              payload = {
+                orderId: parsed.orderId || fallbackPayload.orderId,
+                status: parsed.status || fallbackPayload.status
+              };
+            } catch (err) {
+              payload = fallbackPayload;
+            }
+          }
+        }
+
+        try {
+          if (!column || !payload.orderId) return;
+          const order = state.orders.find((o) => o.order_id === payload.orderId);
+          if (!order) return;
+          const targetStatus = column.dataset.dropStatus;
+          if (payload.status === targetStatus) return;
+          await requestStatusTransition(order, targetStatus);
+        } finally {
+          cleanupDragRuntime(board);
+        }
+      });
+      board.addEventListener('dragend', () => {
+        cleanupDragRuntime(board);
+      });
+      board.addEventListener('click', async (event) => {
+        const toggleBtn = event.target.closest('[data-toggle-comment]');
+        if (toggleBtn) {
+          const box = toggleBtn.closest('.ticket-comment');
+          if (!box) return;
+          const expanded = box.classList.toggle('expanded');
+          toggleBtn.textContent = expanded ? t('collapse') : t('expand');
+          return;
+        }
+        const editBtn = event.target.closest('[data-edit-order]');
+        if (editBtn) {
+          await startEditing(editBtn.dataset.editOrder);
+          return;
+        }
+        const cancelBtn = event.target.closest('[data-cancel-order]');
+        if (cancelBtn) {
+          const order = state.orders.find((o) => o.order_id === cancelBtn.dataset.cancelOrder);
+          if (!order) return;
+          const target = order.status === 'Cancelled' ? 'Pending' : 'Cancelled';
+          await requestStatusTransition(order, target);
+        }
+      });
+
+      document.getElementById('dayRibbon').addEventListener('click', async (event) => {
+        const chip = event.target.closest('[data-day-key]');
+        if (!chip) return;
+        await setSelectedBoardDay(chip.dataset.dayKey, { refresh: true });
+      });
+
+      document.getElementById('selectedItemsBody').addEventListener('input', (event) => {
+        const idx = event.target.dataset.qtyIndex;
+        if (idx !== undefined) {
+          const item = state.selectedItems[Number(idx)];
+          if (!item) return;
+          item.quantity = Math.max(1, Number(event.target.value || 1));
+          renderSelectedItems();
+          return;
+        }
+        const detailIdx = event.target.dataset.detailsIndex;
+        if (detailIdx === undefined) return;
+        const detailItem = state.selectedItems[Number(detailIdx)];
+        if (!detailItem) return;
+        detailItem.details = String(event.target.value || '');
+      });
+
+      document.getElementById('selectedItemsBody').addEventListener('click', (event) => {
+        const duplicateBtn = event.target.closest('[data-duplicate-index]');
+        if (duplicateBtn) {
+          duplicateSelectedItem(Number(duplicateBtn.dataset.duplicateIndex));
+          return;
+        }
+        const removeBtn = event.target.closest('[data-remove-index]');
+        if (!removeBtn) return;
+        state.selectedItems.splice(Number(removeBtn.dataset.removeIndex), 1);
+        renderSelectedItems();
+      });
+
+      document.getElementById('orderPhone').addEventListener('change', (e) => fillByPhone(e.target.value));
+
+      document.getElementById('btnAutofill').addEventListener('click', () => {
+        parsePayloadToForm(document.getElementById('aiPayload').value.trim());
+      });
+
+      document.getElementById('btnClearAi').addEventListener('click', () => {
+        document.getElementById('aiPayload').value = '';
+      });
+
+      document.getElementById('btnSaveOrder').addEventListener('click', saveOrder);
+      document.getElementById('btnResetForm').addEventListener('click', resetForm);
+      document.getElementById('btnRefreshBoard').addEventListener('click', () => runBoardEntrySync(true));
+      document.getElementById('btnJumpCapture').addEventListener('click', () => switchScreen('capture'));
+      document.getElementById('btnArchiveDay').addEventListener('click', archiveSelectedBoardDay);
+      document.getElementById('btnUnarchiveDay').addEventListener('click', unarchiveSelectedBoardDay);
+      document.addEventListener('visibilitychange', () => restartPolling(false));
+    }
+
+    async function start() {
+      document.getElementById('orderDate').value = todayStr();
+
+      bindEvents();
+      applyI18n();
+      resetForm();
+      await loadClientConfig();
+      await refreshAll();
+      restartPolling(false);
+    }
+
+    start();
+  </script>
+</body>
+
+</html>

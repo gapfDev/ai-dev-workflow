@@ -1,51 +1,90 @@
-# AI Development Workflow Framework
+# Bakery Ops Board (MVP)
 
-A comprehensive, platform-agnostic workflow framework for AI-assisted software development. This framework guides Manager Agents and human developers through a structured 7-step process from vision to validation.
+Internal bakery operations system built with Google Apps Script + Google Sheets.
 
-## 🎯 Purpose
+## Live Project
+- Web App: [Bakery Ops Board](https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec)
+- URL to open in browser: `https://script.google.com/macros/s/AKfycby-tdJdLaJQg7jX8M5JkD2L3DpQf7_FhmsnETS3kFu7ttAKbWEgQ5gRIU3SfCeIJUgE/exec`
+- Latest deployed version: `@73` (2026-02-18)
 
-This is a **process framework**, not a technology framework. It works for any type of project:
-- Mobile apps (Android, iOS)
-- Web applications (React, Vue, etc.)
-- Backend services (Python, Node, Go, etc.)
-- Desktop applications
-- CLI tools
-- APIs
+MVP goals:
+- Fast order capture (phone, Facebook, manual, and gradual Square replacement).
+- Visual Kanban board optimized for tablet workflow.
+- Strict FIFO prioritization by capture time.
+- Friendly daily folio numbering.
 
-![Workflow Diagram](images/workflow-diagram.jpg)
+## Operational Roles
+- Order taker
+- Cook
+- Organizer/Packing
+- Dispatch
 
-## 📋 Workflow Overview
+## Main Features
+- Fast order capture with minimum required validation.
+- Product selection popup grouped by family with visual color cues.
+- Per-line item comments (`details`) in capture with duplicate-row support.
+- JSON item comment aliases on import: `details` > `notes` > `comment`.
+- Product menu fallback for resiliency (menu remains visible if API products load slowly).
+- Product catalog imported from source sheet (`gid=0`) and merged into active menu.
+- Kanban ticket comment preview (one-line) with expand/collapse full text.
+- Kanban statuses:
+  - `Pending`
+  - `Working`
+  - `Baked`
+  - `Delivered`
+  - `Cancelled`
+- Business rules:
+  - `Delivered` is only allowed from `Baked`.
+  - `Delivered` cannot be edited (including item comments/line details).
+  - `Cancelled` can be reverted only with confirmation.
+- Periodic refresh and basic concurrency handling.
 
-The framework consists of 7 steps with validation gates:
+## Architecture
+- Frontend: `apps-script/Index.html`
+- Backend API: `apps-script/Code.gs`
+- Admin/operations: `apps-script/Admin.gs`
+- Data store: Google Sheets (`Orders`, `Products`, `Expenses`)
 
-1. **Product Discovery** — Understand the vision and requirements
-2. **Tech Analysis** — Map features to technical solutions
-3. **Setup & Backlog** — Initialize project and create tickets
-4. **Sprint Planning** — Prioritize and organize work
-5. **Implementation** — Build features with TDD
-6. **Code Review** — Validate quality and standards
-7. **QA Validation** — Test user flows and edge cases
+## Repository Structure
+- `apps-script/`: MVP application code.
+- `images/`: reference images.
+- `.agent/`: workflow and skills support material.
 
-## 🛠️ Skills Library
+## Agent Skills
+- Single source of truth: `.agent/skills`.
+- Bridge script: `.agent/scripts/sync-skills-bridge.sh`.
+- Agent standard: `AGENTS.md`.
+- Multi-agent GitHub delivery skills:
+  - `.agent/skills/gh-dependency-orchestrator`
+  - `.agent/skills/gh-ticket-runner`
+  - `.agent/skills/git-worktree-runner`
+  - `.agent/skills/gh-pr-closeout`
+  - `.agent/skills/qa-release-gate`
+  - `.agent/skills/milestone-watchdog`
+  - `.agent/skills/status-reporter`
 
-The `.agent/skills/` directory contains reusable, independent skills:
+Sync for Codex:
+```bash
+bash .agent/scripts/sync-skills-bridge.sh --mode link --prune
+```
 
-- **product-discovery** — Structured interviews for product vision
-- **tech-analysis** — Feature-to-tech mapping
-- **backlog-builder** — Ticket creation from requirements
-- **sprint-planner** — MoSCoW prioritization
-- **project-scaffold** — Project structure setup
-- **tdd-workflow** — Test-driven development guide
-- **code-review-checklist** — Quality validation
-- **qa-validation** — User flow testing
-- **github-flow** — GitHub CLI integration
-- **external-tracking** — Jira/Linear/Trello support
-- **agent-handoff** — Manager-Worker delegation
-- **agent-communication** — Multi-agent coordination via shared board
-- **manager-log** — Decision tracking for Manager Agents
-- **visual-summary** — ASCII art deliverable summaries
+Sync for other LLM runtimes (copy mode):
+```bash
+bash .agent/scripts/sync-skills-bridge.sh --mode copy --prune --dest "<llm_skills_dir>"
+```
 
-## 🚀 Quick Start
+## Quick Start
+1. Open your Apps Script project and load files from `apps-script/`.
+2. Set `SPREADSHEET_ID` in Script Properties.
+3. Run `adminSetSpreadsheetIdProperty({ spreadsheet_id: "<sheet_id>" })`.
+4. Run `adminPrepareEnvironment()`.
+5. Run `adminSeedDemoProductsIfEmpty()`.
+6. Run `adminRunSmokeTests()`.
+7. Publish the Web App (`/exec`) with access set to `Anyone with the link`.
+
+---
+
+## 🚀 Quick Start (Workflow)
 
 ### For Developers (First Time)
 
@@ -171,14 +210,51 @@ You'll never be left wondering what was done or what's next.
 
 ## 📖 Full Documentation
 
-1. Review the workflow: `.agent/workflows/ai-dev-flow-plan.md`
-2. Use skills as needed for each step
-3. Follow the gates to ensure quality at each phase
+Detailed docs:
+- `apps-script/README.md`
+- `apps-script/DEPLOYMENT_CHECKLIST.md`
+- `docs/standards.md`
+- `docs/api-contract.md`
+- `docs/adr/ADR-001-modular-architecture.md`
+- `docs/dod.md`
+- `docs/runbooks/deploy-rollback.md`
+- `docs/runbooks/incident-triage.md`
+- `docs/ownership/module-owners.md`
+- `docs/templates/ticket-template.md`
+- `docs/performance/README.md`
+- `docs/performance/execution-order.md`
+- `docs/performance/phases/`
+- `docs/performance/contracts/`
+- `docs/performance/benchmarks/`
+- `docs/performance/rollout/`
+- `docs/performance/final-handoff.md`
 
-## 📖 Documentation
+## Automated QA
+From `apps-script/`:
+```bash
+python3 qa_e2e.py --api-base "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec" --local-dir "$(pwd)"
+```
 
-All documentation is in English to ensure consistency across teams and AI agents.
+Latest verified run:
+- Passed: `25`
+- Failed: `0`
 
-## 🤝 Contributing
+Loading UX release gate (Milestone 4):
+- Decision date: `2026-02-17`
+- Decision: `NO-GO`
+- Blocking finding: `LUX-BLOCKER-001` (board interaction degraded by near-continuous busy overlay under polling)
+- Evidence: `docs/qa/issue-57-loading-ux-qa-report.md`
 
-This framework is designed to evolve. Contributions and improvements are welcome.
+Item comments release validation:
+- Decision date: `2026-02-17`
+- Decision: `GO`
+- Evidence: `docs/qa/issue-73-item-comments-qa-report.md`
+
+Catalog sync status:
+- Source: `18hvcTtVil8Yc9hO9NYanGo6-qJVJ1iPf9gFXGcyFoII` (`gid=0`)
+- Products active in menu: `15`
+
+## Security
+- Do not commit hardcoded IDs or tokens.
+- Keep secrets only in Script Properties or git-ignored local files.
+- Local template: `apps-script/private.local.json.example`.
