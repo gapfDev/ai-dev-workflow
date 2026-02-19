@@ -501,3 +501,24 @@ Skills are reusable outside this workflow.
 | All | GitHub Flow | `.agent/skills/github-flow/` |
 | All | Agent Handoff | `.agent/skills/agent-handoff/` |
 | All | External Tracking | `.agent/skills/external-tracking/` |
+
+## Execution Skill Map (Robust Mode)
+
+Use this map to run each step with stronger governance and delivery controls.
+
+| Step | Primary Skills | Governance and Control Skills | Expected Output |
+|------|----------------|-------------------------------|-----------------|
+| 1 | `product-discovery` | `manager-log`, `markdown-copy-paste` | `PRODUCT_VISION.md` + logged decisions |
+| 2 | `tech-analysis` | `manager-log`, `markdown-copy-paste` | `TECH_STRATEGY.md` + architecture decisions |
+| 3 | `project-scaffold`, `backlog-builder`, `github-ticket-writer` | `github-epic-manager`, `github-milestone-manager`, `github-board-ops`, `github-flow` | Setup complete + `BACKLOG.md` + issues ready |
+| 4 | `sprint-planner` | `milestone-watchdog`, `status-reporter` | `IMPL_PLAN.md` + sprint priorities |
+| 5 | `gh-ticket-runner`, `tdd-workflow` | `git-worktree-runner`, `gh-dependency-orchestrator`, `manager-handoff` | Ticket implementation with tests and evidence |
+| 6 | `code-review-checklist`, `gh-pr-closeout` | `github-flow`, `status-reporter` | Approved PR with closure hygiene |
+| 7 | `qa-validation`, `qa-release-gate` | `milestone-watchdog`, `status-reporter`, `deploy-readme-sync` (for deploy/redeploy) | Validation report + GO/NO-GO gate |
+
+### Skill Routing Rules
+
+- Prefer `skill-balancer` when intent is ambiguous or cross-domain.
+- Use `github-ticket-ops` only for legacy compatibility; prefer dedicated `github-*` skills for new work.
+- For chained tickets, run `gh-dependency-orchestrator` before assigning implementation.
+- For parallel development, require `git-worktree-runner` before multiple agents start coding.
