@@ -17,7 +17,19 @@ Skill for detecting `gh` CLI availability, setting up GitHub Projects, and manag
 - Issue and PR templates installed in the repo
 - Full workflow from issue creation → merge → auto-close
 
+## Scope Boundary
+- This skill is an orchestration layer for GitHub lifecycle setup and execution.
+- For specialized tasks, prefer dedicated skills when available:
+  - Epic design: `github-epic-manager`
+  - Milestone planning: `github-milestone-manager`
+  - Ticket authoring: `github-ticket-writer`
+  - Board operations: `github-board-ops`
+  - Ticket execution: `gh-ticket-runner`
+  - PR closeout: `gh-pr-closeout`
+
 ---
+
+## Process
 
 ## Phase 0: Detect GitHub CLI
 

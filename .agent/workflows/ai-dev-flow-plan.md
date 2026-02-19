@@ -214,6 +214,7 @@
   ┌──────────▼────────────┐
   │  STEP 2                │
   │  🏗️ ROLE: Arch Agent   │
+  │  🛡️ + Security Agent   │
   │  🗣️ TALK: Med          │
   │  TECHNICAL ANALYSIS    │
   │                        │
@@ -224,10 +225,13 @@
   │  • How to build it?    │
   │  • Stack defined       │
   │  • Libs/APIs           │
+  │  • Threat model        │
   │  ⛔ CONFIG/REPO        │
   │                        │
   │  📤 Output:            │
   │  📄 TECH_STRATEGY.md   │
+  │  + 📄 SECURITY_        │
+  │    THREAT_MODEL.md     │
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
@@ -241,10 +245,26 @@
        │ □ Existing code  │
        │   analyzed?     │
        │ □ Arch pattern   │
-       │   chosen?       │──── ❌ Changes ──→ 🔄 Back to Step 2
+       │   chosen?       │
+       │ □ Threat model  │
+       │   complete?     │
+       │ □ Risks ranked  │
+       │   P0-P3?        │──── ❌ Changes ──→ 🔄 Back to Step 2
        │ All ✅?         │
        └─────┬──────────┘
              │ ✅ Yes
+
+┌─── 🛡️ SECURITY GATE A (After Step 2) ───────────────────────────────────────┐
+│                                                                             │
+│  Required before entering Step 3:                                           │
+│  □ Attack surface documented                                                 │
+│  □ Sensitive data paths identified                                           │
+│  □ Mitigations defined for critical/high risks                               │
+│                                                                             │
+│  If not complete: return to Step 2.                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
   ┌──────────▼────────────┐
   │  STEP 3                │
   │  ⚙️ ROLE: DevOps+PM    │
@@ -254,6 +274,8 @@
   │  📥 Input:             │
   │  PRODUCT_VISION.md     │
   │  + TECH_STRATEGY.md    │
+  │  + SECURITY_THREAT_    │
+  │    MODEL.md            │
   │                        │
   │  🛫 PRE-FLIGHT:        │
   │  □ Check gh --version  │
@@ -267,11 +289,15 @@
   │    compiles/runs       │
   │                        │
   │  • Create Tickets      │
+  │  • Create security     │
+  │    backlog tickets     │
   │  • Prioritize          │
   │                        │
   │  📤 Output:            │
   │  Initialized repo      │
   │  + 📄 BACKLOG.md       │
+  │  + 📄 SECURITY_        │
+  │    BACKLOG.md          │
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
@@ -281,6 +307,8 @@
        │   agreed?       │
        │ □ Tickets have  │
        │   DoD?          │
+       │ □ Security      │
+       │   tickets ready?│
        │ □ Prioritization│
        │   approved?     │──── ❌ Changes ──→ 🔄 Back to Step 3
        │ All ✅?         │
@@ -359,6 +387,8 @@
   │  │ □ Move issue →    │ │
   │  │   In Progress     │ │
   │  │ □ Verify build OK │ │
+  │  │ □ Apply security  │ │
+  │  │   checklist       │ │
   │  │                   │ │
   │  │ • DoD = TDD       │ │
   │  │ > 1 Ticket =      │ │
@@ -367,7 +397,7 @@
   │  └──────────────────┘ │
   │                        │
   │  📥 Input:             │
-  │  IMPL_PLAN.md          │
+  │  IMPLEMENTATION_PLAN.md│
   │  + Current ticket      │
   │                        │
   │  📤 Output:            │
@@ -388,6 +418,7 @@
   ┌──────────▼────────────┐
   │  STEP 6                │
   │  🔍 ROLE: Lead Dev     │
+  │  🛡️ + Security Agent   │
   │  🗣️ TALK: Gate         │
   │  CODE REVIEW           │
   │                        │
@@ -402,6 +433,8 @@
   │    (build/tests/lint)  │
   │  □ Branch up to date   │
   │    with main           │
+  │  □ Security review     │
+  │    requested/done      │
   │                        │
   │  • Code smells         │
   │  • Refactoring         │
@@ -410,14 +443,19 @@
   │  📤 Output:            │
   │  Code Approved         │
   │  + Tests Passing       │
+  │  + 📄 SECURITY_REVIEW_ │
+  │    REPORT.md           │
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
-       │ ✅ GATE 6       │
+       │ ✅ GATE 6 +     │
+       │    SECURITY B   │
        │ □ Tests 100%    │
        │   passing?      │
        │ □ No critical   │
        │   code smells?  │
+       │ □ No open P0/P1 │
+       │   security risk?│
        │ □ Security OK?  │──── ❌ Issues ──→ 🔄 Back to Step 5/6
        │ All ✅?         │
        └─────┬──────────┘
@@ -425,6 +463,7 @@
   ┌──────────▼────────────┐
   │  STEP 7                │
   │  ✅ ROLE: QA Agent     │
+  │  🛡️ + Security Agent   │
   │  🗣️ TALK: Med          │
   │  VALIDATION            │
   │                        │
@@ -443,20 +482,26 @@
   │                        │
   │  • Test user flows     │
   │  • Edge cases          │
+  │  • Security regression │
   │  • Bug report          │
   │                        │
   │  📤 Output:            │
   │  📄 VALIDATION_        │
   │  REPORT.md             │
+  │  + 📄 SECURITY_RELEASE_│
+  │    SIGNOFF.md          │
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
-       │ ✅ GATE 7       │
+       │ ✅ GATE 7 +     │
+       │    SECURITY C   │
        │ □ Flows OK?     │
        │ □ Edge cases    │
        │   covered?      │
        │ □ 0 critical    │
-       │   bugs?         │──── ❌ Bugs ──→ 🔄 Back to Step 5
+       │   bugs?         │
+       │ □ Security      │
+       │   sign-off GO?  │──── ❌ Bugs/Risk ──→ 🔄 Back to Step 5
        │ All ✅?         │
        └─────┬──────────┘
              │ ✅ Yes
@@ -474,13 +519,13 @@
 | Step | Agent Role | Human | 📥 Input | Key Task | 📤 Output |
 |------|------------|-------|----------|----------|-----------|
 | 1 | 👤 **PM Agent** | 🗣️ High | Idea (A/V/Img/Txt) | Vision + Final Review | `PRODUCT_VISION.md` |
-| 2 | 🏗️ **Arch Agent** | 🗣️ Med | `PRODUCT_VISION.md` | Feat → Tech | `TECH_STRATEGY.md` |
-| 3 | ⚙️ **DevOps+PM** | 🗣️ Med | Vision + Tech | Tracking + Setup + Tickets | Repo + `BACKLOG.md` |
-| 4 | 📅 **PM Agent** | 🗣️ Med | `BACKLOG.md` | Sprints + MVP | `IMPL_PLAN.md` |
-| 5a | 💻 **Dev Agent** | 🗣️ Med | `IMPL_PLAN.md` | Agree on agent workflow | Agreement |
+| 2 | 🏗️ **Arch Agent + Security Agent** | 🗣️ Med | `PRODUCT_VISION.md` | Feat → Tech + Threat Model | `TECH_STRATEGY.md` + `SECURITY_THREAT_MODEL.md` |
+| 3 | ⚙️ **DevOps+PM (+Security input)** | 🗣️ Med | Vision + Tech + Security model | Tracking + Setup + Tickets | Repo + `BACKLOG.md` + `SECURITY_BACKLOG.md` |
+| 4 | 📅 **PM Agent** | 🗣️ Med | `BACKLOG.md` | Sprints + MVP | `IMPLEMENTATION_PLAN.md` |
+| 5a | 💻 **Dev Agent** | 🗣️ Med | `IMPLEMENTATION_PLAN.md` | Agree on agent workflow | Agreement |
 | 5b | 💻 **Dev Agent** | 🗣️ Low | Current ticket | TDD: Code + Tests | Tested Feature |
-| 6 | 🔍 **Lead Dev** | 🗣️ Gate | Feature + Tests | Code Review + Run Tests | Approved Code |
-| 7 | ✅ **QA Agent** | 🗣️ Med | Deployable feature | Functional Validation | `VALIDATION_RPT.md` |
+| 6 | 🔍 **Lead Dev + Security Agent** | 🗣️ Gate | Feature + Tests | Code Review + Security Review | Approved Code + `SECURITY_REVIEW_REPORT.md` |
+| 7 | ✅ **QA Agent + Security Agent** | 🗣️ Med | Deployable feature | Functional + Security Validation | `VALIDATION_REPORT.md` + `SECURITY_RELEASE_SIGNOFF.md` |
 
 ## Skills Reference
 
@@ -497,6 +542,7 @@ Skills are reusable outside this workflow.
 | 5 | TDD Workflow | `.agent/skills/tdd-workflow/` |
 | 6 | Code Review Checklist | `.agent/skills/code-review-checklist/` |
 | 7 | QA Validation | `.agent/skills/qa-validation/` |
+| 2/6/7 | Security Gate | `.agent/skills/security-gate/` |
 | All | Visual Summary | `.agent/skills/visual-summary/` |
 | All | GitHub Flow | `.agent/skills/github-flow/` |
 | All | Agent Handoff | `.agent/skills/agent-handoff/` |
@@ -509,12 +555,12 @@ Use this map to run each step with stronger governance and delivery controls.
 | Step | Primary Skills | Governance and Control Skills | Expected Output |
 |------|----------------|-------------------------------|-----------------|
 | 1 | `product-discovery` | `manager-log`, `markdown-copy-paste` | `PRODUCT_VISION.md` + logged decisions |
-| 2 | `tech-analysis` | `manager-log`, `markdown-copy-paste` | `TECH_STRATEGY.md` + architecture decisions |
-| 3 | `project-scaffold`, `backlog-builder`, `github-ticket-writer` | `github-epic-manager`, `github-milestone-manager`, `github-board-ops`, `github-flow` | Setup complete + `BACKLOG.md` + issues ready |
-| 4 | `sprint-planner` | `milestone-watchdog`, `status-reporter` | `IMPL_PLAN.md` + sprint priorities |
-| 5 | `gh-ticket-runner`, `tdd-workflow` | `git-worktree-runner`, `gh-dependency-orchestrator`, `manager-handoff` | Ticket implementation with tests and evidence |
-| 6 | `code-review-checklist`, `gh-pr-closeout` | `github-flow`, `status-reporter` | Approved PR with closure hygiene |
-| 7 | `qa-validation`, `qa-release-gate` | `milestone-watchdog`, `status-reporter`, `deploy-readme-sync` (for deploy/redeploy) | Validation report + GO/NO-GO gate |
+| 2 | `tech-analysis` | `manager-log`, `markdown-copy-paste`, `security-gate` | `TECH_STRATEGY.md` + `SECURITY_THREAT_MODEL.md` |
+| 3 | `project-scaffold`, `backlog-builder`, `github-ticket-writer` | `github-epic-manager`, `github-milestone-manager`, `github-board-ops`, `github-flow`, `security-gate` | Setup complete + `BACKLOG.md` + `SECURITY_BACKLOG.md` |
+| 4 | `sprint-planner` | `milestone-watchdog`, `status-reporter` | `IMPLEMENTATION_PLAN.md` + sprint priorities |
+| 5 | `gh-ticket-runner`, `tdd-workflow` | `git-worktree-runner`, `gh-dependency-orchestrator`, `manager-handoff`, `security-gate` | Ticket implementation with tests and security checks |
+| 6 | `code-review-checklist`, `gh-pr-closeout`, `security-gate` | `github-flow`, `status-reporter` | Approved PR + `SECURITY_REVIEW_REPORT.md` |
+| 7 | `qa-validation`, `qa-release-gate`, `security-gate` | `milestone-watchdog`, `status-reporter`, `deploy-readme-sync` (for deploy/redeploy) | Validation + `SECURITY_RELEASE_SIGNOFF.md` + GO/NO-GO gate |
 
 ### Skill Routing Rules
 
@@ -522,3 +568,17 @@ Use this map to run each step with stronger governance and delivery controls.
 - Use `github-ticket-ops` only for legacy compatibility; prefer dedicated `github-*` skills for new work.
 - For chained tickets, run `gh-dependency-orchestrator` before assigning implementation.
 - For parallel development, require `git-worktree-runner` before multiple agents start coding.
+
+### Security Severity Policy
+
+- `P0 Critical`: active exploit or data exposure risk. Immediate block.
+- `P1 High`: high-impact vulnerability with realistic exploit path. Block merge/release until fixed.
+- `P2 Medium`: meaningful risk with mitigations available. Can proceed with owner + due date.
+- `P3 Low`: best-practice hardening item. Track in backlog.
+
+### Security Enforcement Rules
+
+- No merge is allowed with open `P0` or `P1` findings (Security Gate B).
+- No release is allowed without explicit `GO` in `SECURITY_RELEASE_SIGNOFF.md` (Security Gate C).
+- Risk acceptance is allowed only for `P2`/`P3`, with explicit owner and target date.
+- Local validation command (recommended): `bash .agent/scripts/validate-security-gates.sh --root .`

@@ -13,15 +13,17 @@ Cross-cutting skill for generating visually appealing ASCII-art summaries of any
 ## Output
 - An ASCII visual summary printed to the user, highlighting the key information at a glance
 
-## When to Use
+## Process
+
+### Phase 1: Decide When to Use
 Call this skill **after completing a deliverable**, before presenting it to the user for gate approval. It makes the information scannable and gives a professional, polished feel.
 
-## How to Build a Visual Summary
+### Phase 2: Build the Visual Summary
 
-### Step 1: Identify Key Data
+#### Step 1: Identify Key Data
 Extract the 5-8 most important data points from the deliverable. Less is more.
 
-### Step 2: Choose a Layout
+#### Step 2: Choose a Layout
 Pick the layout that best fits the data:
 
 ---
@@ -206,7 +208,9 @@ Pick the layout that best fits the data:
 
 ---
 
-## Rules for Building Visual Summaries
+## Rules
+
+### Visual Summary Rules
 
 1. **ALWAYS** use double-line box (`╔═╗║╚═╝`) for the outer frame
 2. **ALWAYS** include a title with an emoji in the header

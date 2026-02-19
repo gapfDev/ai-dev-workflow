@@ -17,7 +17,9 @@ Skill for integrating with external project management tools (Jira, Linear, Trel
 
 ---
 
-## The "Manual Sync" Pattern
+## Process
+
+### Phase 0: The "Manual Sync" Pattern
 
 Since the agent cannot click buttons in Jira/Linear/Trello, it relies on **Ticket IDs** and **Human Sync**.
 
