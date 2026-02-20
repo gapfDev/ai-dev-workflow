@@ -45,12 +45,10 @@
 │  major milestones (Gates 1, 4, and 7). I will execute intermediate steps        │
 │  autonomously unless you ask me to pause.                                       │
 │                                                                                 │
-│  First up: Step 1/7 — Product Discovery                                         │
-│  • I'll ask ~21 questions about your vision                                     │
-│  • Takes ~15-20 minutes                                                         │
-│  • Output: PRODUCT_VISION.md                                                    │
-│                                                                                 │
-│  Timeline estimate: [Small/Medium/Large] = [30-60min / 2-4hrs / Multiple days]  │
+│  First up: Step 1/7 — Product Discovery & Strategy                              │
+│  • I will act as a 'Relentless Architect', asking an exhaustive number          │
+│    of questions to extract every assumption and blind spot before we build.     │
+│  • Output: PRODUCT_VISION.md (or REVERSE_ENGINEERING_REPORT.md)                 │
 │                                                                                 │
 │  Ready to begin Step 1?"                                                        │
 │                                                                                 │
@@ -97,14 +95,14 @@
 │                                                                                 │
 │  Manager Agent MUST announce:                                                   │
 │                                                                                 │
-│  "📍 STEP 1/7: Product Discovery                                                │
+│  "📍 STEP 1/7: Product Discovery & Strategy                                     │
 │                                                                                 │
 │  What we'll do:                                                                 │
-│  • Ask 21 structured questions about your vision                                │
-│  • Understand features, user flows, and business goals                          │
-│  • Create PRODUCT_VISION.md document                                            │
-│                                                                                 │
-│  Estimated time: 15-20 minutes                                                  │
+│  • Determine if this is a Greenfield (New) or Brownfield (Legacy) project.      │
+│  • Check Platform Constraints (e.g., App Store Guidelines).                     │
+│  • I will act as a 'Relentless Architect', asking an absurd amount of           │
+│    questions to extract every assumption and blind spot before we build.        │
+│  • Create PRODUCT_VISION.md (or REVERSE_ENGINEERING_REPORT.md for legacy).      │
 │                                                                                 │
 │  Ready to proceed with Step 1?"                                                 │
 │                                                                                 │
@@ -114,27 +112,28 @@
 
   ┌───────────────────────┐
   │  STEP 1                │
-  │  👤 ROLE: PM Agent     │
+  │  👤 ROLE: Relentless PM│
   │  🗣️ TALK: High         │
   │  💡 PRODUCT DISCOVERY  │
   │                        │
   │  📥 Input:             │
   │  User's idea           │
-  │  (Audio/Video/Img/Txt) │
   │                        │
-  │  • Act as PM. Ask deep,│
-  │    exhaustive questions│
-  │    to extract EVERY    │
-  │    detail of product.  │
-  │  • Request A/V/Img     │
+  │  • Greenfield/Brownfield│
+  │    Check.              │
+  │  • Platform Constraints.│
+  │  • Interrogate idea    │
+  │    ruthlessly. Leave no│
+  │    stone unturned.     │
   │  ⛔ CODE/ARCHITECTURE  │
-  │  🎯 Goal: NOTHING left │
-  │     to assumption      │
+  │  🎯 Goal: Zero unknown │
+  │     assumptions.       │
   │  👉 FINAL REVIEW       │
   │     (Wait for human OK)│
   │                        │
   │  📤 Output:            │
   │  📄 PRODUCT_VISION.md  │
+  │  (or REVERSE_ENG.md)   │
   └──────────┬────────────┘
              │
 ┌────────────▼────────────────────────────────────────────────────────────────┐
@@ -142,21 +141,21 @@
 │                                                                             │
 │  Manager Agent MUST show:                                                   │
 │                                                                             │
-│  "✅ STEP 1/7 COMPLETE: Product Discovery                                   │
+│  "✅ STEP 1/7 COMPLETE: Product Discovery & Strategy                        │
 │                                                                             │
 │  📋 Deliverables Created:                                                   │
-│  • PRODUCT_VISION.md (21 questions answered)                                │
+│  • PRODUCT_VISION.md (or REVERSE_ENG.md) completed after interrogation      │
 │  • [X] core features identified                                             │
-│  • [X] user flows documented                                                │
+│  • [X] workflows or boundaries documented                                   │
 │                                                                             │
-│  🎯 Key Features:                                                           │
-│  1. [Feature name]                                                          │
-│  2. [Feature name]                                                          │
+│  🎯 Key Elements:                                                           │
+│  1. [Element name]                                                          │
+│  2. [Element name]                                                          │
 │  3. [etc...]                                                                │
 │                                                                             │
-│  📝 Key Insights:                                                           │
-│  • [Critical requirement, e.g., 'Offline-first required']                  │
-│  • [User need, e.g., 'Mobile-optimized UI essential']                      │
+│  📝 Key Insights/Blindspots Uncovered:                                      │
+│  • [Critical constraint or assumption corrected]                            │
+│  • [Platform limitation acknowledged]                                       │
 │                                                                             │
 │  📊 Progress: [##--------] 1/7                                              │
 │                                                                             │
@@ -205,18 +204,20 @@
   │  PRODUCT_VISION.md     │
   │                        │
   │  • Act as Architect.   │
-  │  • Present multiple-   │
-  │    choice tech options │
-  │    (A/B/C) to guide    │
-  │    the human.          │
-  │  • Define Stack & APIs │
-  │  • Threat model        │
+  │  • Select QA Paradigm: │
+  │    (TDD, Evals, Golden │
+  │     Master).           │
+  │  • STRUCTURAL GATE:    │
+  │    Define DB Schema &  │
+  │    API Contracts NOW.  │
+  │  • Threat model + LLM  │
+  │    OWASP check.        │
   │  ⛔ CONFIG/REPO        │
   │                        │
   │  📤 Output:            │
   │  📄 TECH_STRATEGY.md   │
-  │  + 📄 SECURITY_        │
-  │    THREAT_MODEL.md     │
+  │  + 📄 SCHEMA.md        │
+  │  + 📄 SECURITY_MODEL.md│
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
@@ -254,33 +255,27 @@
   │  STEP 3                │
   │  ⚙️ ROLE: DevOps+PM    │
   │  🗣️ TALK: Med          │
-  │  PROJECT SCAFFOLD &    │
-  │  BACKLOG BUILDER       │
+  │  SCAFFOLD & BACKLOG    │
   │                        │
   │  📥 Input:             │
-  │  PRODUCT_VISION.md     │
-  │  + TECH_STRATEGY.md    │
-  │  + SECURITY_THREAT_    │
-  │    MODEL.md            │
+  │  VISION + STRATEGY +   │
+  │  SECURITY_MODEL        │
   │                        │
   │  🛫 PRE-FLIGHT:        │
-  │  □ Check gh --version  │
-  │  □ Check gh auth status│
-  │  □ Ask: tracking sys?  │
-  │    (GH Issues/Local/   │
-  │     Jira/Hybrid)       │
-  │  □ Create repo (if new)│
-  │  □ Init stack/IDE      │
-  │  □ Verify project      │
-  │    compiles/runs       │
+  │  □ Check auth & tracker│
+  │  □ Env Bootstrap (IaC/ │
+  │    Docker-compose up)  │
+  │  □ Secret Isolation    │
+  │    (.gitignore *.env)  │
+  │  □ Isolate Metaprojects│
+  │    (Xcode/Unity).      │
   │                        │
   │  • Create Tickets      │
   │  • Create security     │
   │    backlog tickets     │
-  │  • Prioritize          │
   │                        │
   │  📤 Output:            │
-  │  Initialized repo      │
+  │  Bootstrapped Repo     │
   │  + 📄 BACKLOG.md       │
   │  + 📄 SECURITY_        │
   │    BACKLOG.md          │
@@ -456,27 +451,23 @@
   │                        │
   │  📥 Input:             │
   │  Deployable feature    │
-  │  (approved in Step 6)  │
   │                        │
   │  🛫 PRE-FLIGHT:        │
-  │  □ Feature builds/runs │
-  │    without errors      │
-  │  □ Test environment    │
-  │    ready (device/emu/  │
-  │    browser)            │
-  │  □ Latest code merged  │
-  │    or branch available │
+  │  □ Hardware/External   │
+  │    Check? If yes →     │
+  │    Pause for Human QA. │
+  │  □ Env ready           │
   │                        │
-  │  • Test user flows     │
-  │  • Edge cases          │
+  │  • Run Chosen Paradigm │
+  │    (TDD/Evals/Golden)  │
   │  • Security regression │
-  │  • Bug report          │
+  │  • Explicit Deployment │
+  │    Strategy (BlueGreen/│
+  │    DarkLaunch/Stores)  │
   │                        │
   │  📤 Output:            │
-  │  📄 VALIDATION_        │
-  │  REPORT.md             │
-  │  + 📄 SECURITY_RELEASE_│
-  │    SIGNOFF.md          │
+  │  📄 VALIDATION_REP.md  │
+  │  + 📄 SECURITY_SIGNOFF │
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
@@ -505,14 +496,14 @@
 
 | Step | Agent Role | Human | 📥 Input | Key Task | 📤 Output |
 |------|------------|-------|----------|----------|-----------|
-| 1 | 👤 **PM Agent** | 🗣️ High | Idea (A/V/Img/Txt) | Act as PM: exhaustively guide & collect every detail | `PRODUCT_VISION.md` |
-| 2 | 🏗️ **Arch Agent + Security Agent** | 🗣️ Med | `PRODUCT_VISION.md` | Act as Architect: guide with A/B/C tech options | `TECH_STRATEGY.md` + `SECURITY_THREAT_MODEL.md` |
-| 3 | ⚙️ **DevOps+PM (+Security input)** | 🗣️ Low | Vision + Tech + Security model | Tracking + Setup + Tickets | Repo + `BACKLOG.md` + `SECURITY_BACKLOG.md` |
+| 1 | 👤 **Relentless PM** | 🗣️ High | Idea | Greenfield/Brownfield check + Interrogate ruthlessly to extract blind spots | `PRODUCT_VISION.md` / `REVERSE_ENG.md` |
+| 2 | 🏗️ **Arch Agent + Security Agent** | 🗣️ Med | `PRODUCT_VISION.md` | Select QA Paradigm + Define DB Schema/Contract + Threat Model | `TECH_STRATEGY.md` + `SCHEMA.md` + `SECURITY_MODEL.md` |
+| 3 | ⚙️ **DevOps+PM (+Security input)** | 🗣️ Low | Vision + Tech + Security model | Isolate metaprojects + Env Bootstrap + Issue Tracking | Repo + `BACKLOG.md` + `SECURITY_BACKLOG.md` |
 | 4 | 📅 **PM Agent** | 🗣️ Gate | `BACKLOG.md` | Sprints + MVP | `IMPLEMENTATION_PLAN.md` |
 | 5a | 💻 **Dev Agent** | 🗣️ Low | `IMPLEMENTATION_PLAN.md` | Agree on agent workflow | Agreement |
-| 5b | 💻 **Dev Agent** | 🗣️ 🔕 Silent | Current ticket | TDD: Code + Tests | Tested Feature |
+| 5b | 💻 **Dev Agent** | 🗣️ 🔕 Silent | Current ticket | Selected QA Paradigm Execution (TDD/Evals/Master) | Tested Feature |
 | 6 | 🔍 **Lead Dev + Security Agent** | 🗣️ Low | Feature + Tests | Code Review + Security Review | Approved Code + `SECURITY_REVIEW_REPORT.md` |
-| 7 | ✅ **QA Agent + Security Agent** | 🗣️ Gate | Deployable feature | Functional + Security Validation | `VALIDATION_REPORT.md` + `SECURITY_RELEASE_SIGNOFF.md` |
+| 7 | ✅ **QA Agent + Security Agent** | 🗣️ Gate | Deployable feature | Functional + Human QA + Explicit Deployment Strategy | `VALIDATION_REPORT.md` + `SECURITY_RELEASE_SIGNOFF.md` |
 
 ### Security Enforcement Rules
 
