@@ -18,14 +18,14 @@
 │  🏗️ Arch Agent  = Architect            Med  = Confirm / Adjust                 │
 │  ⚙️ DevOps Agt  = DevOps               Low  = Execute autonomously             │
 │  💻 Dev Agent   = Developer            Gate = Approval only (yes/no)            │
-│  🔍 Lead Dev    = Tech Lead                                                     │
-│  ✅ QA Agent    = Quality Assurance   SYMBOLS:                                  │
-│                                        ⛔ = FORBIDDEN at this step              │
-│  CONTRACTS:                            📄 = Required deliverable                │
-│  📥 = Input (from previous step)       🎯 = Goal / Objective of step            │
-│  📤 = Output (to next step)            👉 = Mandatory action                    │
-│                                        🛫 = Pre-flight setup actions            │
-│                                        🔀 = Handoff point (role change)         │
+│  🔍 Lead Dev    = Tech Lead            🔕 Silent = Auto-execute (Delegate mode) │
+│  ✅ QA Agent    = Quality Assurance                                             │
+│                                        SYMBOLS:                                 │
+│  CONTRACTS:                            ⛔ = FORBIDDEN at this step              │
+│  📥 = Input (from previous step)       📄 = Required deliverable                │
+│  📤 = Output (to next step)            🎯 = Goal / Objective of step            │
+│  👉 = Mandatory action                 🔀 = Role change / Handoff               │
+│  🛫 = Pre-flight setup actions         ⚙️ = Circuit Breaker (Halt if 3 errors)  │
 │  🚫 GLOBAL RULE — BLOCKED:                                                      │
 │  If info missing → 1. Ask the human                                             │
 │                    2. If no response → Document assumption + mark ⚠️             │
@@ -41,8 +41,9 @@
 │                                                                                 │
 │  I'll guide you through a 7-step development process.                           │
 │                                                                                 │
-│  We'll go step-by-step, and you'll approve each step before we proceed.         │
-│  You can modify, skip, or pause anytime.                                        │
+│  We'll go step-by-step, but you'll only need to explicitly approve the          │
+│  major milestones (Gates 1, 4, and 7). I will execute intermediate steps        │
+│  autonomously unless you ask me to pause.                                       │
 │                                                                                 │
 │  First up: Step 1/7 — Product Discovery                                         │
 │  • I'll ask ~21 questions about your vision                                     │
@@ -75,7 +76,7 @@
 
 ┌─── PROGRESS TRACKER TEMPLATE ───────────────────────────────────────────────────┐
 │                                                                                 │
-│  Show after EACH step completion:                                               │
+│  Show after EACH phase completion (specifically at Gates 1, 4, and 7):          │
 │                                                                                 │
 │  Progress: [####------] 4/7                                                     │
 │                                                                                 │
@@ -109,46 +110,28 @@
 │                                                                                 │
 │  ⏸️ WAIT for user confirmation (Yes/No/Wait/Modify)                             │
 │                                                                                 │
-│  AFTER completing Step 1, show:                                                 │
-│                                                                                 │
-│  "✅ STEP 1/7 COMPLETE: Product Discovery                                       │
-│                                                                                 │
-│  Summary:                                                                       │
-│  - Captured 21 answers about your vision                                        │
-│  - Created PRODUCT_VISION.md                                                    │
-│  - Identified [X] core features                                                 │
-│                                                                                 │
-│  Progress: [##--------] 1/7                                                     │
-│                                                                                 │
-│  Next: Step 2/7 — Tech Analysis                                                 │
-│  • Discuss architecture \u0026 tech stack (~10-15 min)                              │
-│  • Output: TECH_STRATEGY.md                                                     │
-│                                                                                 │
-│  Ready to proceed to Step 2? [Yes/No/Modify]"                                   │
-│                                                                                 │
-│  ⏸️ WAIT for user confirmation before starting Step 2                           │
-│                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
   ┌───────────────────────┐
   │  STEP 1                │
   │  👤 ROLE: PM Agent     │
   │  🗣️ TALK: High         │
-  │  💡 VISION / IDEA      │
+  │  💡 PRODUCT DISCOVERY  │
   │                        │
   │  📥 Input:             │
   │  User's idea           │
   │  (Audio/Video/Img/Txt) │
   │                        │
-  │  • Understand features │
-  │    and product         │
-  │  • Ask a lot           │
+  │  • Act as PM. Ask deep,│
+  │    exhaustive questions│
+  │    to extract EVERY    │
+  │    detail of product.  │
   │  • Request A/V/Img     │
   │  ⛔ CODE/ARCHITECTURE  │
-  │  🎯 Goal: EVERYTHING   │
-  │     ready for Backlog  │
+  │  🎯 Goal: NOTHING left │
+  │     to assumption      │
   │  👉 FINAL REVIEW       │
-  │     (Nothing missing)  │
+  │     (Wait for human OK)│
   │                        │
   │  📤 Output:            │
   │  📄 PRODUCT_VISION.md  │
@@ -216,15 +199,17 @@
   │  🏗️ ROLE: Arch Agent   │
   │  🛡️ + Security Agent   │
   │  🗣️ TALK: Med          │
-  │  TECHNICAL ANALYSIS    │
+  │  TECH ANALYSIS         │
   │                        │
   │  📥 Input:             │
   │  PRODUCT_VISION.md     │
   │                        │
-  │  • Features -> TECH    │
-  │  • How to build it?    │
-  │  • Stack defined       │
-  │  • Libs/APIs           │
+  │  • Act as Architect.   │
+  │  • Present multiple-   │
+  │    choice tech options │
+  │    (A/B/C) to guide    │
+  │    the human.          │
+  │  • Define Stack & APIs │
   │  • Threat model        │
   │  ⛔ CONFIG/REPO        │
   │                        │
@@ -235,7 +220,7 @@
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
-       │ ✅ GATE 2       │
+       │ ✅ GATE 2 (Auto) │
        │ □ Stack viable? │
        │ □ Every feature │
        │   has a tech    │
@@ -250,10 +235,10 @@
        │   complete?     │
        │ □ Risks ranked  │
        │   P0-P3?        │──── ❌ Changes ──→ 🔄 Back to Step 2
-       │ All ✅?         │
+       │ All ✅? Proceed │
        └─────┬──────────┘
              │ ✅ Yes
-
+             │
 ┌─── 🛡️ SECURITY GATE A (After Step 2) ───────────────────────────────────────┐
 │                                                                             │
 │  Required before entering Step 3:                                           │
@@ -269,7 +254,8 @@
   │  STEP 3                │
   │  ⚙️ ROLE: DevOps+PM    │
   │  🗣️ TALK: Med          │
-  │  SETUP & BACKLOG       │
+  │  PROJECT SCAFFOLD &    │
+  │  BACKLOG BUILDER       │
   │                        │
   │  📥 Input:             │
   │  PRODUCT_VISION.md     │
@@ -301,7 +287,7 @@
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
-       │ ✅ GATE 3       │
+       │ ✅ GATE 3 (Auto) │
        │ □ Repo compiles?│
        │ □ Tracking sys  │
        │   agreed?       │
@@ -311,14 +297,14 @@
        │   tickets ready?│
        │ □ Prioritization│
        │   approved?     │──── ❌ Changes ──→ 🔄 Back to Step 3
-       │ All ✅?         │
+       │ All ✅? Proceed │
        └─────┬──────────┘
              │ ✅ Yes
   ┌──────────▼────────────┐
   │  STEP 4                │
   │  📅 ROLE: PM Agent     │
   │  🗣️ TALK: Med          │
-  │  PLAN MODE             │
+  │  SPRINT PLANNER        │
   │                        │
   │  📥 Input:             │
   │  BACKLOG.md            │
@@ -341,10 +327,11 @@
        │   reasonable?   │
        │ □ Dependencies  │
        │   clear?        │──── ❌ Changes ──→ 🔄 Back to Step 4
-       │ All ✅?         │
+       │ All ✅? WAIT HD │
+       │ (Human Direct)  │
        └─────┬──────────┘
              │ ✅ Yes
-
+             │
 ┌─── 🚪 GITHUB GATE (Step 3.5) — MANDATORY BEFORE CODING ─────────────────────┐
 │                                                                             │
 │  Manager Agent MUST complete BEFORE Step 5 (Implementation):                │
@@ -375,12 +362,12 @@
   │  │    AGREEMENT      │ │
   │  │ • 1 or N agents?  │ │
   │  │ • Parallel/Tree?  │ │
-  │  │ 🗣️ TALK: Med      │ │
+  │  │ 🗣️ TALK: Low      │ │
   │  └──────────────────┘ │
   │                        │
   │  ┌─ 5b ─────────────┐ │
-  │  │ 💻 IMPLEMENT      │ │
-  │  │                   │ │
+  │  │ 💻 GH TICKET      │ │
+  │  │    RUNNER        │ │
   │  │ 🛫 PRE-FLIGHT:    │ │
   │  │ □ Create branch   │ │
   │  │   codex/<id>-name │ │
@@ -393,7 +380,7 @@
   │  │ • DoD = TDD       │ │
   │  │ > 1 Ticket =      │ │
   │  │   Code + Tests <  │ │
-  │  │ 🗣️ TALK: Low      │ │
+  │  │ 🗣️ TALK: 🔕 Silent│ │
   │  └──────────────────┘ │
   │                        │
   │  📥 Input:             │
@@ -406,13 +393,13 @@
   └──────────┬────────────┘
              │
        ┌─────▼──────────┐
-       │ ✅ GATE 5       │
+       │ ✅ GATE 5 (Auto) │
        │ □ Tests pass?   │
        │ □ Meets ticket  │
        │   DoD?          │
        │ □ TDD respected │
-       │   (same ticket) │──── ❌ Fails TDD ──→ 🔄 Fix
-       │ All ✅?         │
+       │   (same ticket) │──── ❌ Fails TDD ──→ 🔄 Fix (⚙️ Halt after 3x)
+       │ All ✅? Proceed │
        └─────┬──────────┘
              │ ✅ Yes
   ┌──────────▼────────────┐
@@ -420,7 +407,7 @@
   │  🔍 ROLE: Lead Dev     │
   │  🛡️ + Security Agent   │
   │  🗣️ TALK: Gate         │
-  │  CODE REVIEW           │
+  │  CODE REVIEW CHECKLIST │
   │                        │
   │  📥 Input:             │
   │  Feature + Tests       │
@@ -457,7 +444,7 @@
        │ □ No open P0/P1 │
        │   security risk?│
        │ □ Security OK?  │──── ❌ Issues ──→ 🔄 Back to Step 5/6
-       │ All ✅?         │
+       │ All ✅? Wait HD │
        └─────┬──────────┘
              │ ✅ Yes
   ┌──────────▼────────────┐
@@ -465,7 +452,7 @@
   │  ✅ ROLE: QA Agent     │
   │  🛡️ + Security Agent   │
   │  🗣️ TALK: Med          │
-  │  VALIDATION            │
+  │  QA VALIDATION & RELEASE
   │                        │
   │  📥 Input:             │
   │  Deployable feature    │
@@ -502,7 +489,7 @@
        │   bugs?         │
        │ □ Security      │
        │   sign-off GO?  │──── ❌ Bugs/Risk ──→ 🔄 Back to Step 5
-       │ All ✅?         │
+       │ All ✅? WAIT HD │
        └─────┬──────────┘
              │ ✅ Yes
        ┌─────▼─────┐
@@ -518,63 +505,14 @@
 
 | Step | Agent Role | Human | 📥 Input | Key Task | 📤 Output |
 |------|------------|-------|----------|----------|-----------|
-| 1 | 👤 **PM Agent** | 🗣️ High | Idea (A/V/Img/Txt) | Vision + Final Review | `PRODUCT_VISION.md` |
-| 2 | 🏗️ **Arch Agent + Security Agent** | 🗣️ Med | `PRODUCT_VISION.md` | Feat → Tech + Threat Model | `TECH_STRATEGY.md` + `SECURITY_THREAT_MODEL.md` |
-| 3 | ⚙️ **DevOps+PM (+Security input)** | 🗣️ Med | Vision + Tech + Security model | Tracking + Setup + Tickets | Repo + `BACKLOG.md` + `SECURITY_BACKLOG.md` |
-| 4 | 📅 **PM Agent** | 🗣️ Med | `BACKLOG.md` | Sprints + MVP | `IMPLEMENTATION_PLAN.md` |
-| 5a | 💻 **Dev Agent** | 🗣️ Med | `IMPLEMENTATION_PLAN.md` | Agree on agent workflow | Agreement |
-| 5b | 💻 **Dev Agent** | 🗣️ Low | Current ticket | TDD: Code + Tests | Tested Feature |
-| 6 | 🔍 **Lead Dev + Security Agent** | 🗣️ Gate | Feature + Tests | Code Review + Security Review | Approved Code + `SECURITY_REVIEW_REPORT.md` |
-| 7 | ✅ **QA Agent + Security Agent** | 🗣️ Med | Deployable feature | Functional + Security Validation | `VALIDATION_REPORT.md` + `SECURITY_RELEASE_SIGNOFF.md` |
-
-## Skills Reference
-
-Each step has an independent skill with detailed instructions and templates.
-Skills are reusable outside this workflow.
-
-| Step | Skill | Location |
-|------|-------|----------|
-| 1 | Product Discovery | `.agent/skills/product-discovery/` |
-| 2 | Tech Analysis | `.agent/skills/tech-analysis/` |
-| 3 (Setup) | Project Scaffold | `.agent/skills/project-scaffold/` |
-| 3 (Backlog) | Backlog Builder | `.agent/skills/backlog-builder/` |
-| 4 | Sprint Planner | `.agent/skills/sprint-planner/` |
-| 5 | TDD Workflow | `.agent/skills/tdd-workflow/` |
-| 6 | Code Review Checklist | `.agent/skills/code-review-checklist/` |
-| 7 | QA Validation | `.agent/skills/qa-validation/` |
-| 2/6/7 | Security Gate | `.agent/skills/security-gate/` |
-| All | Visual Summary | `.agent/skills/visual-summary/` |
-| All | GitHub Flow | `.agent/skills/github-flow/` |
-| All | Agent Handoff | `.agent/skills/agent-handoff/` |
-| All | External Tracking | `.agent/skills/external-tracking/` |
-
-## Execution Skill Map (Robust Mode)
-
-Use this map to run each step with stronger governance and delivery controls.
-
-| Step | Primary Skills | Governance and Control Skills | Expected Output |
-|------|----------------|-------------------------------|-----------------|
-| 1 | `product-discovery` | `manager-log`, `markdown-copy-paste` | `PRODUCT_VISION.md` + logged decisions |
-| 2 | `tech-analysis` | `manager-log`, `markdown-copy-paste`, `security-gate` | `TECH_STRATEGY.md` + `SECURITY_THREAT_MODEL.md` |
-| 3 | `project-scaffold`, `backlog-builder`, `github-ticket-writer` | `github-epic-manager`, `github-milestone-manager`, `github-board-ops`, `github-flow`, `security-gate` | Setup complete + `BACKLOG.md` + `SECURITY_BACKLOG.md` |
-| 4 | `sprint-planner` | `milestone-watchdog`, `status-reporter` | `IMPLEMENTATION_PLAN.md` + sprint priorities |
-| 5 | `gh-ticket-runner`, `tdd-workflow` | `git-worktree-runner`, `gh-dependency-orchestrator`, `manager-handoff`, `security-gate` | Ticket implementation with tests and security checks |
-| 6 | `code-review-checklist`, `gh-pr-closeout`, `security-gate` | `github-flow`, `status-reporter` | Approved PR + `SECURITY_REVIEW_REPORT.md` |
-| 7 | `qa-validation`, `qa-release-gate`, `security-gate` | `milestone-watchdog`, `status-reporter`, `deploy-readme-sync` (for deploy/redeploy) | Validation + `SECURITY_RELEASE_SIGNOFF.md` + GO/NO-GO gate |
-
-### Skill Routing Rules
-
-- Prefer `skill-balancer` when intent is ambiguous or cross-domain.
-- Use `github-ticket-ops` only for legacy compatibility; prefer dedicated `github-*` skills for new work.
-- For chained tickets, run `gh-dependency-orchestrator` before assigning implementation.
-- For parallel development, require `git-worktree-runner` before multiple agents start coding.
-
-### Security Severity Policy
-
-- `P0 Critical`: active exploit or data exposure risk. Immediate block.
-- `P1 High`: high-impact vulnerability with realistic exploit path. Block merge/release until fixed.
-- `P2 Medium`: meaningful risk with mitigations available. Can proceed with owner + due date.
-- `P3 Low`: best-practice hardening item. Track in backlog.
+| 1 | 👤 **PM Agent** | 🗣️ High | Idea (A/V/Img/Txt) | Act as PM: exhaustively guide & collect every detail | `PRODUCT_VISION.md` |
+| 2 | 🏗️ **Arch Agent + Security Agent** | 🗣️ Med | `PRODUCT_VISION.md` | Act as Architect: guide with A/B/C tech options | `TECH_STRATEGY.md` + `SECURITY_THREAT_MODEL.md` |
+| 3 | ⚙️ **DevOps+PM (+Security input)** | 🗣️ Low | Vision + Tech + Security model | Tracking + Setup + Tickets | Repo + `BACKLOG.md` + `SECURITY_BACKLOG.md` |
+| 4 | 📅 **PM Agent** | 🗣️ Gate | `BACKLOG.md` | Sprints + MVP | `IMPLEMENTATION_PLAN.md` |
+| 5a | 💻 **Dev Agent** | 🗣️ Low | `IMPLEMENTATION_PLAN.md` | Agree on agent workflow | Agreement |
+| 5b | 💻 **Dev Agent** | 🗣️ 🔕 Silent | Current ticket | TDD: Code + Tests | Tested Feature |
+| 6 | 🔍 **Lead Dev + Security Agent** | 🗣️ Low | Feature + Tests | Code Review + Security Review | Approved Code + `SECURITY_REVIEW_REPORT.md` |
+| 7 | ✅ **QA Agent + Security Agent** | 🗣️ Gate | Deployable feature | Functional + Security Validation | `VALIDATION_REPORT.md` + `SECURITY_RELEASE_SIGNOFF.md` |
 
 ### Security Enforcement Rules
 
@@ -582,3 +520,10 @@ Use this map to run each step with stronger governance and delivery controls.
 - No release is allowed without explicit `GO` in `SECURITY_RELEASE_SIGNOFF.md` (Security Gate C).
 - Risk acceptance is allowed only for `P2`/`P3`, with explicit owner and target date.
 - Local validation command (recommended): `bash .agent/scripts/validate-security-gates.sh --root .`
+
+### 🤖 Tech Delegate Mode (Batched Execution & Flow Continuity)
+
+If you are running this flow autonomously as a Manager Agent without human micro-management:
+1. **Interactive Requirements:** You MUST stop and explicitly ask for human approval at **Gate 1** (Vision Complete), **Gate 4** (Sprint Plan finalized), and **Gate 7** (Release ready). Do not bypass these.
+2. **Batched Execution Phase (Steps 2-3 & 5-6):** Do not interrupt the user after Step 2, Step 3, Step 5, and Step 6 to ask for permission to proceed unless you encounter unresolvable ambiguity. You should move seamlessly from `TECH_STRATEGY` to `BACKLOG`, and seamlessly execute code and PRs. Simply report your progress as a batch.
+3. **⚙️ Circuit Breaker:** If a CI/CD build, `gh-ticket-runner`, or lint step fails **3 times in a row**, the Agent MUST halt and drop back to human interaction: *"⚠️ I need help. Sticking on an error in branch X."*
