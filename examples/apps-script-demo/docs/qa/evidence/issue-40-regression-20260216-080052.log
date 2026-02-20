@@ -1,0 +1,29 @@
+[PASS] API getProducts count=15
+[PASS] API createOrder A {'status': 'success', 'message': 'Order created', 'order_id': 'ORD-1771228856752', 'order_number': 'ORD-16FEB-015', 'captured_at': '2026-02-16T08:00:56.752Z', 'auto_unarchived_day': False, 'auto_unarchived_day_key': ''}
+[PASS] API createOrder B {'status': 'success', 'message': 'Order created', 'order_id': 'ORD-1771228859994', 'order_number': 'ORD-16FEB-016', 'captured_at': '2026-02-16T08:00:59.994Z', 'auto_unarchived_day': False, 'auto_unarchived_day_key': ''}
+[PASS] Folio format A folio=ORD-16FEB-015
+[PASS] Folio format B folio=ORD-16FEB-016
+[PASS] captured_at generated A captured_at=2026-02-16T08:00:56.752Z
+[PASS] captured_at generated B captured_at=2026-02-16T08:00:59.994Z
+[PASS] Folio sequence increments ORD-16FEB-015 -> ORD-16FEB-016
+[PASS] API getOrders count=16
+[PASS] FIFO order by captured_at ascending 
+[PASS] Created order A retrievable 
+[PASS] Created order B retrievable 
+[PASS] Rule: Delivered only from Baked {'status': 'error', 'message': 'Only Baked orders can move to Delivered'}
+[PASS] Transition Pending->Working {'status': 'success', 'message': 'Status updated', 'order_id': 'ORD-1771228856752', 'order_status': 'Working', 'sync_version': 2, 'conflict': False}
+[PASS] Transition Working->Baked {'status': 'success', 'message': 'Status updated', 'order_id': 'ORD-1771228856752', 'order_status': 'Baked', 'sync_version': 3, 'conflict': False}
+[PASS] Transition Baked->Delivered {'status': 'success', 'message': 'Status updated', 'order_id': 'ORD-1771228856752', 'order_status': 'Delivered', 'sync_version': 4, 'conflict': False}
+[PASS] Rule: Delivered not editable {'status': 'error', 'message': 'Delivered orders cannot be edited'}
+[PASS] Rule: Delivered status locked {'status': 'error', 'message': 'Delivered orders cannot change status'}
+[PASS] Transition -> Cancelled {'status': 'success', 'message': 'Status updated', 'order_id': 'ORD-1771228859994', 'order_status': 'Cancelled', 'sync_version': 2, 'conflict': False}
+[PASS] Rule: Cancelled revert requires confirm {'status': 'error', 'message': 'Reactivation from Cancelled requires confirmation'}
+[PASS] Cancelled revert with confirm {'status': 'success', 'message': 'Status updated', 'order_id': 'ORD-1771228859994', 'order_status': 'Pending', 'sync_version': 3, 'conflict': False}
+[PASS] UI tabs only Capture/Kanban tabs=['Capture', 'Kanban']
+[PASS] UI popup product search count=3
+[PASS] UI created order appears in Kanban tickets=1
+[PASS] UI adaptive density class present class=kanban density-compact
+
+=== QA SUMMARY ===
+Passed: 25
+Failed: 0
