@@ -45,14 +45,14 @@ If GitHub CLI is available:
 ## Repository Structure
 - `.agent/`: workflow assets and agent support material.
 - `.github/ISSUE_TEMPLATE/`: issue templates for bug reports and workflow improvements.
-- `apps-script/`: demo application used only as a workflow example.
+- `examples/`: demo applications and dry run outputs used to illustrate the workflow.
 - `images/`: workflow visuals and supporting screenshots.
 
-## Example Folder: `apps-script/`
-`apps-script/` is a demo of workflow application (Bakery Ops Board sample). It is reference material only, not the core purpose of this repository.
+## Workflow Examples & Dry Runs
+The `examples/` directory contains reference implementations of the AI Dev Workflow:
 
-If you want product-specific setup details for that example, read:
-- `apps-script/README.md`
+- **`examples/focus-timer-dryrun/`**: A "Dry Run" simulated execution of the workflow. It contains the generated artifacts (e.g., `PRODUCT_VISION.md`, `TECH_STRATEGY.md`, `BACKLOG.md`) for a mock web app project without actual code. Use this to understand the expected output format of each workflow phase.
+- **`examples/apps-script-demo/`**: A fully functional demo application (Bakery Ops Board). It shows how the workflow and GitHub issues manifest in a real-world codebase. For specific setup details for this project, read `examples/apps-script-demo/README.md`.
 
 ## Contributing
 See:
