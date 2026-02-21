@@ -25,7 +25,7 @@ Control multi-agent execution using issue dependency gates as the source of trut
 ### Phase 1: Build the Execution Graph
 1. Collect the active milestone tickets.
 2. Capture explicit dependency links for every ticket.
-3. Validate there are no cycles in the dependency graph.
+3. Validate there are no cycles in the dependency graph. Attempt to produce a topological ordering of the tickets. If a valid ordering cannot be produced, the graph contains a cycle. Report the cycle to the Manager and **HALT** execution until the cycle is resolved by restructuring the tickets.
 
 ### Phase 2: Gate and Unblock Execution
 1. Mark tickets with open dependencies as blocked.

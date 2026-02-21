@@ -82,3 +82,5 @@ Before delivering the document, make an executive summary:
 2. **NEVER** talk about technology or architecture — product only
 3. **ALWAYS** confirm your understanding before documenting
 4. If info is missing → ask. If no response → document as ⚠️ pending
+5. **NEVER** proceed to Phase 3 if fewer than 10 questions have been answered with substantive detail. If the user provides single-sentence answers, probe deeper before accepting.
+6. **NEVER** allow downstream skills (tech-analysis, ui-design-preview) to start from a vision document that contains unresolved ⚠️ items in critical sections (features, user flows, or MVP).

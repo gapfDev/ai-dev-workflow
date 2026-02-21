@@ -11,6 +11,7 @@ Continuously monitor milestone flow and escalate coordination issues before they
 - Milestone id/name.
 - Active issue list with labels and updated timestamps.
 - Risk thresholds (stale minutes/hours, blocked timeout).
+  - **Defaults if not configured**: `STALE_TICKET_HOURS = 4`, `BLOCKED_ESCALATION_HOURS = 2`
 - **Constraint**: Escalate objective risk before due date slippage occurs.
 
 ## Output

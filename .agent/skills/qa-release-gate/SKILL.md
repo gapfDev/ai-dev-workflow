@@ -27,6 +27,12 @@ Run QA as a hard gate after dependency completion, then publish go/no-go decisio
 2. If any dependency is open, mark QA as blocked with reason.
 3. Prepare test report scaffold while waiting.
 
+### Phase 1.5: Independent Coverage Validation
+1. Read the PRODUCT_VISION.md and independently generate a list of 5-10 critical functional scenarios that a user would encounter.
+2. Compare these scenarios against the existing test suite.
+3. If any scenario is NOT covered by an existing test, report it as a coverage gap.
+4. Coverage gaps in critical user flows are blockers; gaps in secondary flows are warnings.
+
 ### Phase 2: Execute Validation Matrix
 1. Run mandatory scenario matrix.
 2. Run regression checks for unaffected core flows.

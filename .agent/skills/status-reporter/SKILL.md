@@ -26,6 +26,7 @@ Generate a short and actionable execution report for stakeholders and orchestrat
 1. Count closed/open/blocked tickets.
 2. Identify recently changed tickets and PRs.
 3. Detect dependency bottlenecks.
+4. For each In Progress ticket with an active branch, check if the branch is behind the target branch. If behind, append `[STALE: N commits behind]` to the ticket status in the report.
 
 ### Phase 2: Build Action Report
 1. Summarize progress in one block.

@@ -29,8 +29,9 @@ Close ticket work cleanly by enforcing PR linkage, verification evidence, and cl
 
 ### Phase 2: Merge Readiness
 1. Verify no unresolved review blockers remain.
-2. Ensure branch title/body are consistent with issue intent.
-3. Merge using project policy.
+2. Ensure branch is up to date with the target branch. If merge conflicts are detected, rebase the branch and re-run the test suite before proceeding.
+3. Ensure branch title/body are consistent with issue intent.
+4. Merge using project policy.
 
 ### Phase 3: Ticket Closure Evidence
 1. Post closure comment with PR link and test summary.
@@ -49,3 +50,4 @@ Close ticket work cleanly by enforcing PR linkage, verification evidence, and cl
 2. **ALWAYS** leave final evidence comment before/at closure.
 3. **NEVER** close issue while PR is still open.
 4. **NEVER** hide failed tests in closeout notes.
+5. **NEVER** merge a PR with unresolved merge conflicts. If rebase fails, report the conflict to the Manager for resolution.
