@@ -37,6 +37,18 @@ Create tickets that are small, testable, and unambiguous for engineering executi
 2. Assign owner, priority, and area.
 3. Verify ticket size and split if oversized.
 
+### Phase 4: Local Fallback (If `gh` CLI is unavailable)
+If you cannot create the issue in GitHub:
+1. Create a local markdown file in `.agent/issues/` (e.g., `.agent/issues/ERR-001.md`).
+2. **CRITICAL:** You MUST include this exact YAML frontmatter at the top of the file:
+   ```yaml
+   ---
+   type: ephemeral
+   status: active
+   ---
+   ```
+3. Write the ticket details below the frontmatter.
+
 ---
 
 ## Completeness Checklist

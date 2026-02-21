@@ -20,6 +20,9 @@ Security control skill to prevent vulnerable architecture, unsafe merges, and ri
 - `SECURITY_RELEASE_SIGNOFF.md` (Step 7 / Gate C).
 - Severity-classified finding list (`P0` to `P3`).
 
+> [!CAUTION]
+> **STRICT FILENAME ENFORCEMENT:** You MUST use these exact filenames. For instance, NEVER shorten `SECURITY_RELEASE_SIGNOFF.md` to `SECURITY_SIGNOFF.md`.
+
 ## Process
 
 ### Phase 1: Security Gate A (Architecture)
@@ -83,3 +86,4 @@ bash .agent/scripts/validate-security-gates.sh --root . --threat-prefix THREAT- 
 3. **ALWAYS** block release when sign-off is missing or `NO-GO`.
 4. **ALWAYS** require owner + due date for accepted `P2/P3` risks.
 5. **NEVER** close a gate without written evidence artifacts.
+6. **STRICT FILENAMES:** Always use the exact filenames specified in the Output section.

@@ -26,6 +26,7 @@ Run one ticket with consistent execution and reporting behavior.
 1. Confirm all dependency tickets are closed.
 2. Add a comment: `STARTED by <agent> | ETA: <time>`.
 3. Confirm scope and non-scope directly from the issue body.
+4. **Create a branch** using the format: `codex/[issue-#]-[short-name]`.
 
 ### Phase 2: Execute and Validate
 1. Implement only what is required by AC and DoD.
@@ -36,6 +37,7 @@ Run one ticket with consistent execution and reporting behavior.
 1. Open PR linked with closure keyword (`Closes #<ticket>`).
 2. Post closure comment with PR link, tests, and key outcomes.
 3. Close issue only after merge and evidence is posted.
+4. **LOCAL TRIAGE RULE:** If you were working on a local fallback ticket (`.agent/issues/ERR-001.md`), instead of closing a GitHub issue, you MUST edit the file and change the YAML frontmatter from `status: active` to `status: ready_to_prune`. This signals the Knowledge Gardener to clean it up.
 
 ---
 

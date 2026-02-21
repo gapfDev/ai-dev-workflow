@@ -31,10 +31,27 @@
 │                    2. If no response → Document assumption + mark ⚠️             │
 │                    3. NEVER invent data                                          │
 │                                                                                 │
+│  🧠 GLOBAL RULE — THE ILLEGIBILITY RULE & PERSONA PREFIXING:                    │
+│  If it's not in the repo, it doesn't exist. All chat decisions MUST be          │
+│  written to docs/ or .agent/. Never rely on chat memory for architecture.       │
+│  When logging decisions in a shared doc (like MANAGER_LOG.md), ALWAYS           │
+│  prefix with your persona (e.g., "🤖 [QA Agent]:", "🤖 [Security Agent]:").     │
+│                                                                                 │
 │  🔒 GLOBAL RULE — USER DATA:                                                    │
 │  When analyzing security, ALWAYS consider ALL user-provided                      │
 │  data vectors (text, images, files, location). Not just                          │
 │  API endpoints.                                                                  │
+│                                                                                 │
+│  📛 GLOBAL RULE — STRICT FILENAME ENFORCEMENT:                                  │
+│  Artifact filenames are STATED PROTOCOL. NEVER abbreviate or change them.       │
+│  Examples: `VALIDATION_REPORT.md` must never be `VALIDATION_REP.md`.            │
+│  `SECURITY_RELEASE_SIGNOFF.md` must never be `SECURITY_SIGNOFF.md`.             │
+│                                                                                 │
+│  🪂 GLOBAL RULE — EXPLICIT FALLBACKS (LOCAL TRIAGE):                            │
+│  If a core tool (like `gh` CLI) is unavailable, DO NOT perform a silent         │
+│  fallback. You MUST create a local sub-ticket (e.g., .agent/issues/ERR-001.md)  │
+│  documenting the issue. In Step 4 (Sprint Planner), convert all local issues    │
+│  into `BACKLOG.md` tasks or actual GitHub issues.                               │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
@@ -271,13 +288,9 @@
   │  SECURITY_MODEL        │
   │                        │
   │  🛫 PRE-FLIGHT:        │
-  │  □ Check auth & tracker│
-  │  □ Env Bootstrap (IaC/ │
-  │    Docker-compose up)  │
-  │  □ Secret Isolation    │
-  │    (.gitignore *.env)  │
-  │  □ Isolate Metaprojects│
-  │    (Xcode/Unity).      │
+  │  • Scaffold project    │
+  │    (Init repo, isolate │
+  │    secrets & envs).    │
   │                        │
   │  • Create Tickets      │
   │  • Create security     │
@@ -285,6 +298,8 @@
   │                        │
   │  📤 Output:            │
   │  Bootstrapped Repo     │
+  │  + 📄 AGENTS.md        │
+  │    (via generator)     │
   │  + 📄 BACKLOG.md       │
   │  + 📄 SECURITY_        │
   │    BACKLOG.md          │
@@ -340,17 +355,8 @@
 │                                                                             │
 │  Manager Agent MUST complete BEFORE Step 5 (Implementation):                │
 │                                                                             │
-│  1. Verify BACKLOG.md + Roadmap exists                                      │
-│  2. Create GitHub issues (if gh CLI available):                             │
-│     □ 1 issue per functional block                                          │
-│     □ Each issue has DoD (Definition of Done)                               │
-│     □ Issues labeled (priority/type/size)                                   │
-│  3. Create branches:                                                        │
-│     □ Format: codex/[issue-#]-[short-name]                                  │
-│     □ Link branch to issue                                                  │
-│  4. Move first issue to "In Progress"                                       │
-│                                                                             │
-│  ⚠️ RULE: "implement the plan" = issues + branches FIRST, code SECOND       │
+│  1. Create structured backlog tickets.                                      │
+│  2. Execute coding tickets (create branch, write code, run TDD).            │
 │                                                                             │
 │  SHOW: "🚪 GitHub Gate ✅: [X] issues ready, starting #[Y]"                 │
 │                                                                             │
@@ -362,15 +368,14 @@
   │  🗣️ TALK: Low          │
   │                        │
   │  ┌─ 5a ─────────────┐ │
-  │  │ 🤝 WORKFLOW       │ │
-  │  │    AGREEMENT      │ │
-  │  │ • 1 or N agents?  │ │
-  │  │ • Parallel/Tree?  │ │
-  │  │ • Stale threshold? │ │
-  │  │ • File CLAIM       │ │
-  │  │   protocol agreed? │ │
-  │  │ 🗣️ TALK: Low      │ │
-  │  └──────────────────┘ │
+  │ 🤝 WORKFLOW       │ │
+  │    AGREEMENT      │ │
+  │ • Coordinate      │ │
+  │   communication   │ │
+  │   between agents  │ │
+  │   if > 1 active.  │ │
+  │ 🗣️ TALK: Low      │ │
+  └──────────────────┘ │
   │                        │
   │  ┌─ 5b ─────────────┐ │
   │  │ 💻 GH TICKET      │ │
@@ -385,8 +390,9 @@
   │  │   checklist       │ │
   │  │                   │ │
   │  │ • DoD = TDD       │ │
-  │  │ > 1 Ticket =      │ │
-  │  │   Code + Tests <  │ │
+  │  │ • Auto-fix tests  │ │
+  │  │   locally before  │ │
+  │  │   PR review.      │ │
   │  │ 🗣️ TALK: 🔕 Silent│ │
   │  └──────────────────┘ │
   │                        │
@@ -421,18 +427,12 @@
   │  (code from Step 5)    │
   │                        │
   │  🛫 PRE-FLIGHT:        │
-  │  □ PR created and      │
-  │    linked (Closes #XX) │
-  │  □ CI checks pass      │
-  │    (build/tests/lint)  │
-  │  □ Branch up to date   │
-  │    with main           │
-  │  □ Security review     │
-  │    requested/done      │
+  │  • Execute code        │
+  │    review checklist.   │
+  │  • Verify CI pass      │
   │                        │
-  │  • Code smells         │
-  │  • Refactoring         │
-  │  • Security            │
+  │  • Security review     │
+  │    requested/done      │
   │                        │
   │  📤 Output:            │
   │  Code Approved         │
@@ -476,6 +476,9 @@
   │  • Explicit Deployment │
   │    Strategy (BlueGreen/│
   │    DarkLaunch/Stores)  │
+  │                        │
+  │  • Prune obsolete docs │
+  │    and clean workspace.│
   │                        │
   │  📤 Output:            │
   │  📄 VALIDATION_REP.md  │
@@ -529,4 +532,4 @@
 If you are running this flow autonomously as a Manager Agent without human micro-management:
 1. **Interactive Requirements:** You MUST stop and explicitly ask for human approval at **Gate 1** (Vision Complete), **Gate 4** (Sprint Plan finalized), and **Gate 7** (Release ready). Do not bypass these.
 2. **Batched Execution Phase (Steps 2-3 & 5-6):** Do not interrupt the user after Step 2, Step 3, Step 5, and Step 6 to ask for permission to proceed unless you encounter unresolvable ambiguity. You should move seamlessly from `TECH_STRATEGY` to `BACKLOG`, and seamlessly execute code and PRs. Simply report your progress as a batch.
-3. **⚙️ Circuit Breaker:** If a CI/CD build, `gh-ticket-runner`, or lint step fails **3 times in a row**, the Agent MUST halt and drop back to human interaction: *"⚠️ I need help. Sticking on an error in branch X."*
+3. **⚙️ Circuit Breaker:** If a CI/CD build, ticket execution, or lint step fails **3 times in a row**, the Agent MUST halt and drop back to human interaction: *"⚠️ I need help. Sticking on an error in branch X."* You MUST persist the error count to a file `.agent/state/circuit.json` to avoid resetting the count upon context loss.

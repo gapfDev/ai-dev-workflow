@@ -61,6 +61,9 @@ Read the acceptance criteria and create test cases:
 
 ### Phase 5: Generate Report
 
+> [!CAUTION]
+> **STRICT FILENAME ENFORCEMENT:** You MUST name this file exactly `VALIDATION_REPORT.md`. Do not abbreviate it to `VALIDATION_REP.md` or any other variant.
+
 ```markdown
 # Validation Report
 
@@ -99,3 +102,4 @@ Read the acceptance criteria and create test cases:
 2. **ALWAYS** test at least 1 happy path + 2 edge cases per criterion
 3. **ALWAYS** include steps to reproduce in every bug report
 4. If the user needs to test on their device → guide them step by step
+5. **STRICT FILENAME:** Always output as `VALIDATION_REPORT.md`
