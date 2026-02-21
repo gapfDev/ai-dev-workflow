@@ -1,0 +1,3 @@
+# SECURITY TICKET BACKLOG
+
+1. [x] Implement granular permissions logic: ACCESS_COARSE_LOCATION vs ACCESS_FINE_LOCATION.

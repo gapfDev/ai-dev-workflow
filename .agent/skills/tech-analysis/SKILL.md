@@ -13,6 +13,9 @@ Skill for analyzing product features and mapping them to concrete technical solu
 ## Output
 - Complete `TECH_STRATEGY.md` document (use template in `templates/`)
 
+> [!CAUTION]
+> **STRICT FILENAME ENFORCEMENT:** You MUST name the output file exactly `TECH_STRATEGY.md`. Never deviate.
+
 ## Process
 
 ### Phase 1: Extract Features
@@ -75,3 +78,4 @@ For each non-obvious technical decision:
 2. **NEVER** choose technology without justification
 3. **ALWAYS** consider at least 1 alternative per important decision
 4. If there's technical doubt → ask the user, don't assume
+5. **STRICT FILENAME:** Always output as `TECH_STRATEGY.md`
