@@ -65,6 +65,13 @@ Every handoff file MUST follow this structure to ensure the receiving agent has 
 - Do not commit `.agent/temp` to Git (it is in `.gitignore`).
 - If a task changes significantly, update the Brief file first, then tell the Agent.
 
+### Phase 5: Re-delegation (Salvage Mode)
+When re-assigning a ticket from a failed, stale, or crashed agent:
+1. Check if the previous agent left a branch on remote (e.g., `codex/<ticket-id>-<slug>`).
+2. If a branch exists, instruct the new agent to fetch and assess it before writing new code.
+3. Document in the brief what was salvageable and what needs to be redone.
+4. Update the task brief with explicit salvage instructions: "Agent [X] stalled. Branch `[branch-name]` may contain partial work. Assess, salvage, or reset."
+
 ## Rules
 1. **ALWAYS** provide a self-contained brief with context, constraints, and DoD.
 2. **ALWAYS** update the brief before asking the receiving agent to proceed.

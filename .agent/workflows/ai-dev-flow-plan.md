@@ -31,6 +31,11 @@
 │                    2. If no response → Document assumption + mark ⚠️             │
 │                    3. NEVER invent data                                          │
 │                                                                                 │
+│  🔒 GLOBAL RULE — USER DATA:                                                    │
+│  When analyzing security, ALWAYS consider ALL user-provided                      │
+│  data vectors (text, images, files, location). Not just                          │
+│  API endpoints.                                                                  │
+│                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─── ⚠️ MANAGER AGENT: WORKFLOW KICKOFF REQUIRED ─────────────────────────────────┐
@@ -184,6 +189,10 @@
        │ □ References/   │
        │   screenshots   │
        │   included?     │
+       │ □ If UI project:│
+       │   Design mockups│
+       │   approved and  │
+       │   locked?       │
        │                 │
        │ TRACKING:       │
        │ □ manager-log   │
@@ -357,6 +366,9 @@
   │  │    AGREEMENT      │ │
   │  │ • 1 or N agents?  │ │
   │  │ • Parallel/Tree?  │ │
+  │  │ • Stale threshold? │ │
+  │  │ • File CLAIM       │ │
+  │  │   protocol agreed? │ │
   │  │ 🗣️ TALK: Low      │ │
   │  └──────────────────┘ │
   │                        │

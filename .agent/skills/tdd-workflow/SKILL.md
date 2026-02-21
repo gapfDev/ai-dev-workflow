@@ -36,14 +36,19 @@ Skill for implementing features using the TDD cycle: Red → Green → Refactor.
 - Read the technical notes — how to implement
 
 ### 2. Plan Tests
-Before writing code, list the tests you need:
+Before writing code, perform **Boundary Value Analysis** on each acceptance criterion. For every input, explicitly identify: minimum valid value, maximum valid value, zero/empty, negative (if numeric), null/undefined. Each boundary MUST have a corresponding test.
+
+Then list the tests you need:
 
 ```markdown
 Planned tests for [TICKET_ID]:
 - [ ] Test 1: [Acceptance criterion 1]
 - [ ] Test 2: [Acceptance criterion 2]
-- [ ] Test 3: [Edge case: empty input]
-- [ ] Test 4: [Edge case: invalid data]
+- [ ] Test 3: [Boundary: minimum value]
+- [ ] Test 4: [Boundary: maximum value]
+- [ ] Test 5: [Boundary: zero/empty]
+- [ ] Test 6: [Boundary: negative/null]
+- [ ] Test 7: [Edge case: invalid data]
 ```
 
 ### 3. Red-Green-Refactor Cycle

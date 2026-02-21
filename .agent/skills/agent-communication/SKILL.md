@@ -94,6 +94,7 @@ When work is complete:
 | **Decision** | Architectural choice made | "Chose Repository pattern because we need offline support" |
 | **Question** | Need input from another agent | "Q for Backend Dev: What's the error handling strategy?" |
 | **Blocker** | Can't proceed | "🚫 Blocked: Need API keys before I can test auth flow" |
+| **Claim** | Intend to modify shared files | "📌 CLAIM: `types.ts`, `api/routes.ts` for Ticket #12" |
 
 ---
 
@@ -117,6 +118,8 @@ When work is complete:
 6. **NEVER** use the board for code — use PRs/commits for that
 7. **ALWAYS** mark completed tasks with ✅ and blockers with 🚫
 8. **ALWAYS** write in English for consistency
+9. **ALWAYS** post a CLAIM message before modifying shared/foundational files (types, schemas, routes, configs). If another agent has already claimed the same file, negotiate ordering before proceeding.
+10. **NEVER** start editing a file that another agent has an active CLAIM on without resolving the conflict first.
 
 ---
 

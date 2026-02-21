@@ -25,8 +25,12 @@ Security control skill to prevent vulnerable architecture, unsafe merges, and ri
 ### Phase 1: Security Gate A (Architecture)
 1. Identify attack surface and trust boundaries.
 2. Map sensitive data flows and storage points.
-3. Rank risks by severity (`P0`-`P3`) and define mitigations.
-4. Block progression to Step 3 if critical/high risks are undefined.
+3. **Analyze all user-provided data vectors**: For each type of data the user can input (text, files, images, audio, video, location, metadata), evaluate:
+   - Does it contain or could it expose PII (faces, addresses, plates, GPS coordinates)?
+   - Does it require sanitization, stripping, or blurring before storage or display?
+   - What regulatory frameworks apply (GDPR, CCPA, HIPAA)?
+4. Rank risks by severity (`P0`-`P3`) and define mitigations.
+5. Block progression to Step 3 if critical/high risks are undefined.
 
 ### Phase 1.5: Security Backlog Conversion (Planning)
 1. Convert mitigations into security backlog tickets with clear acceptance criteria.

@@ -50,13 +50,15 @@ Skill for systematically reviewing code to verify quality, security, and maintai
 
 #### Security
 - [ ] No hardcoded secrets/keys?
+- [ ] No sensitive data logged, traced, or exposed at runtime (including debug paths)?
+- [ ] Sensitive variables never appear in error messages, stack traces, or observability outputs?
 - [ ] User inputs validated/sanitized?
 - [ ] APIs use HTTPS?
 - [ ] Sensitive data stored securely?
 
 #### Tests
 - [ ] Adequate coverage of new code?
-- [ ] Cover happy path + edge cases?
+- [ ] Cover happy path + edge cases? (Enumerate the specific edge cases covered. Are boundary values included?)
 - [ ] Tests are independent of each other?
 - [ ] Test names are descriptive?
 

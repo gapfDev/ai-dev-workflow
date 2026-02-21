@@ -25,6 +25,14 @@ Execute this skill **only when all of these are true**:
 
 ## Process
 
+### Phase 0: Input Validation
+Before generating any mockup, verify the PRODUCT_VISION.md contains at minimum:
+1. Explicit screen or page descriptions (not just feature names)
+2. At least one user flow with step-by-step walkthrough
+3. Design preferences (colors, mode, style) or a stated willingness to accept defaults
+
+If any of these are missing or vague (single-sentence descriptions with no detail), **HALT** and request the Manager to return to `product-discovery` for deeper requirements before proceeding.
+
 ### Phase 1: Extract Screens
 1. Read the PRODUCT_VISION.md
 2. Identify every screen or page mentioned (explicit or implicit)
@@ -62,3 +70,5 @@ Present all mockups to the user with these questions:
 3. **ALWAYS** use the design preferences from the PRODUCT_VISION.md — do not invent a style the user didn't request
 4. **ALWAYS** present mockups one conversation turn at a time — do not dump 10 images at once
 5. If the user provides their own mockups/screenshots → skip generation, use theirs as the design source
+6. **ALWAYS** compare new feedback against the previous 2 iterations during Phase 4. If feedback directly contradicts a prior revision (e.g., "make it darker" after "make it lighter"), HALT iteration and present the contradiction to the user for resolution before generating another mockup.
+7. **NEVER** iterate more than 3 times on the same screen without escalating to the Manager for a design decision.

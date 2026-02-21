@@ -29,8 +29,9 @@ Use isolated worktrees to execute multiple tickets in parallel from the same rep
 
 ### Phase 2: Work in Isolation
 1. Run implementation and tests inside the worktree path.
-2. Commit only files related to the ticket.
-3. Push branch and open PR.
+2. Before starting significant new work, fetch the latest state of the target branch and rebase your worktree branch. If the rebase introduces conflicts, resolve them before continuing.
+3. Commit only files related to the ticket.
+4. Push branch and open PR.
 
 ### Phase 3: Teardown
 1. After merge, remove worktree directory.
